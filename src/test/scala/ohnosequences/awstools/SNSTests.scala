@@ -34,7 +34,7 @@ class SNSTests {
 
     println(policy.toJson)
 
-    queue.delete()
+    // queue.delete()
     sqs.shutdown()
 
     assertEquals(1, policy.getStatements.size())
