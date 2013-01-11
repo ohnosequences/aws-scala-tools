@@ -1,4 +1,4 @@
-package ohnosequences.aws-scala-tools
+package ohnosequences.awsScalaTools
 
 class StubTest {
 }

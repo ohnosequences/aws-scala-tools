@@ -2,7 +2,7 @@
 import sbtrelease._
 import ReleaseStateTransformations._
 
-import aws-scala-toolsBuild._
+import awsScalaToolsBuild._
 
 name := "aws-scala-tools"
 
@@ -34,6 +34,11 @@ resolvers ++= Seq (
 libraryDependencies ++= Seq (
                               "com.chuusai" %% "shapeless" % "1.2.3"
                             )
+
+libraryDependencies += "com.amazonaws" % "aws-java-sdk" % "1.3.26"
+
+libraryDependencies += "com.novocode" % "junit-interface" % "0.10-M1" % "test"
+
 
 scalacOptions ++= Seq(
                       "-feature",
