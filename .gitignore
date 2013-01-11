@@ -22,3 +22,5 @@ artifacts/
 data/in/
 data/out/
 
+# hiding credentials
+AwsCredentials.properties
