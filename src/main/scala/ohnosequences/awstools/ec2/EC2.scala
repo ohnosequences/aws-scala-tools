@@ -1,4 +1,4 @@
-package awsaws.ec2
+package ohnosequences.awstools.ec2
 
 import java.io.File
 

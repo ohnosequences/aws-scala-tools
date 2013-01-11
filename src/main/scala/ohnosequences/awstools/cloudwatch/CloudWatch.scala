@@ -1,4 +1,4 @@
-package awsaws.cloudwatch
+package ohnosequences.awstools.cloudwatch
 
 import java.io.File
 

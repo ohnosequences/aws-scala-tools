@@ -1,4 +1,4 @@
-package awsaws.sqs
+package ohnosequences.awstools.sqs
 
 import org.junit.Test
 import org.junit.Assert._

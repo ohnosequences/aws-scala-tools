@@ -7,7 +7,7 @@ import sbtrelease._
 import ReleaseStateTransformations._
 import sbtrelease.ReleasePlugin.ReleaseKeys._
 
-object awsScalaToolsBuild extends Build {
+object awstoolsBuild extends Build {
 
   lazy val awsScalaTools = Project(
     id = "aws-scala-tools",

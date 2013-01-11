@@ -1,4 +1,4 @@
-package awsaws.s3
+package ohnosequences.awstools.s3
 
 import java.io.File
 

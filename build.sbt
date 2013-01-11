@@ -2,7 +2,7 @@
 import sbtrelease._
 import ReleaseStateTransformations._
 
-import awsScalaToolsBuild._
+import awstoolsBuild._
 
 name := "aws-scala-tools"
 

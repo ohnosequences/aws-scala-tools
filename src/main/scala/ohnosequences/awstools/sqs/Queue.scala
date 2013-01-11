@@ -1,4 +1,4 @@
-package awsaws.sqs
+package ohnosequences.awstools.sqs
 
 import com.amazonaws.services.sqs.model._
 import com.amazonaws.services.sqs.AmazonSQS

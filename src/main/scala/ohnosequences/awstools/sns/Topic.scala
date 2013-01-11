@@ -1,6 +1,6 @@
-package awsaws.sns
+package ohnosequences.awstools.sns
 
-import awsaws.sqs.Queue
+import ohnosequences.awstools.sqs.Queue
 
 import com.amazonaws.services.sns.AmazonSNS
 import com.amazonaws.services.sns.model._

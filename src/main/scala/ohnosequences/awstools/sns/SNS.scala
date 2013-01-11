@@ -1,11 +1,10 @@
-package awsaws.sns
+package ohnosequences.awstools.sns
 
 import java.io.File
 
 import com.amazonaws.auth.PropertiesCredentials
 import com.amazonaws.services.sns.{AmazonSNSClient, AmazonSNS}
-import com.amazonaws.services.sns.model.{DeleteTopicRequest, CreateTopicRequest}
-
+import com.amazonaws.services.sns.model.CreateTopicRequest
 
 class SNS(val sns: AmazonSNS) {
 
