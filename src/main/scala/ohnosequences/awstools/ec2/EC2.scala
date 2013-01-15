@@ -8,7 +8,6 @@ import com.amazonaws.services.ec2.{AmazonEC2Client, AmazonEC2}
 
 import scala.collection.JavaConversions._
 import com.amazonaws.services.ec2.model._
-import ohnosequences.grid.server.AWSClients._
 
 
 object InstanceSpecs {

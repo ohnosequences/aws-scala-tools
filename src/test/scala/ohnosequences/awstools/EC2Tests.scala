@@ -6,6 +6,8 @@ import com.amazonaws.services.ec2.model.InstanceType._
 import com.amazonaws.services.ec2.model.LaunchSpecification
 
 import java.util.Arrays
+import ohnosequences.awstools.sqs.SQS
+import java.io.File
 
 class EC2Tests {
 
@@ -29,6 +31,22 @@ class EC2Tests {
   def base64Tests() {
     assertEquals("dGVzdHRlc3QK", Utils.base64encode("testtest\n"))
   }
+
+  // @Test
+  // def conversionTest() {
+  //   val ec2 = EC2.create(new File("AwsCredentials.properties"))
+
+  //   try {
+  //     val instance: Instance = ec2.runInstances()
+
+  //     assertEquals(queue.url, sqs.getQueueByName(queueName).get.url)
+  //     assertEquals(None, sqs.getQueueByName("unexisting queue"))
+  //   } finally {
+  //     queue.delete()
+  //     sqs.shutdown()
+  //   }
+  // }
+
 
 
 

@@ -24,3 +24,8 @@ data/out/
 
 # hiding credentials
 AwsCredentials.properties
+
+# IntelliJ Indea
+.idea/
+.idea_modules/
+src/main/main.iml
