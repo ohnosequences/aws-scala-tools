@@ -8,6 +8,7 @@ import com.amazonaws.services.ec2.{AmazonEC2Client, AmazonEC2}
 
 import scala.collection.JavaConversions._
 import com.amazonaws.services.ec2.model._
+import ohnosequences.grid.server.AWSClients._
 
 
 object InstanceSpecs {
@@ -58,9 +59,11 @@ class EC2(val ec2: AmazonEC2) {
     ).getSpotPriceHistory.map(_.getSpotPrice.toDouble).fold(1D)(math.min(_, _))
   }
 
-//  def setTag(tag: Tag) {
-//    ec2.createTags(new CreateTagsRequest())
-//  }
+  def createTag(instance: ohnosequences.awstools.ec2.Instance, tag: Tag) = {
+    ec2.createTags(new CreateTagsRequest().withResources(instance.getInstanceId).withTags(tag))
+  }
+
+
 
   def listInstancesByTag(tag: Tag) = {
     ec2.describeInstances(
