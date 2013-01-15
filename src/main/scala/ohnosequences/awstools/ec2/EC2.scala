@@ -4,9 +4,11 @@ import java.io.File
 
 import com.amazonaws.auth.PropertiesCredentials
 import com.amazonaws.services.ec2.{AmazonEC2Client, AmazonEC2}
-import com.amazonaws.services.ec2.model._
+
 
 import scala.collection.JavaConversions._
+import com.amazonaws.services.ec2.model._
+
 
 object InstanceSpecs {
   implicit def getLaunchSpecs(specs: InstanceSpecs) = {
@@ -38,13 +40,13 @@ class EC2(val ec2: AmazonEC2) {
     ec2.requestSpotInstances(spotRequest)
   }
 
-  def runInstances(amount: Int, specs: InstanceSpecs): List[Instance] = {
+  def runInstances(amount: Int, specs: InstanceSpecs): List[ohnosequences.awstools.ec2.Instance] = {
     val runRequest = new RunInstancesRequest(specs.amiId, amount, amount)
       .withInstanceType(specs.instanceType)
       .withKeyName(specs.keyName)
       .withUserData(Utils.base64encode(specs.userData))
       .withSecurityGroups(specs.securityGroups)
-    ec2.runInstances(runRequest).getReservation().getInstances().toList
+    ec2.runInstances(runRequest).getReservation().getInstances().map(ohnosequences.awstools.ec2.Instance(ec2, _)).toList
   }
 
   def getSpotPrice = {
@@ -66,17 +68,29 @@ class EC2(val ec2: AmazonEC2) {
     ).getReservations().flatMap(_.getInstances)
   }
 
-  def createTag(instanceId: String, tag: Tag) {
-    ec2.createTags(new CreateTagsRequest(List(instanceId), List(tag)))
-  }
 
   def getInstancePublicDnsName(instanceId: String): Option[String] = {
     val instances = ec2.describeInstances().getReservations() flatMap (_.getInstances())
     instances find (_.getInstanceId() == instanceId) map (_.getPublicDnsName())
   }
 
+  def terminateInstance(instanceId: String) {
+    ec2.terminateInstances(new TerminateInstancesRequest(List(instanceId)))
+  }
+
   def shutdown() {
     ec2.shutdown()
+  }
+
+  def getCurrentInstanceId = {
+    io.Source.fromURL("http://169.254.169.254/latest/meta-data/instance-id").mkString
+  }
+
+  def getCurrentInstance: ohnosequences.awstools.ec2.Instance = getInstanceById(getCurrentInstanceId)
+
+  def getInstanceById(instanceId: String): ohnosequences.awstools.ec2.Instance = {
+    val instance = ec2.describeInstances(new DescribeInstancesRequest().withInstanceIds(instanceId)).getReservations.flatMap(_.getInstances).head
+    Instance(ec2, instance)
   }
 
 }
@@ -87,4 +101,6 @@ object EC2 {
     ec2Client.setEndpoint("http://ec2.eu-west-1.amazonaws.com")
     new EC2(ec2Client)
   }
+
+
 }
