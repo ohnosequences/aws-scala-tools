@@ -3,6 +3,7 @@ package ohnosequences.awstools.sqs
 import com.amazonaws.services.sqs.model._
 import com.amazonaws.services.sqs.AmazonSQS
 import scala.collection.JavaConversions._
+import scala.Some
 
 case class Queue(val sqs: AmazonSQS, val url: String, val name: String) {
 
@@ -39,6 +40,10 @@ case class Queue(val sqs: AmazonSQS, val url: String, val name: String) {
     new GetQueueAttributesRequest(url).withAttributeNames(name.toString)
   ).getAttributes.get(name.toString)
 
+  def getAllAttributes = sqs.getQueueAttributes(
+    new GetQueueAttributesRequest(url).withAttributeNames(List("All"))
+  ).getAttributes.toMap
+
   def getArn = getAttribute(QueueAttributeName.QueueArn)
 
   def getApproximateNumberOfMessages = getAttribute(QueueAttributeName.ApproximateNumberOfMessages)
@@ -54,8 +59,11 @@ case class Queue(val sqs: AmazonSQS, val url: String, val name: String) {
   }
 
   override def toString = {
-    "[ name=" + name + "; " + "url=" + url + "; " + " messages = " + getApproximateNumberOfMessages + " ]"
+     name
+    //"[ name=" + name + "; " + "url=" + url + "; " + " messages = " + getApproximateNumberOfMessages + " ]"
   }
+
+
 
 
 

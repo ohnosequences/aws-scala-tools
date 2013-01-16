@@ -20,6 +20,10 @@ object InstanceSpecs {
     launchSpecs.setUserData(Utils.base64encode(specs.userData))
     launchSpecs
   }
+
+//  def fromMap(map: Map[String, String]) = {
+//
+//  }
 }
 
 case class InstanceSpecs(
@@ -31,13 +35,12 @@ case class InstanceSpecs(
 
 class EC2(val ec2: AmazonEC2) {
 
-  def requestSpotInstances(amount: Int, price: String, specs: InstanceSpecs): 
-    RequestSpotInstancesResult = {
-    val spotRequest = new RequestSpotInstancesRequest()
-    spotRequest.setSpotPrice(price)
-    spotRequest.setInstanceCount(amount)
-    spotRequest.setLaunchSpecification(specs)
-    ec2.requestSpotInstances(spotRequest)
+  def requestSpotInstances(amount: Int, price: Double, specs: InstanceSpecs): List[ohnosequences.awstools.ec2.SpotInstanceRequest] = {
+    ec2.requestSpotInstances(new RequestSpotInstancesRequest()
+      .withSpotPrice(price.toString)
+      .withInstanceCount(amount)
+      .withLaunchSpecification(specs)
+    ).getSpotInstanceRequests.map(SpotInstanceRequest(ec2, _)).toList
   }
 
   def runInstances(amount: Int, specs: InstanceSpecs): List[ohnosequences.awstools.ec2.Instance] = {
@@ -46,28 +49,42 @@ class EC2(val ec2: AmazonEC2) {
       .withKeyName(specs.keyName)
       .withUserData(Utils.base64encode(specs.userData))
       .withSecurityGroups(specs.securityGroups)
-    ec2.runInstances(runRequest).getReservation().getInstances().map(ohnosequences.awstools.ec2.Instance(ec2, _)).toList
+    ec2.runInstances(runRequest).getReservation.getInstances.map(Instance(ec2, _)).toList
   }
 
-  def getSpotPrice = {
+  def getCurrentSpotPrice(instanceType: InstanceType, productDescription: String) = {
     ec2.describeSpotPriceHistory(
       new DescribeSpotPriceHistoryRequest()
         .withStartTime(new java.util.Date())
-        .withInstanceTypes(InstanceType.T1Micro.toString)
-        .withProductDescriptions("Linux/UNIX")
+        .withInstanceTypes(instanceType.toString)
+        .withProductDescriptions(productDescription)
     ).getSpotPriceHistory.map(_.getSpotPrice.toDouble).fold(1D)(math.min(_, _))
   }
 
-  def createTag(instance: ohnosequences.awstools.ec2.Instance, tag: Tag) = {
-    ec2.createTags(new CreateTagsRequest().withResources(instance.getInstanceId).withTags(tag))
+  def createTag(resourceId: String, tag: Tag) {
+    ec2.createTags(new CreateTagsRequest().withResources(resourceId).withTags(tag))
   }
 
-
+//  def createTag(instance: ohnosequences.awstools.ec2.Instance, tag: Tag) {
+//    createTag(instance.getInstanceId, tag)
+//  }
 
   def listInstancesByTag(tag: Tag) = {
     ec2.describeInstances(
       new DescribeInstancesRequest().withFilters(new Filter("tag:" + tag.getKey, List(tag.getValue)))
-    ).getReservations().flatMap(_.getInstances)
+    ).getReservations().flatMap(_.getInstances).map(Instance(ec2, _))
+  }
+
+  def listRequestsByTag(tag: Tag) = {
+    ec2.describeSpotInstanceRequests(
+      new DescribeSpotInstanceRequestsRequest().withFilters(new Filter("tag:" + tag.getKey, List(tag.getValue)))
+    ).getSpotInstanceRequests.map(SpotInstanceRequest(ec2, _))
+  }
+
+  def listRequests() = {
+    ec2.describeSpotInstanceRequests(
+      new DescribeSpotInstanceRequestsRequest()
+    ).getSpotInstanceRequests.map(SpotInstanceRequest(ec2, _))
   }
 
 
@@ -78,6 +95,10 @@ class EC2(val ec2: AmazonEC2) {
 
   def terminateInstance(instanceId: String) {
     ec2.terminateInstances(new TerminateInstancesRequest(List(instanceId)))
+  }
+
+  def cancelSpotRequest(requestId: String) {
+    ec2.cancelSpotInstanceRequests(new CancelSpotInstanceRequestsRequest(List(requestId)))
   }
 
   def shutdown() {

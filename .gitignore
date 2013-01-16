@@ -29,3 +29,12 @@ AwsCredentials.properties
 .idea/
 .idea_modules/
 src/main/main.iml
+gridClient/.idea/
+gridClient/.idea_modules/
+gridServer/.idea/
+gridServer/.idea_modules/
+gridClient/project/
+gridClient/target/
+gridServer/project/
+gridServer/target/
+

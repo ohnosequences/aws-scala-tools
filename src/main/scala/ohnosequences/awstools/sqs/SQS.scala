@@ -15,7 +15,7 @@ class SQS(val sqs: AmazonSQS) {
   def getQueueByName(name: String) = {
     try {
       val response = sqs.getQueueUrl(new GetQueueUrlRequest(name))
-      Some(new Queue(sqs, response.getQueueUrl, name = name))
+      Some(Queue(sqs, response.getQueueUrl, name = name))
     } catch {
       case e: AmazonServiceException if (e.getStatusCode == 400) => None
     }

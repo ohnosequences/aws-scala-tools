@@ -14,6 +14,10 @@ case class Instance(val ec2: AmazonEC2, instance: com.amazonaws.services.ec2.mod
     ec2.createTags(new CreateTagsRequest(List(instance.getInstanceId), List(tag)))
   }
 
+  def getTagValue(tagName: String) = {
+    instance.getTags.find(_.getKey == tagName).map(_.getValue)
+  }
+
   def getInstanceId = instance.getInstanceId
 }
 
