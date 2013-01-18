@@ -81,9 +81,12 @@ class EC2(val ec2: AmazonEC2) {
     ).getSpotInstanceRequests.map(SpotInstanceRequest(ec2, _))
   }
 
-  def listRequests() = {
+  def listRequestsByTagAndState(tag: Tag, state: String) = {
     ec2.describeSpotInstanceRequests(
-      new DescribeSpotInstanceRequestsRequest()
+      new DescribeSpotInstanceRequestsRequest().withFilters(
+        new Filter("state", List(state)),
+        new Filter("tag:" + tag.getKey, List(tag.getValue))
+      )
     ).getSpotInstanceRequests.map(SpotInstanceRequest(ec2, _))
   }
 

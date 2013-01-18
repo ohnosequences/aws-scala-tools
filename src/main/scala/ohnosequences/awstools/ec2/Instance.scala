@@ -19,6 +19,13 @@ case class Instance(val ec2: AmazonEC2, instance: com.amazonaws.services.ec2.mod
   }
 
   def getInstanceId = instance.getInstanceId
+
+  def getSSHCommand = {
+    //ssh -i evdokim.pem ec2-user@ec2-46-137-141-37.eu-west-1.compute.amazonaws.com
+    val keyPairFile = instance.getKeyName + ".pem"
+    val publicDNS = instance.getPublicDnsName
+    "ssh -i " + keyPairFile + " ec2-user@" + publicDNS
+  }
 }
 
 

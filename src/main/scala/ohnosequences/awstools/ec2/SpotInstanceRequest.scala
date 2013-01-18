@@ -11,6 +11,8 @@ case class SpotInstanceRequest(val ec2: AmazonEC2, val request: com.amazonaws.se
 
   def getTagValue(tagName: String) = request.getTags.find(_.getKey == tagName).map(_.getValue)
 
+  def getInstanceId = request.getInstanceId
+
 //  def cancel = ec2.cancelSpotInstanceRequests(
 //    new CancelSpotInstanceRequestsRequest(getSpotInstanceRequestId)
 //  )
