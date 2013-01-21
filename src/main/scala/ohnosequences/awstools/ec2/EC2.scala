@@ -30,8 +30,10 @@ case class InstanceSpecs(
   instanceType   : InstanceType,
   amiId          : String,      
   securityGroups : List[String],
-  keyName        : String,      
+  keyName        : String,
   userData       : String = "")
+
+
 
 class EC2(val ec2: AmazonEC2) {
 
@@ -74,6 +76,8 @@ class EC2(val ec2: AmazonEC2) {
       new DescribeInstancesRequest().withFilters(new Filter("tag:" + tag.getKey, List(tag.getValue)))
     ).getReservations().flatMap(_.getInstances).map(Instance(ec2, _))
   }
+
+
 
   def listRequestsByTag(tag: Tag) = {
     ec2.describeSpotInstanceRequests(
