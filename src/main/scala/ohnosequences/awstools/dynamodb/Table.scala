@@ -15,19 +15,54 @@ trait AttributeValueLongBijection extends AttributeValueBijection[Long] {
   override def from(attributeValue: AttributeValue) = attributeValue.getN.toLong
 }
 
-class Table[T](ddb: AmazonDynamoDBClient, name: String) {
+//abstract sealed class DynamoValue
+//
+//case class LongValue(value: Long) extends DynamoValue
 
-  this: AttributeValueBijection[T] =>
+
+class Table[T](ddb: AmazonDynamoDBClient, name: String, val hashKeyName: String, val rangeKeyName: String) {
+
+  table: AttributeValueBijection[T] =>
+
+  case class Item(map: Map[String, T]) {
+    def delete {
+      deleteItem(new Key(table.to(map(hashKeyName)), table.to(map(rangeKeyName))))
+    }
+  }
+
+
 
   implicit def TToAttributeValue(t: T) = to(t)
+  implicit def AttributeToT(t: AttributeValue) = from(t)
+
 
   def putItem(item: Map[String, T]) {
-
     ddb.putItem(new PutItemRequest(name, item.mapValues(to)))
   }
 
-  def query(hashKeyValue: T, rangeKeyLowerBound: T, rangeKeyUpperBound: T) = {
+  def deleteItem(key: Key) {
+    ddb.deleteItem(new DeleteItemRequest(name, key))
+  }
+
+  def getItem(key: Key) = {
+    var map = ddb.getItem(new GetItemRequest()
+      .withTableName(name)
+      .withKey(key)
+    ).getItem
+    if (map == null) {
+      Map[String, T]()
+    } else {
+      map.mapValues(from)
+    }
+  }
+
+
+
+
+
+  def query(hashKeyValue: T, rangeKeyLowerBound: T, rangeKeyUpperBound: T): List[Map[String, T]] = {
     // "42"
+
     ddb.query(
       new QueryRequest()
         .withHashKeyValue(hashKeyValue)
@@ -38,10 +73,41 @@ class Table[T](ddb: AmazonDynamoDBClient, name: String) {
           .withAttributeValueList(rangeKeyLowerBound, rangeKeyUpperBound)
         )
 
-     ).getItems
+     ).getItems.map(_.toMap.mapValues(from(_))).toList
 
+  }
+
+//  def scan() = {
+//    val items = ddb.scan(new ScanRequest(name)).getItems
+//    items.map{item => Item(item.mapValues(from(_)))}
+//  }
+  def getKey(item: java.util.Map[String, AttributeValue]) = {
+    new Key(item(hashKeyName), item(rangeKeyName))
+  }
+
+  def getKey2(item: java.util.Map[String, T]) = {
+    new Key(item(hashKeyName), item(rangeKeyName))
   }
 
 
 
+  //rewrite!!!!!!!!!!!!
+  def clear() {
+
+    var items: java.util.List[java.util.Map[String, AttributeValue]] = List()
+
+    do {
+      println("deleting " + items.size() + " items")
+      items.foreach{item: java.util.Map[String, AttributeValue] =>
+        print(".")
+        deleteItem(getKey(item))
+      }
+      println()
+      items = ddb.scan(new ScanRequest(name)).getItems
+
+    } while(!items.isEmpty)
+
+  }
 }
+
+

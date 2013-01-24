@@ -45,10 +45,17 @@ class DynamoDB(val ddb: AmazonDynamoDBClient) {
           .withAttributeType(rangeKey._2)
         )
     ))
-    new Table[Long](ddb, name) with AttributeValueLongBijection
+    new Table[Long](ddb, name, hashKey._1, rangeKey._1) with AttributeValueLongBijection
   }
 
-  def getTable(name: String) = new Table[Long](ddb, name) with AttributeValueLongBijection
+  def getTable(name: String) = {
+    val schema = ddb.describeTable(
+      new DescribeTableRequest().withTableName(name)
+    ).getTable.getKeySchema
+
+    new Table[Long](ddb, name, schema.getHashKeyElement.getAttributeName, schema.getRangeKeyElement.getAttributeName) with AttributeValueLongBijection
+
+  }
 
 
 }

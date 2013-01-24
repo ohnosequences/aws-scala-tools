@@ -8,6 +8,8 @@ import com.amazonaws.services.ec2.{AmazonEC2Client, AmazonEC2}
 
 import scala.collection.JavaConversions._
 import com.amazonaws.services.ec2.model._
+import javax.annotation.processing.Filer
+import java.util.Date
 
 
 object InstanceSpecs {
@@ -29,19 +31,21 @@ object InstanceSpecs {
 case class InstanceSpecs(
   instanceType   : InstanceType,
   amiId          : String,      
-  securityGroups : List[String],
-  keyName        : String,
+  securityGroups : List[String] = List(),
+  keyName        : String = "",
   userData       : String = "")
 
 
 
 class EC2(val ec2: AmazonEC2) {
 
-  def requestSpotInstances(amount: Int, price: Double, specs: InstanceSpecs): List[ohnosequences.awstools.ec2.SpotInstanceRequest] = {
+  def requestSpotInstances(amount: Int, price: Double, specs: InstanceSpecs, timeout: Int = 36000): List[ohnosequences.awstools.ec2.SpotInstanceRequest] = {
     ec2.requestSpotInstances(new RequestSpotInstancesRequest()
       .withSpotPrice(price.toString)
       .withInstanceCount(amount)
       .withLaunchSpecification(specs)
+      .withLaunchGroup("grid")
+     // .withValidUntil(new Date(System.currentTimeMillis() + timeout))
     ).getSpotInstanceRequests.map(SpotInstanceRequest(ec2, _)).toList
   }
 
@@ -51,6 +55,7 @@ class EC2(val ec2: AmazonEC2) {
       .withKeyName(specs.keyName)
       .withUserData(Utils.base64encode(specs.userData))
       .withSecurityGroups(specs.securityGroups)
+
     ec2.runInstances(runRequest).getReservation.getInstances.map(Instance(ec2, _)).toList
   }
 
@@ -67,30 +72,62 @@ class EC2(val ec2: AmazonEC2) {
     ec2.createTags(new CreateTagsRequest().withResources(resourceId).withTags(tag))
   }
 
+  def createTags(resourceId: String, tags: List[Tag]) {
+    ec2.createTags(new CreateTagsRequest().withResources(resourceId).withTags(tags))
+  }
+
 //  def createTag(instance: ohnosequences.awstools.ec2.Instance, tag: Tag) {
 //    createTag(instance.getInstanceId, tag)
 //  }
 
+  def createTagFilter(tag: Tag) = new Filter("tag:" + tag.getKey, List(tag.getValue))
+  def createStatesFilter(states: String*) = new Filter("state", states)
+
+
+  def listInstancesByTags(tags: List[Tag]) = {
+    ec2.describeInstances(
+      new DescribeInstancesRequest().withFilters(tags.map(createTagFilter(_)))
+    ).getReservations().flatMap(_.getInstances).map(Instance(ec2, _))
+  }
+
   def listInstancesByTag(tag: Tag) = {
     ec2.describeInstances(
-      new DescribeInstancesRequest().withFilters(new Filter("tag:" + tag.getKey, List(tag.getValue)))
+      new DescribeInstancesRequest().withFilters(createTagFilter(tag))
+    ).getReservations().flatMap(_.getInstances).map(Instance(ec2, _))
+  }
+
+  def listInstancesByFilters(filters: List[Filter]) = {
+    ec2.describeInstances(
+      new DescribeInstancesRequest().withFilters(filters)
     ).getReservations().flatMap(_.getInstances).map(Instance(ec2, _))
   }
 
 
 
-  def listRequestsByTag(tag: Tag) = {
+//  def listRequestsByTag(tag: Tag) = {
+//    ec2.describeSpotInstanceRequests(
+//      new DescribeSpotInstanceRequestsRequest().withFilters(new Filter("tag:" + tag.getKey, List(tag.getValue)))
+//    ).getSpotInstanceRequests.map(SpotInstanceRequest(ec2, _))
+//  }
+
+  def listRequestsByTags(tags: List[Tag]) = {
     ec2.describeSpotInstanceRequests(
-      new DescribeSpotInstanceRequestsRequest().withFilters(new Filter("tag:" + tag.getKey, List(tag.getValue)))
+      new DescribeSpotInstanceRequestsRequest().withFilters(tags.map(createTagFilter(_)))
     ).getSpotInstanceRequests.map(SpotInstanceRequest(ec2, _))
   }
 
-  def listRequestsByTagAndState(tag: Tag, state: String) = {
+  def listRequestsByTagsAndState(tags: List[Tag], state: String) = {
     ec2.describeSpotInstanceRequests(
       new DescribeSpotInstanceRequestsRequest().withFilters(
-        new Filter("state", List(state)),
-        new Filter("tag:" + tag.getKey, List(tag.getValue))
+        tags.map(createTagFilter(_))
+        :+ createStatesFilter(state)
       )
+    ).getSpotInstanceRequests.map(SpotInstanceRequest(ec2, _))
+  }
+
+  def listRequestByFilters(filters: List[Filter]) = {
+    ec2.describeSpotInstanceRequests(
+      new DescribeSpotInstanceRequestsRequest().withFilters(filters)
     ).getSpotInstanceRequests.map(SpotInstanceRequest(ec2, _))
   }
 
