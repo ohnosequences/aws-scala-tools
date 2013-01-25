@@ -1,7 +1,7 @@
 package ohnosequences.awstools.ec2
 
 import com.amazonaws.services.ec2.AmazonEC2
-import com.amazonaws.services.ec2.model.{CancelSpotInstanceRequestsRequest, Tag}
+import com.amazonaws.services.ec2.model.CreateTagsRequest
 
 import scala.collection.JavaConversions._
 
@@ -13,11 +13,7 @@ case class SpotInstanceRequest(val ec2: AmazonEC2, val request: com.amazonaws.se
 
   def getInstanceId = request.getInstanceId
 
-//  def cancel = ec2.cancelSpotInstanceRequests(
-//    new CancelSpotInstanceRequestsRequest(getSpotInstanceRequestId)
-//  )
-
-//  def createTag(tag: Tag) {
-//    ec2.createTag(getSpotInstanceRequestId)
-//  }
+  def createTags(tags: awstools.ec2.Tag*) {
+    ec2.createTags(new CreateTagsRequest().withResources(getSpotInstanceRequestId).withTags(tags.map(_.toECTag)))
+  }
 }
