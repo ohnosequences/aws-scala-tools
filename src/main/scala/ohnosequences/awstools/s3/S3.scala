@@ -1,9 +1,12 @@
 package ohnosequences.awstools.s3
 
-import java.io.File
+import java.io.{ByteArrayInputStream, File}
 
 import com.amazonaws.auth.PropertiesCredentials
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3Client}
+import com.amazonaws.services.s3.model.{ObjectMetadata, PutObjectRequest}
+
+case class ObjectAddress(bucket: String, key: String)
 
 class S3(val s3: AmazonS3) {
 
@@ -15,6 +18,25 @@ class S3(val s3: AmazonS3) {
   def getBucket(name: String) = {
     if (s3.doesBucketExist(name)) Some(Bucket(s3, name)) else None
   }
+
+  def readWholeObject(objectAddress: ObjectAddress) = {
+    val objectStream = s3.getObject(objectAddress.bucket, objectAddress.key).getObjectContent
+    scala.io.Source.fromInputStream(objectStream).mkString
+  }
+
+  def putWholeObject(objectAddress: ObjectAddress, content: String) {
+    val array = content.getBytes
+
+    val stream = new ByteArrayInputStream(array)
+    val metadata = new ObjectMetadata()
+    metadata.setContentLength(array.length)
+    s3.putObject(objectAddress.bucket, objectAddress.key, stream, metadata)
+  }
+
+  def deleteObject(objectAddress: ObjectAddress) {
+    s3.deleteObject(objectAddress.bucket, objectAddress.key)
+  }
+
 
 //  def shutdown() {
 //    s3.s
@@ -30,3 +52,5 @@ object S3 {
     new S3(s3Client)
   }
 }
+
+
