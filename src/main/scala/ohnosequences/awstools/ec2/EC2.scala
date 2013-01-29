@@ -12,28 +12,26 @@ import com.amazonaws.services.ec2.model._
 
 
 object InstanceSpecs {
+
+
   implicit def getLaunchSpecs(specs: InstanceSpecs) = {
     val launchSpecs = new LaunchSpecification()
     launchSpecs.setSecurityGroups(specs.securityGroups)
-    launchSpecs.setInstanceType(specs.instanceType)
+    launchSpecs.setInstanceType(specs.instanceType.toAWS)
     launchSpecs.setImageId(specs.amiId)
     launchSpecs.setKeyName(specs.keyName)
     launchSpecs.setUserData(Utils.base64encode(specs.userData))
     launchSpecs
   }
-
-//  def fromMap(map: Map[String, String]) = {
-//
-//  }
 }
 
+
 case class InstanceSpecs(
-  instanceType   : InstanceType,
+  instanceType   : ohnosequences.awstools.ec2.InstanceType,
   amiId          : String,      
   securityGroups : List[String] = List(),
   keyName        : String = "",
   userData       : String = "")
-
 
 
 class EC2(val ec2: AmazonEC2) {
@@ -50,7 +48,7 @@ class EC2(val ec2: AmazonEC2) {
 
   def runInstances(amount: Int, specs: InstanceSpecs): List[ohnosequences.awstools.ec2.Instance] = {
     val runRequest = new RunInstancesRequest(specs.amiId, amount, amount)
-      .withInstanceType(specs.instanceType)
+      .withInstanceType(specs.instanceType.toAWS)
       .withKeyName(specs.keyName)
       .withUserData(Utils.base64encode(specs.userData))
       .withSecurityGroups(specs.securityGroups)
@@ -58,7 +56,7 @@ class EC2(val ec2: AmazonEC2) {
     ec2.runInstances(runRequest).getReservation.getInstances.map(Instance(ec2, _)).toList
   }
 
-  def getCurrentSpotPrice(instanceType: InstanceType, productDescription: String) = {
+  def getCurrentSpotPrice(instanceType: ohnosequences.awstools.ec2.InstanceType, productDescription: String) = {
     ec2.describeSpotPriceHistory(
       new DescribeSpotPriceHistoryRequest()
         .withStartTime(new java.util.Date())
@@ -68,7 +66,7 @@ class EC2(val ec2: AmazonEC2) {
   }
 
 
-  def createTags(resourceId: String, tags: awstools.ec2.Tag*) {
+  def createTags(resourceId: String, tags: ohnosequences.awstools.ec2.Tag*) {
     ec2.createTags(new CreateTagsRequest().withResources(resourceId).withTags(tags.map(_.toECTag)))
   }
 
@@ -92,7 +90,7 @@ class EC2(val ec2: AmazonEC2) {
 //    ).getReservations().flatMap(_.getInstances).map(Instance(ec2, _))
 //  }
 
-  def listInstancesByFilters(filters: awstools.ec2.Filter*): List[Instance] = {
+  def listInstancesByFilters(filters: ohnosequences.awstools.ec2.Filter*): List[Instance] = {
     ec2.describeInstances(
       new DescribeInstancesRequest().withFilters(filters.map(_.toEC2Filter))
     ).getReservations().flatMap(_.getInstances).map(Instance(ec2, _)).toList
@@ -121,7 +119,7 @@ class EC2(val ec2: AmazonEC2) {
 //    ).getSpotInstanceRequests.map(SpotInstanceRequest(ec2, _))
 //  }
 
-  def listRequestsByFilters(filters: awstools.ec2.Filter*): List[ohnosequences.awstools.ec2.SpotInstanceRequest] = {
+  def listRequestsByFilters(filters: ohnosequences.awstools.ec2.Filter*): List[ohnosequences.awstools.ec2.SpotInstanceRequest] = {
     ec2.describeSpotInstanceRequests(
       new DescribeSpotInstanceRequestsRequest().withFilters(filters.map(_.toEC2Filter))
     ).getSpotInstanceRequests.map(SpotInstanceRequest(ec2, _)).toList

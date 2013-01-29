@@ -2,12 +2,12 @@ package ohnosequences.awstools.ec2
 
 import org.junit.Test
 import org.junit.Assert._
-import com.amazonaws.services.ec2.model.InstanceType._
+
 import com.amazonaws.services.ec2.model.LaunchSpecification
 
 import java.util.Arrays
-import ohnosequences.awstools.sqs.SQS
-import java.io.File
+import ohnosequences.awstools.ec2.InstanceType._
+
 
 class EC2Tests {
 

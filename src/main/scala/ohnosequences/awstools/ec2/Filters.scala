@@ -1,4 +1,4 @@
-package awstools.ec2
+package ohnosequences.awstools.ec2
 
 import com.amazonaws.services.ec2
 

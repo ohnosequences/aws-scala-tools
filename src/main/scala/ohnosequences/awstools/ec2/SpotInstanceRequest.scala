@@ -13,7 +13,7 @@ case class SpotInstanceRequest(val ec2: AmazonEC2, val request: com.amazonaws.se
 
   def getInstanceId = request.getInstanceId
 
-  def createTags(tags: awstools.ec2.Tag*) {
+  def createTags(tags: ohnosequences.awstools.ec2.Tag*) {
     ec2.createTags(new CreateTagsRequest().withResources(getSpotInstanceRequestId).withTags(tags.map(_.toECTag)))
   }
 }

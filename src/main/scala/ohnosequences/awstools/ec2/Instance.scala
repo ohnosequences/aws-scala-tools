@@ -1,9 +1,8 @@
 package ohnosequences.awstools.ec2
 
-import com.amazonaws.services._
 
-import ec2.AmazonEC2
-import ec2.model.{CreateTagsRequest, TerminateInstancesRequest}
+import com.amazonaws.services.ec2.AmazonEC2
+import com.amazonaws.services.ec2.model.{CreateTagsRequest, TerminateInstancesRequest}
 
 import scala.collection.JavaConversions._
 
@@ -12,7 +11,7 @@ case class Instance(val ec2: AmazonEC2, instance: com.amazonaws.services.ec2.mod
 
   def terminate = ec2.terminateInstances(new TerminateInstancesRequest(List(instance.getInstanceId)))
 
-  def createTags(tags: awstools.ec2.Tag*) {
+  def createTags(tags: ohnosequences.awstools.ec2.Tag*) {
     ec2.createTags(new CreateTagsRequest().withResources(getInstanceId).withTags(tags.map(_.toECTag)))
   }
 
