@@ -6,7 +6,71 @@ import com.amazonaws.auth.PropertiesCredentials
 import com.amazonaws.services.dynamodb.AmazonDynamoDBClient
 import com.amazonaws.services.dynamodb.model._
 
-import scala.collection.JavaConversions._
+import com.amazonaws.services.dynamodb.datamodeling.DynamoDBMapper
+
+
+abstract sealed class KeyType {
+  type ValueType
+
+  def toScalarAttributeType: ScalarAttributeType
+}
+
+object KeyType {
+
+  def fromScalarAttributeType(scalarAttributeType: ScalarAttributeType) = scalarAttributeType match {
+    case ScalarAttributeType.N => NumericType
+    case ScalarAttributeType.S => StringType
+  }
+
+  def fromAWSName(name: String) = name match {
+    case "N" => NumericType
+    case "S" => StringType
+  }
+}
+
+case object NumericType extends KeyType {
+  type ValueType = Long
+
+  override def toScalarAttributeType = ScalarAttributeType.N
+}
+
+case object StringType extends KeyType {
+  type ValueType = String
+
+  override def toScalarAttributeType = ScalarAttributeType.S
+}
+
+abstract sealed class KeyValue[K <: KeyType] {
+  def getValue: K#ValueType
+
+  def getAttributeValue: AttributeValue
+}
+
+case class NumericValue(value: Long) extends KeyValue[NumericType.type] {
+  override def getValue = value
+
+  override def getAttributeValue = new AttributeValue().withN(value.toString)
+}
+
+case class StringValue(value: String) extends KeyValue[StringType.type] {
+  override def getValue = value
+
+  override def getAttributeValue = new AttributeValue().withS(value)
+}
+
+case class HashKey(name: String, keyType: KeyType)
+
+case class RangeKey(name: String, keyType: KeyType)
+
+case class Table(ddb: AmazonDynamoDBClient, name: String, hashKey: HashKey, rangeKey: RangeKey) {
+  def waitForActivation() {
+    //    ddb.describeTable(
+    //      new DescribeTableRequest().withTableName(name)
+    //    ).
+    println("waiting for table")
+    Thread.sleep(5000)
+  }
+}
 
 class DynamoDB(val ddb: AmazonDynamoDBClient) {
 
@@ -14,50 +78,46 @@ class DynamoDB(val ddb: AmazonDynamoDBClient) {
     ddb.shutdown()
   }
 
-//  def query() = {
-//   // "42"
-//    val items = ddb.query(
-//      new QueryRequest()
-//        .withHashKeyValue(new AttributeValue().withN("1"))
-//        .withTableName("InstancesStat")
-//        .withRangeKeyCondition(new Condition()
-//          .withComparisonOperator(ComparisonOperator.GT.toString)
-//          .withAttributeValueList(new AttributeValue().withN("5"))
-//        )
-//    ).getItems
-//    println(items)
-//    items
-//
-//  }
+  def createMapper = DynamoObjectMapper(ddb, new DynamoDBMapper(ddb))
 
-  def createTable(name: String, hashKey: (String, ScalarAttributeType), rangeKey: (String, ScalarAttributeType)) = {
+  def createTable(name: String, hashKey: HashKey, rangeKey: RangeKey, readUnits: Long = 1, writeUnits: Long = 1) = {
     ddb.createTable(new CreateTableRequest(
       name,
       new KeySchema()
         .withHashKeyElement(
-          new KeySchemaElement()
-            .withAttributeName(hashKey._1)
-            .withAttributeType(hashKey._2)
-         )
+        new KeySchemaElement()
+          .withAttributeName(hashKey.name)
+          .withAttributeType(hashKey.keyType.toScalarAttributeType)
+      )
         .withRangeKeyElement(
         new KeySchemaElement()
-          .withAttributeName(rangeKey._1)
-          .withAttributeType(rangeKey._2)
-        )
-    ))
-    new Table[Long](ddb, name, hashKey._1, rangeKey._1) with AttributeValueLongBijection
+          .withAttributeName(rangeKey.name)
+          .withAttributeType(rangeKey.keyType.toScalarAttributeType)
+      )
+    ).withProvisionedThroughput(new ProvisionedThroughput()
+      .withReadCapacityUnits(readUnits)
+      .withWriteCapacityUnits(writeUnits)
+    )
+    )
+    Table(ddb, name, hashKey, rangeKey)
   }
 
-  def getTable(name: String) = {
-    val schema = ddb.describeTable(
-      new DescribeTableRequest().withTableName(name)
-    ).getTable.getKeySchema
+  def getTable(name: String): Option[Table] = {
+    try {
+      val schema = ddb.describeTable(
+        new DescribeTableRequest().withTableName(name)
+      ).getTable.getKeySchema
+      val hashKeyElement = schema.getHashKeyElement
+      val rangeKeyElement = schema.getRangeKeyElement
 
-    new Table[Long](ddb, name, schema.getHashKeyElement.getAttributeName, schema.getRangeKeyElement.getAttributeName) with AttributeValueLongBijection
+      val hashKey = HashKey(hashKeyElement.getAttributeName, KeyType.fromAWSName(hashKeyElement.getAttributeType))
+      val rangeKey = RangeKey(rangeKeyElement.getAttributeName, KeyType.fromAWSName(rangeKeyElement.getAttributeType))
 
+      Some(Table(ddb, name, hashKey, rangeKey))
+    } catch {
+      case e: ResourceNotFoundException => None
+    }
   }
-
-
 }
 
 object DynamoDB {

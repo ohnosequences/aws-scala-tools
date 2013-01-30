@@ -58,4 +58,17 @@ class DynamoDBTests {
    // classOf[User].
   }
 
+  @Test
+  def createTableTest {
+    val ddb = DynamoDB.create(new File("gridServer/AwsCredentials.properties"))
+
+  //  val t1 = ddb.createTable("test123", HashKey("id", NumericType), RangeKey("timestamp", NumericType))
+    val t2 = ddb.getTable("test1234")
+    println(t2)
+    ddb.shutdown()
+    //assertEquals(t1, t2)
+
+
+  }
+
 }
