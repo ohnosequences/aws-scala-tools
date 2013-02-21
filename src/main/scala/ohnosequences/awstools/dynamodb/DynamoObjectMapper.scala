@@ -2,7 +2,7 @@ package ohnosequences.awstools.dynamodb
 
 import com.amazonaws.services.dynamodb.AmazonDynamoDBClient
 import com.amazonaws.services.dynamodb.datamodeling.{DynamoDBQueryExpression, DynamoDBMapper}
-import com.amazonaws.services.dynamodb.model.{ComparisonOperator, Condition, AttributeValue}
+import com.amazonaws.services.dynamodb.model.{ComparisonOperator, Condition}
 
 import scala.collection.JavaConversions._
 
@@ -32,12 +32,5 @@ case class DynamoObjectMapper(ddb: AmazonDynamoDBClient, mapper: DynamoDBMapper)
     )
     result.toList
   }
-
-//  def getAttributeValue(any: Any) = any match {
-//    case n: Long => new AttributeValue().withN(String.valueOf(n))
-//    case n: Int => new AttributeValue().withN(String.valueOf(n))
-//    case other => new AttributeValue().withS(other.toString)
-//  }
-
 
 }

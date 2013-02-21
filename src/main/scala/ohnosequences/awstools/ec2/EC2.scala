@@ -4,15 +4,12 @@ import java.io.File
 
 import com.amazonaws.auth.PropertiesCredentials
 import com.amazonaws.services.ec2.{AmazonEC2Client, AmazonEC2}
-
-
-import scala.collection.JavaConversions._
 import com.amazonaws.services.ec2.model._
 
+import scala.collection.JavaConversions._
 
 
 object InstanceSpecs {
-
 
   implicit def getLaunchSpecs(specs: InstanceSpecs) = {
     val launchSpecs = new LaunchSpecification()
@@ -70,26 +67,6 @@ class EC2(val ec2: AmazonEC2) {
     ec2.createTags(new CreateTagsRequest().withResources(resourceId).withTags(tags.map(_.toECTag)))
   }
 
-//  def createTag(instance: ohnosequences.awstools.ec2.Instance, tag: Tag) {
-//    createTag(instance.getInstanceId, tag)
-//  }
-
-//  def createTagFilter(tag: Tag) = new Filter("tag:" + tag.getKey, List(tag.getValue))
-//  def createStatesFilter(states: String*) = new Filter("state", states)
-
-
-//  def listInstancesByTags(tags: List[Tag]) = {
-//    ec2.describeInstances(
-//      new DescribeInstancesRequest().withFilters(tags.map(createTagFilter(_)))
-//    ).getReservations().flatMap(_.getInstances).map(Instance(ec2, _))
-//  }
-//
-//  def listInstancesByTag(tag: Tag) = {
-//    ec2.describeInstances(
-//      new DescribeInstancesRequest().withFilters(createTagFilter(tag))
-//    ).getReservations().flatMap(_.getInstances).map(Instance(ec2, _))
-//  }
-
   def listInstancesByFilters(filters: ohnosequences.awstools.ec2.Filter*): List[Instance] = {
     ec2.describeInstances(
       new DescribeInstancesRequest().withFilters(filters.map(_.toEC2Filter))
@@ -98,38 +75,12 @@ class EC2(val ec2: AmazonEC2) {
 
 
 
-//  def listRequestsByTag(tag: Tag) = {
-//    ec2.describeSpotInstanceRequests(
-//      new DescribeSpotInstanceRequestsRequest().withFilters(new Filter("tag:" + tag.getKey, List(tag.getValue)))
-//    ).getSpotInstanceRequests.map(SpotInstanceRequest(ec2, _))
-//  }
-//
-//  def listRequestsByTags(tags: List[Tag]) = {
-//    ec2.describeSpotInstanceRequests(
-//      new DescribeSpotInstanceRequestsRequest().withFilters(tags.map(createTagFilter(_)))
-//    ).getSpotInstanceRequests.map(SpotInstanceRequest(ec2, _))
-//  }
-//
-//  def listRequestsByTagsAndState(tags: List[Tag], state: String) = {
-//    ec2.describeSpotInstanceRequests(
-//      new DescribeSpotInstanceRequestsRequest().withFilters(
-//        tags.map(createTagFilter(_))
-//        :+ createStatesFilter(state)
-//      )
-//    ).getSpotInstanceRequests.map(SpotInstanceRequest(ec2, _))
-//  }
-
   def listRequestsByFilters(filters: ohnosequences.awstools.ec2.Filter*): List[ohnosequences.awstools.ec2.SpotInstanceRequest] = {
     ec2.describeSpotInstanceRequests(
       new DescribeSpotInstanceRequestsRequest().withFilters(filters.map(_.toEC2Filter))
     ).getSpotInstanceRequests.map(SpotInstanceRequest(ec2, _)).toList
   }
 
-
-//  def getInstancePublicDnsName(instanceId: String): Option[String] = {
-//    val instances = ec2.describeInstances().getReservations() flatMap (_.getInstances())
-//    instances find (_.getInstanceId() == instanceId) map (_.getPublicDnsName())
-//  }
 
   def terminateInstance(instanceId: String) {
     ec2.terminateInstances(new TerminateInstancesRequest(List(instanceId)))

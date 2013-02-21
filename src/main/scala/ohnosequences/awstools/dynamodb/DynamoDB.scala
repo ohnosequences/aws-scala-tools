@@ -20,6 +20,7 @@ object KeyType {
   def fromScalarAttributeType(scalarAttributeType: ScalarAttributeType) = scalarAttributeType match {
     case ScalarAttributeType.N => NumericType
     case ScalarAttributeType.S => StringType
+    case _ => StringType
   }
 
   def fromAWSName(name: String) = name match {

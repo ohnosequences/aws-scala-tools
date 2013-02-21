@@ -20,7 +20,7 @@
 ////case class LongValue(value: Long) extends DynamoValue
 //
 //
-//class Table[T](ddb: AmazonDynamoDBClient, name: String, val hashKeyName: String, val rangeKeyName: String) {
+//class Tables[T](ddb: AmazonDynamoDBClient, name: String, val hashKeyName: String, val rangeKeyName: String) {
 //
 //  table: AttributeValueBijection[T] =>
 //
