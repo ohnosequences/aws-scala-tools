@@ -11,7 +11,7 @@ class DynamoDBTests {
 
   // @Test
   def policyTests {
-    val ddb = DynamoDB.create(new File("gridServer/AwsCredentials.properties"))
+   // val ddb = DynamoDB.create(new File("AwsCredentials.properties"))
 
     //    @DynamoDBTable(tableName = "test2")
     //    class Test2(var id: String = "", var name: String = "") {
@@ -30,53 +30,53 @@ class DynamoDBTests {
     //      def withName(name: String) = {this.name = name; this}
     //    }
 
-    val x = List(1, 2, 3)
-    val y = List(1, 2, 3)
+    // val x = List(1, 2, 3)
+    // val y = List(1, 2, 3)
 
-    val sum = x.flatMap {
-      a => y.map {
-        b => a + b
-      }
-    }
-
-
-
-    val test = new User()
-    test.setId("123")
-    test.setName("testName")
-    val mapper = new DynamoDBMapper(ddb.ddb)
-    mapper.save(test)
-
-    val test2 = mapper.load(classOf[User], "123")
-
-    ddb.shutdown()
+    // val sum = x.flatMap {
+    //   a => y.map {
+    //     b => a + b
+    //   }
+    // }
 
 
-    assertEquals("testName", test2.getName)
+
+    // val test = new User()
+    // test.setId("123")
+    // test.setName("testName")
+    // val mapper = new DynamoDBMapper(ddb.ddb)
+    // mapper.save(test)
+
+    // val test2 = mapper.load(classOf[User], "123")
+
+    // ddb.shutdown()
+
+
+    // assertEquals("testName", test2.getName)
   }
 
   @Test
   def mappingTest {
 
-    println("test")
-    class AttributeNames(names: List[String]) extends Annotation
+    // println("test")
+    // class AttributeNames(names: List[String]) extends Annotation
 
-    @AttributeNames(names = List("name", "age"))
-    case class User(name: String, age: Int)
+    // @AttributeNames(names = List("name", "age"))
+    // case class User(name: String, age: Int)
 
-    println(classOf[User].getDeclaredAnnotations.toList)
-    val user = User.apply("test", 34)
+    // println(classOf[User].getDeclaredAnnotations.toList)
+    // val user = User.apply("test", 34)
     // classOf[User].
   }
 
   @Test
   def createTableTest {
-    val ddb = DynamoDB.create(new File("gridServer/AwsCredentials.properties"))
+    // val ddb = DynamoDB.create(new File("AwsCredentials.properties"))
 
-    //  val t1 = ddb.createTable("test123", HashKey("id", NumericType), RangeKey("timestamp", NumericType))
-    val t2 = ddb.getTable("test1234")
-    println(t2)
-    ddb.shutdown()
+    // //  val t1 = ddb.createTable("test123", HashKey("id", NumericType), RangeKey("timestamp", NumericType))
+    // val t2 = ddb.getTable("test1234")
+    // println(t2)
+    // ddb.shutdown()
     //assertEquals(t1, t2)
 
 
