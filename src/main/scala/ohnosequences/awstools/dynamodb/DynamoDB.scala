@@ -7,12 +7,14 @@ import com.amazonaws.services.dynamodb.AmazonDynamoDBClient
 import com.amazonaws.services.dynamodb.model._
 
 import com.amazonaws.services.dynamodb.datamodeling.DynamoDBMapper
-
+import scala.collection.JavaConversions._
 
 abstract sealed class KeyType {
   type ValueType
 
   def toScalarAttributeType: ScalarAttributeType
+
+  def constructValue(s: String): AttributeValue
 }
 
 object KeyType {
@@ -33,12 +35,15 @@ case object NumericType extends KeyType {
   type ValueType = Long
 
   override def toScalarAttributeType = ScalarAttributeType.N
+
+  override def constructValue(s: String) = new AttributeValue().withN(s)
 }
 
 case object StringType extends KeyType {
   type ValueType = String
 
   override def toScalarAttributeType = ScalarAttributeType.S
+  override def constructValue(s: String) = new AttributeValue().withS(s)
 }
 
 abstract sealed class KeyValue[K <: KeyType] {
@@ -68,8 +73,23 @@ case class Table(ddb: AmazonDynamoDBClient, name: String, hashKey: HashKey, rang
     //    ddb.describeTable(
     //      new DescribeTableRequest().withTableName(name)
     //    ).
+
     println("waiting for table")
     Thread.sleep(5000)
+  }
+
+  def incrementCounter(counterName: String, hashKeyValue: String, rangeKeyValue: String) = {
+    ddb.updateItem(new UpdateItemRequest()
+      .withTableName(name)
+      .withKey(new Key()
+      .withHashKeyElement(hashKey.keyType.constructValue(hashKeyValue))
+      .withRangeKeyElement(rangeKey.keyType.constructValue(rangeKeyValue))
+    ).withAttributeUpdates(Map(
+      counterName -> new AttributeValueUpdate()
+        .withValue(new AttributeValue().withN("1"))
+        .withAction(AttributeAction.ADD)
+    )).withReturnValues(ReturnValue.ALL_NEW)
+    ).getAttributes.get(counterName).getN
   }
 }
 
@@ -81,26 +101,34 @@ class DynamoDB(val ddb: AmazonDynamoDBClient) {
 
   def createMapper = DynamoObjectMapper(ddb, new DynamoDBMapper(ddb))
 
-  def createTable(name: String, hashKey: HashKey, rangeKey: RangeKey, readUnits: Long = 1, writeUnits: Long = 1) = {
-    ddb.createTable(new CreateTableRequest(
-      name,
-      new KeySchema()
-        .withHashKeyElement(
-        new KeySchemaElement()
-          .withAttributeName(hashKey.name)
-          .withAttributeType(hashKey.keyType.toScalarAttributeType)
-      )
-        .withRangeKeyElement(
-        new KeySchemaElement()
-          .withAttributeName(rangeKey.name)
-          .withAttributeType(rangeKey.keyType.toScalarAttributeType)
-      )
-    ).withProvisionedThroughput(new ProvisionedThroughput()
-      .withReadCapacityUnits(readUnits)
-      .withWriteCapacityUnits(writeUnits)
-    )
-    )
-    Table(ddb, name, hashKey, rangeKey)
+  def createTable(name: String, hashKey: HashKey, rangeKey: RangeKey, waitForActivation: Boolean = true, readUnits: Long = 1, writeUnits: Long = 1): Table = {
+    getTable(name) match {
+      case Some(table) => table
+      case None => {
+        ddb.createTable(new CreateTableRequest(
+          name,
+          new KeySchema()
+            .withHashKeyElement(
+            new KeySchemaElement()
+              .withAttributeName(hashKey.name)
+              .withAttributeType(hashKey.keyType.toScalarAttributeType)
+          )
+            .withRangeKeyElement(
+            new KeySchemaElement()
+              .withAttributeName(rangeKey.name)
+              .withAttributeType(rangeKey.keyType.toScalarAttributeType)
+          )
+        ).withProvisionedThroughput(new ProvisionedThroughput()
+          .withReadCapacityUnits(readUnits)
+          .withWriteCapacityUnits(writeUnits)
+        )
+        )
+        if (waitForActivation) {
+          waitForTable(name)
+        }
+        Table(ddb, name, hashKey, rangeKey)
+      }
+      }
   }
 
   def getTable(name: String): Option[Table] = {
@@ -119,6 +147,36 @@ class DynamoDB(val ddb: AmazonDynamoDBClient) {
       case e: ResourceNotFoundException => None
     }
   }
+
+  def getTableStatus(name: String): String = {
+    ddb.describeTable(new DescribeTableRequest()
+      .withTableName(name)
+    ).getTable.getTableStatus
+  }
+
+  def waitForTable(name: String) {
+    println("waiting for table")
+    val TIMEOUT = 5000
+    var ready = false
+
+    var i = 0
+    while(!ready) {
+      print(".")
+      Thread.sleep(TIMEOUT)
+      if (getTableStatus(name).equals("ACTIVE") || i > 100) {
+        ready = true
+      }
+      i = i + 1
+    }
+    println("")
+  }
+
+  def deleteTable(name: String) {
+    ddb.deleteTable(new DeleteTableRequest()
+      .withTableName(name)
+    )
+  }
+
 }
 
 object DynamoDB {

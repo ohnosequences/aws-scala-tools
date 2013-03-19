@@ -38,7 +38,8 @@ class EC2(val ec2: AmazonEC2) {
       .withSpotPrice(price.toString)
       .withInstanceCount(amount)
       .withLaunchSpecification(specs)
-      .withLaunchGroup("grid")
+      .withLaunchGroup("grid")              //TODO!!!
+
      // .withValidUntil(new Date(System.currentTimeMillis() + timeout))
     ).getSpotInstanceRequests.map(SpotInstanceRequest(ec2, _)).toList
   }
