@@ -10,7 +10,10 @@ case class AutoScalingGroup(
   maxSize: Int,
   desiredCapacity: Int,
   availabilityZones: List[String] = List("eu-west-1a", "eu-west-1b", "eu-west-1c")
-)
+) {
+
+
+}
 
 case class LaunchConfiguration(
   name: String = "",

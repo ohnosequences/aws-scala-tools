@@ -107,6 +107,17 @@ class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2
     deleteAutoScalingGroup(getAutoScalingGroupByName(name))
   }
 
+  def setDesiredCapacity(group: ohnosequences.awstools.autoscaling.AutoScalingGroup, capacity: Int) {
+    as.updateAutoScalingGroup(new UpdateAutoScalingGroupRequest()
+      .withAutoScalingGroupName(group.name)
+      .withDesiredCapacity(capacity)
+    )
+  }
+
+//  def getDesiredCapacity = {
+//
+//  }
+
 //  * <b>NOTE:</b> To remove all instances before calling
 //    * DeleteAutoScalingGroup, you can call UpdateAutoScalingGroup to set the
 //  * minimum and maximum size of the AutoScalingGroup to zero.
