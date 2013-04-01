@@ -4,8 +4,8 @@ import ohnosequences.awstools.ec2.{InstanceType, InstanceSpecs}
 import scala.collection.JavaConversions._
 
 case class AutoScalingGroup(
-  name: String,
-  launchingConfiguration: String,
+  name: String = "",
+  launchingConfiguration: LaunchConfiguration,
   minSize: Int,
   maxSize: Int,
   desiredCapacity: Int,
@@ -13,7 +13,7 @@ case class AutoScalingGroup(
 )
 
 case class LaunchConfiguration(
-  name: String,
+  name: String = "",
   spotPrice: Double,
   instanceSpecs: InstanceSpecs
 )
@@ -35,10 +35,10 @@ object LaunchConfiguration {
 }
 
 object AutoScalingGroup {
-  def fromAWS(autoScalingGroup: com.amazonaws.services.autoscaling.model.AutoScalingGroup): AutoScalingGroup = {
+  def fromAWS(autoScalingGroup: com.amazonaws.services.autoscaling.model.AutoScalingGroup, autoscaling: AutoScaling): AutoScalingGroup = {
     AutoScalingGroup(
       name = autoScalingGroup.getAutoScalingGroupName,
-      launchingConfiguration = autoScalingGroup.getLaunchConfigurationName,
+      launchingConfiguration = autoscaling.getLaunchConfigurationByName(autoScalingGroup.getLaunchConfigurationName),
       minSize = autoScalingGroup.getMinSize,
       maxSize = autoScalingGroup.getMaxSize,
       desiredCapacity = autoScalingGroup.getDesiredCapacity

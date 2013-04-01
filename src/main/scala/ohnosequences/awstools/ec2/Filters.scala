@@ -16,6 +16,10 @@ case class TagFilter(tag: Tag) extends  Filter {
   override def toEC2Filter = new ec2.model.Filter("tag:" + tag.name, List(tag.value))
 }
 
+//case class AutoScalingGroupFilter(groupName: String) extends Filter {
+//  override def toEC2Filter = new ec2.model.Filter("aws:autoscaling:groupName", List(groupName))
+//}
+
 case class RequestStateFilter(states: String*) extends  Filter {
   override def toEC2Filter = new ec2.model.Filter("state", states)
 }

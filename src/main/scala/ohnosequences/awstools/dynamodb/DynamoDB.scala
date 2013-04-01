@@ -172,9 +172,13 @@ class DynamoDB(val ddb: AmazonDynamoDBClient) {
   }
 
   def deleteTable(name: String) {
+    try {
     ddb.deleteTable(new DeleteTableRequest()
       .withTableName(name)
     )
+    } catch {
+      case e:ResourceNotFoundException => ;
+    }
   }
 
 }

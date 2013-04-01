@@ -6,6 +6,9 @@ import com.amazonaws.auth.PropertiesCredentials
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3Client}
 import com.amazonaws.services.s3.model.{ObjectMetadata, PutObjectRequest}
 
+import scala.collection.JavaConversions._
+
+
 case class ObjectAddress(bucket: String, key: String)
 
 class S3(val s3: AmazonS3) {
@@ -36,6 +39,26 @@ class S3(val s3: AmazonS3) {
   def deleteObject(objectAddress: ObjectAddress) {
     s3.deleteObject(objectAddress.bucket, objectAddress.key)
   }
+
+  def deleteBucket(name: String, empty: Boolean = true) {
+    if (empty) {
+      emptyBucket(name)
+    }
+    s3.deleteBucket(name)
+
+  }
+
+
+  //todo next 1000!!!!
+  def emptyBucket(name: String) {
+    s3.listObjects(name).getObjectSummaries().foreach { objectSummary =>
+      s3.deleteObject(objectSummary.getBucketName, objectSummary.getKey)
+    }
+
+  }
+
+
+
 
 
 //  def shutdown() {

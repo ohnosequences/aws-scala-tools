@@ -68,7 +68,7 @@ class EC2(val ec2: AmazonEC2) {
     ec2.createTags(new CreateTagsRequest().withResources(resourceId).withTags(tags.map(_.toECTag)))
   }
 
-  def listInstancesByFilters(filters: ohnosequences.awstools.ec2.Filter*): List[Instance] = {
+  def listInstancesByFilters(filters: ohnosequences.awstools.ec2.Filter*): List[ohnosequences.awstools.ec2.Instance] = {
     ec2.describeInstances(
       new DescribeInstancesRequest().withFilters(filters.map(_.toEC2Filter))
     ).getReservations().flatMap(_.getInstances).map(Instance(ec2, _)).toList
