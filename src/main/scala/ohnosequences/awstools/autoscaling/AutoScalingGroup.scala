@@ -38,13 +38,16 @@ object LaunchConfiguration {
 }
 
 object AutoScalingGroup {
-  def fromAWS(autoScalingGroup: com.amazonaws.services.autoscaling.model.AutoScalingGroup, autoscaling: AutoScaling): AutoScalingGroup = {
-    AutoScalingGroup(
-      name = autoScalingGroup.getAutoScalingGroupName,
-      launchingConfiguration = autoscaling.getLaunchConfigurationByName(autoScalingGroup.getLaunchConfigurationName),
-      minSize = autoScalingGroup.getMinSize,
-      maxSize = autoScalingGroup.getMaxSize,
-      desiredCapacity = autoScalingGroup.getDesiredCapacity
-    )
+  def fromAWS(autoScalingGroup: com.amazonaws.services.autoscaling.model.AutoScalingGroup, autoscaling: AutoScaling): Option[AutoScalingGroup] = {
+    autoscaling.getLaunchConfigurationByName(autoScalingGroup.getLaunchConfigurationName) match {
+      case None => None //since launch configuration deleted this autoscaling group will be deleted soon
+      case Some(launchConfiguration) => Some(AutoScalingGroup(
+        name = autoScalingGroup.getAutoScalingGroupName,
+        launchingConfiguration = launchConfiguration,
+        minSize = autoScalingGroup.getMinSize,
+        maxSize = autoScalingGroup.getMaxSize,
+        desiredCapacity = autoScalingGroup.getDesiredCapacity
+      ))
+    }
   }
 }

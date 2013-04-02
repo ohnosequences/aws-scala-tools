@@ -68,18 +68,20 @@ class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2
     )
   }
 
-  def getLaunchConfigurationByName(name: String): ohnosequences.awstools.autoscaling.LaunchConfiguration = {
+  def getLaunchConfigurationByName(name: String): Option[ohnosequences.awstools.autoscaling.LaunchConfiguration] = {
     as.describeLaunchConfigurations(new DescribeLaunchConfigurationsRequest()
       .withLaunchConfigurationNames(name)
-    ).getLaunchConfigurations.map {lc => ohnosequences.awstools.autoscaling.LaunchConfiguration.fromAWS(lc)}.head
+    ).getLaunchConfigurations.map {
+      lc => ohnosequences.awstools.autoscaling.LaunchConfiguration.fromAWS(lc)
+    }.headOption
   }
 
-  def getAutoScalingGroupByName(name: String): ohnosequences.awstools.autoscaling.AutoScalingGroup = {
+  def getAutoScalingGroupByName(name: String): Option[ohnosequences.awstools.autoscaling.AutoScalingGroup] = {
     as.describeAutoScalingGroups(new DescribeAutoScalingGroupsRequest()
       .withAutoScalingGroupNames(name)
-    ).getAutoScalingGroups.map {asg =>
+    ).getAutoScalingGroups.flatMap {asg =>
       ohnosequences.awstools.autoscaling.AutoScalingGroup.fromAWS(asg, autoscaling)
-    }.head
+    }.headOption
   }
 
   def describeLaunchConfigurations(): List[ohnosequences.awstools.autoscaling.LaunchConfiguration] = {
@@ -89,7 +91,7 @@ class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2
   def describeAutoScalingGroups(): List[ohnosequences.awstools.autoscaling.AutoScalingGroup] = {
     as.describeAutoScalingGroups().getAutoScalingGroups.map {asg =>
       ohnosequences.awstools.autoscaling.AutoScalingGroup.fromAWS(asg, autoscaling)
-    }.toList
+    }.flatten.toList
   }
 
   def deleteLaunchConfiguration(name: String) {
@@ -104,7 +106,7 @@ class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2
   }
 
   def deleteAutoScalingGroup(name: String) {
-    deleteAutoScalingGroup(getAutoScalingGroupByName(name))
+    getAutoScalingGroupByName(name).map(deleteAutoScalingGroup(_))
   }
 
   def setDesiredCapacity(group: ohnosequences.awstools.autoscaling.AutoScalingGroup, capacity: Int) {
