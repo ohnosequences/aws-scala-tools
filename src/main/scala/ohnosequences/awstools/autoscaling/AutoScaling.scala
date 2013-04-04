@@ -10,7 +10,7 @@ import com.amazonaws.services.autoscaling.model._
 import scala.collection.JavaConversions._
 import ohnosequences.awstools.ec2.Utils
 import com.amazonaws.AmazonServiceException
-import ohnosequences.grid.server.GridServer
+
 
 class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2) { autoscaling =>
 
