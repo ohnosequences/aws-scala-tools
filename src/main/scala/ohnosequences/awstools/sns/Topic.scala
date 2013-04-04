@@ -16,6 +16,10 @@ case class Topic(sns: AmazonSNS, topicArn: String, name: String) {
     sns.publish(new PublishRequest(topicArn, message))
   }
 
+  def publish(message: String, subject: String) {
+    sns.publish(new PublishRequest(topicArn, message, subject))
+  }
+
   def setAttribute(name: String, value: String) {
     sns.setTopicAttributes(new SetTopicAttributesRequest(topicArn, name, value))
   }
@@ -35,6 +39,14 @@ case class Topic(sns: AmazonSNS, topicArn: String, name: String) {
 
     queue.setAttributes(Map(QueueAttributeName.Policy.toString -> policy.toJson))
 
+  }
+
+  def subscribeEmail(email: String) = {
+    sns.subscribe(new SubscribeRequest()
+      .withTopicArn(topicArn)
+      .withProtocol("email")
+      .withEndpoint(email)
+    )
   }
 
   override def toString = {

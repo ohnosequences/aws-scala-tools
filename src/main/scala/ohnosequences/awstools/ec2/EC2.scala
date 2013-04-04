@@ -7,6 +7,7 @@ import com.amazonaws.services.ec2.{AmazonEC2Client, AmazonEC2}
 import com.amazonaws.services.ec2.model._
 
 import scala.collection.JavaConversions._
+import java.net.{URL, NoRouteToHostException}
 
 
 object InstanceSpecs {
@@ -95,15 +96,22 @@ class EC2(val ec2: AmazonEC2) {
     ec2.shutdown()
   }
 
-  def getCurrentInstanceId = {
-    io.Source.fromURL("http://169.254.169.254/latest/meta-data/instance-id").mkString
+  def getCurrentInstanceId: Option[String] = {
+    try {
+      val currentIdURL = new URL("http://169.254.169.254/latest/meta-data/instance-id")
+      Some(io.Source.fromURL(currentIdURL).mkString)
+    } catch {
+      case t: NoRouteToHostException => None
+
+    }
   }
 
-  def getCurrentInstance: ohnosequences.awstools.ec2.Instance = getInstanceById(getCurrentInstanceId)
+  def getCurrentInstance: Option[ohnosequences.awstools.ec2.Instance] = getCurrentInstanceId.flatMap(getInstanceById(_))
 
-  def getInstanceById(instanceId: String): ohnosequences.awstools.ec2.Instance = {
-    val instance = ec2.describeInstances(new DescribeInstancesRequest().withInstanceIds(instanceId)).getReservations.flatMap(_.getInstances).head
-    Instance(ec2, instance)
+  def getInstanceById(instanceId: String): Option[ohnosequences.awstools.ec2.Instance] = {
+    val instance = ec2.describeInstances(new DescribeInstancesRequest().withInstanceIds(instanceId)).getReservations.flatMap(_.getInstances).headOption
+    instance.map(Instance(ec2, _))
+
   }
 
 }

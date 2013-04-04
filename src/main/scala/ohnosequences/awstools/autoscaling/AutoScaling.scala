@@ -10,6 +10,7 @@ import com.amazonaws.services.autoscaling.model._
 import scala.collection.JavaConversions._
 import ohnosequences.awstools.ec2.Utils
 import com.amazonaws.AmazonServiceException
+import ohnosequences.grid.server.GridServer
 
 class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2) { autoscaling =>
 
@@ -33,29 +34,27 @@ class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2
     }
   }
 
-  def createAutoScalingGroup(autoScalingGroup: ohnosequences.awstools.autoscaling.AutoScalingGroup) {
-    createLaunchingConfiguration(autoScalingGroup.launchingConfiguration)
-    as.createAutoScalingGroup(new CreateAutoScalingGroupRequest()
-      .withAutoScalingGroupName(autoScalingGroup.name)
-      .withLaunchConfigurationName(autoScalingGroup.launchingConfiguration.name)
-      .withAvailabilityZones(autoScalingGroup.availabilityZones)
-      .withMaxSize(autoScalingGroup.maxSize)
-      .withMinSize(autoScalingGroup.minSize)
-      .withDesiredCapacity(autoScalingGroup.desiredCapacity)
-    )
+  def createAutoScalingGroup(autoScalingGroup: ohnosequences.awstools.autoscaling.AutoScalingGroup) = {
+    getAutoScalingGroupByName(autoScalingGroup.name) match {
+      case Some(group) => {
+        println("aws-scala-tools WARNING: group with name " + autoScalingGroup.name + " is already exists")
+        group
+      }
+      case None => {
+        createLaunchingConfiguration(autoScalingGroup.launchingConfiguration)
+        as.createAutoScalingGroup(new CreateAutoScalingGroupRequest()
+          .withAutoScalingGroupName(autoScalingGroup.name)
+          .withLaunchConfigurationName(autoScalingGroup.launchingConfiguration.name)
+          .withAvailabilityZones(autoScalingGroup.availabilityZones)
+          .withMaxSize(autoScalingGroup.maxSize)
+          .withMinSize(autoScalingGroup.minSize)
+          .withDesiredCapacity(autoScalingGroup.desiredCapacity)
+        )
+      }
+    }
+
   }
 
-//  def describeInstances(name: String): List[ohnosequences.awstools.ec2.Instance] = {
-//    as.describeAutoScalingInstances(new DescribeAutoScalingInstancesRequest()).getAutoScalingInstances.map{ instanceDetails =>
-//      ec2.getInstanceById(instanceDetails.getInstanceId)
-//    }.toList
-//  }
-//
-//  def getResourceId(autoScalingGroup: ohnosequences.awstools.autoscaling.AutoScalingGroup): String = {
-//    as.describeAutoScalingGroups(new DescribeAutoScalingGroupsRequest()
-//      .withAutoScalingGroupNames(autoScalingGroup.name)
-//    ).getAutoScalingGroups.head.getAutoScalingGroupARN
-//  }
 
 
 
