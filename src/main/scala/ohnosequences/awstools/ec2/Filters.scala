@@ -12,6 +12,10 @@ sealed abstract class Filter {
   def toEC2Filter: ec2.model.Filter
 }
 
+case class ResourceFilter(id: String) extends  Filter {
+  override def toEC2Filter =  new ec2.model.Filter("resource-id:", List(id))
+}
+
 case class TagFilter(tag: Tag) extends  Filter {
   override def toEC2Filter = new ec2.model.Filter("tag:" + tag.name, List(tag.value))
 }

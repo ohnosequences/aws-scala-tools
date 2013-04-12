@@ -2,7 +2,7 @@ package ohnosequences.awstools.cloudwatch
 
 import java.io.File
 
-import com.amazonaws.auth.PropertiesCredentials
+import com.amazonaws.auth.{BasicAWSCredentials, AWSCredentials, PropertiesCredentials}
 import com.amazonaws.services.cloudwatch.{model, AmazonCloudWatchClient, AmazonCloudWatch}
 import com.amazonaws.services.cloudwatch.model.{GetMetricStatisticsRequest, StandardUnit, MetricDatum, PutMetricDataRequest}
 
@@ -37,8 +37,18 @@ class CloudWatch(val cw: AmazonCloudWatch) {
 }
 
 object CloudWatch {
+
+
   def create(credentialsFile: File): CloudWatch = {
-    val cwClient = new AmazonCloudWatchClient(new PropertiesCredentials(credentialsFile))
+    create(new PropertiesCredentials(credentialsFile))
+  }
+
+  def create(accessKey: String, secretKey: String): CloudWatch = {
+    create(new BasicAWSCredentials(accessKey, secretKey))
+  }
+
+  def create(credentials: AWSCredentials): CloudWatch = {
+    val cwClient = new AmazonCloudWatchClient(credentials)
     cwClient.setEndpoint("http://monitoring.eu-west-1.amazonaws.com")
     new CloudWatch(cwClient)
   }

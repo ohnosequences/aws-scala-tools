@@ -2,7 +2,7 @@ package ohnosequences.awstools.dynamodb
 
 import java.io.File
 
-import com.amazonaws.auth.PropertiesCredentials
+import com.amazonaws.auth.{AWSCredentials, BasicAWSCredentials, PropertiesCredentials}
 import com.amazonaws.services.dynamodb.AmazonDynamoDBClient
 import com.amazonaws.services.dynamodb.model._
 
@@ -184,8 +184,18 @@ class DynamoDB(val ddb: AmazonDynamoDBClient) {
 }
 
 object DynamoDB {
+
   def create(credentialsFile: File): DynamoDB = {
-    val ddbClient = new AmazonDynamoDBClient(new PropertiesCredentials(credentialsFile))
+    create(new PropertiesCredentials(credentialsFile))
+  }
+
+  def create(accessKey: String, secretKey: String): DynamoDB = {
+    create(new BasicAWSCredentials(accessKey, secretKey))
+  }
+
+  def create(credentials: AWSCredentials): DynamoDB = {
+
+    val ddbClient = new AmazonDynamoDBClient(credentials)
     ddbClient.setEndpoint("http://dynamodb.eu-west-1.amazonaws.com")
     new DynamoDB(ddbClient)
   }

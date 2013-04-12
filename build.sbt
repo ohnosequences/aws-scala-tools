@@ -8,7 +8,7 @@ name := "aws-scala-tools"
 
 organization := "ohnosequences"
 
-version := "0.2r5"
+version := "0.2r6"
 
 scalaVersion := "2.10.0"
 

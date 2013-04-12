@@ -2,7 +2,7 @@ package ohnosequences.awstools.autoscaling
 
 import java.io.File
 
-import com.amazonaws.auth.PropertiesCredentials
+import com.amazonaws.auth.{AWSCredentials, BasicAWSCredentials, PropertiesCredentials}
 import com.amazonaws.services.autoscaling.AmazonAutoScaling
 import com.amazonaws.services.autoscaling.AmazonAutoScalingClient
 import com.amazonaws.services.autoscaling.model._
@@ -142,8 +142,17 @@ class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2
 }
 
 object AutoScaling {
+
   def create(credentialsFile: File, ec2: ohnosequences.awstools.ec2.EC2): AutoScaling = {
-    val asClient = new AmazonAutoScalingClient(new PropertiesCredentials(credentialsFile))
+    create(new PropertiesCredentials(credentialsFile), ec2)
+  }
+
+  def create(accessKey: String, secretKey: String, ec2: ohnosequences.awstools.ec2.EC2): AutoScaling = {
+    create(new BasicAWSCredentials(accessKey, secretKey), ec2)
+  }
+
+  def create(credentials: AWSCredentials, ec2: ohnosequences.awstools.ec2.EC2): AutoScaling = {
+    val asClient = new AmazonAutoScalingClient(credentials)
     asClient.setEndpoint("http://autoscaling.eu-west-1.amazonaws.com")
     new AutoScaling(asClient, ec2)
   }

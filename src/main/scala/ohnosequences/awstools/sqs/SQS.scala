@@ -3,7 +3,7 @@ package ohnosequences.awstools.sqs
 import java.io.File
 import com.amazonaws.services.sqs._
 import com.amazonaws.services.sqs.model._
-import com.amazonaws.auth.PropertiesCredentials
+import com.amazonaws.auth.{AWSCredentials, BasicAWSCredentials, PropertiesCredentials}
 import scala.collection.JavaConversions._
 import com.amazonaws.AmazonServiceException
 
@@ -36,7 +36,15 @@ class SQS(val sqs: AmazonSQS) {
 object SQS {
 
   def create(credentialsFile: File): SQS = {
-    val sqsClient = new AmazonSQSClient(new PropertiesCredentials(credentialsFile))
+    create(new PropertiesCredentials(credentialsFile))
+  }
+
+  def create(accessKey: String, secretKey: String): SQS = {
+    create(new BasicAWSCredentials(accessKey, secretKey))
+  }
+
+  def create(credentials: AWSCredentials): SQS = {
+    val sqsClient = new AmazonSQSClient(credentials)
     sqsClient.setEndpoint("http://sqs.eu-west-1.amazonaws.com")
     new SQS(sqsClient)
   }

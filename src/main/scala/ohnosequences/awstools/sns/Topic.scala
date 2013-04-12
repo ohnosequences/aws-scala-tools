@@ -9,6 +9,7 @@ import com.amazonaws.auth.policy.Statement.Effect
 import com.amazonaws.auth.policy.actions.SQSActions
 import com.amazonaws.auth.policy.conditions.ConditionFactory
 import com.amazonaws.services.sqs.model.QueueAttributeName
+import scala.collection.JavaConversions._
 
 case class Topic(sns: AmazonSNS, topicArn: String, name: String) {
 
@@ -39,6 +40,26 @@ case class Topic(sns: AmazonSNS, topicArn: String, name: String) {
 
     queue.setAttributes(Map(QueueAttributeName.Policy.toString -> policy.toJson))
 
+  }
+
+  def isEmailSubscribed(email: String): Boolean = {
+
+    val subscriptions = getSubscriptions()
+    //println(subscriptions)
+    val subscribed = subscriptions.exists { subscription =>
+      subscription.getProtocol.equals("email") && subscription.getEndpoint.equals(email)
+    }
+    //println("subscribed = " + subscribed)
+    subscribed
+
+  }
+
+  //todo next token!
+  def getSubscriptions(): List[Subscription] = {
+
+    sns.listSubscriptionsByTopic(new ListSubscriptionsByTopicRequest()
+      .withTopicArn(topicArn)
+    ).getSubscriptions.toList
   }
 
   def subscribeEmail(email: String) = {

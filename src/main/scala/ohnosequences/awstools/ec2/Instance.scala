@@ -1,32 +1,56 @@
 package ohnosequences.awstools.ec2
 
 
-import com.amazonaws.services.ec2.AmazonEC2
-import com.amazonaws.services.ec2.model.{CreateTagsRequest, TerminateInstancesRequest}
-
 import scala.collection.JavaConversions._
 
-case class Instance(val ec2: AmazonEC2, instance: com.amazonaws.services.ec2.model.Instance) {
+case class Instance(ec2: EC2, instanceId: String) {
 
-
-  def terminate = ec2.terminateInstances(new TerminateInstancesRequest(List(instance.getInstanceId)))
-
-  def createTags(tags: ohnosequences.awstools.ec2.Tag*) {
-    ec2.createTags(new CreateTagsRequest().withResources(getInstanceId).withTags(tags.map(_.toECTag)))
+  def terminate() {
+    ec2.terminateInstance(instanceId)
   }
 
+  def createTag(tag: ohnosequences.awstools.ec2.Tag) {
+    ec2.createTags(instanceId, List(tag))
+  }
+
+  def createTags(tags: List[ohnosequences.awstools.ec2.Tag]) {
+    ec2.createTags(instanceId, tags)
+  }
+
+//  def getTagValue(tagName: String) = {
+//     ec2.ec2.describeTags(new DescribeTagsRequest()
+//      .withFilters(List(
+//        ResourceFilter(instanceId).toEC2Filter,
+//        TagFilter(Tag(tagName, "*")).toEC2Filter
+//      ))
+//    ).getTags.find(_.getKey == tagName).map(_.getValue)
+//  }
+
   def getTagValue(tagName: String) = {
+    val instance = ec2.getEC2InstanceById(instanceId).get
     instance.getTags.find(_.getKey == tagName).map(_.getValue)
   }
 
-  def getInstanceId = instance.getInstanceId
 
-  def getSSHCommand = {
-    //ssh -i evdokim.pem ec2-user@ec2-46-137-141-37.eu-west-1.compute.amazonaws.com
+  def getInstanceId = instanceId
+
+  def getSSHCommand(): String = {
+    val instance = ec2.getEC2InstanceById(instanceId).get
     val keyPairFile = instance.getKeyName + ".pem"
     val publicDNS = instance.getPublicDnsName
     "ssh -i " + keyPairFile + " ec2-user@" + publicDNS
   }
+
+  def getState(): String = {
+    val instance = ec2.getEC2InstanceById(instanceId).get
+    instance.getState.getName
+
+  }
+
+  def getPublicDNS(): String = {
+    ec2.getEC2InstanceById(instanceId).get.getPublicDnsName
+  }
+
 }
 
 

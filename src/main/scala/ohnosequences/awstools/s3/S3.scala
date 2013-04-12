@@ -2,11 +2,12 @@ package ohnosequences.awstools.s3
 
 import java.io.{InputStream, ByteArrayInputStream, File}
 
-import com.amazonaws.auth.PropertiesCredentials
+import com.amazonaws.auth.{AWSCredentials, BasicAWSCredentials, PropertiesCredentials}
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3Client}
 import com.amazonaws.services.s3.model.{ObjectMetadata, PutObjectRequest}
 
 import scala.collection.JavaConversions._
+import com.amazonaws.services.importexport.model.NoSuchBucketException
 
 
 case class ObjectAddress(bucket: String, key: String)
@@ -53,7 +54,12 @@ class S3(val s3: AmazonS3) {
       if (empty) {
         emptyBucket(name)
       }
+      try {
       s3.deleteBucket(name)
+      } catch {
+        case e: NoSuchBucketException => ()
+      }
+
     }
 
   }
@@ -79,8 +85,17 @@ class S3(val s3: AmazonS3) {
 }
 
 object S3 {
+
   def create(credentialsFile: File): S3 = {
-    val s3Client = new AmazonS3Client(new PropertiesCredentials(credentialsFile))
+    create(new PropertiesCredentials(credentialsFile))
+  }
+
+  def create(accessKey: String, secretKey: String): S3 = {
+    create(new BasicAWSCredentials(accessKey, secretKey))
+  }
+
+  def create(credentials: AWSCredentials): S3 = {
+    val s3Client = new AmazonS3Client(credentials)
     s3Client.setEndpoint("http://s3-eu-west-1.amazonaws.com")
     new S3(s3Client)
   }

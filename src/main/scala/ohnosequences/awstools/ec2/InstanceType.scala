@@ -27,6 +27,7 @@ object InstanceType {
   val C1Medium = InstanceType("c1.medium")
   val M1Small = InstanceType("m1.small")
   val M1Medium = InstanceType("m1.medium")
+  val M1Large = InstanceType("m1.large")
 
 }
 
