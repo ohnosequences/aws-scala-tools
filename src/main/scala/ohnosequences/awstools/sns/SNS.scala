@@ -10,12 +10,6 @@ class SNS(val sns: AmazonSNS) {
 
   def createTopic(name: String) = Topic(sns, sns.createTopic(new CreateTopicRequest(name)).getTopicArn, name)
 
-//  def getTopic(name: String) = {
-//    sns.listTopics(new ListTopicsRequest()
-//      .
-//    )
-//  }
-
   def shutdown() {
     sns.shutdown()
   }

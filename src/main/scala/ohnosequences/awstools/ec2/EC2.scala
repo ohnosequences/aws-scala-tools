@@ -58,6 +58,12 @@ class EC2(val ec2: AmazonEC2) {
         val writer = new PrintWriter(file)
         writer.print(keyContent)
         writer.close()
+
+        //chmod 400
+        file.setWritable(false, false)
+        file.setReadable(false, false)
+        file.setExecutable(false, false)
+        file.setReadable(true, false)
       }
       }
 
@@ -80,6 +86,7 @@ class EC2(val ec2: AmazonEC2) {
       )
     } catch {
       case e: AmazonServiceException if e.getErrorCode().equals("InvalidGroup.InUse") => ()
+      case e: AmazonServiceException if e.getErrorCode().equals("InvalidGroup.NotFound") => ()
     }
   }
 
@@ -120,7 +127,6 @@ class EC2(val ec2: AmazonEC2) {
       .withSpotPrice(price.toString)
       .withInstanceCount(amount)
       .withLaunchSpecification(specs)
-      .withLaunchGroup("grid")              //TODO!!!
 
      // .withValidUntil(new Date(System.currentTimeMillis() + timeout))
     ).getSpotInstanceRequests.map(SpotInstanceRequest(ec2, _)).toList
