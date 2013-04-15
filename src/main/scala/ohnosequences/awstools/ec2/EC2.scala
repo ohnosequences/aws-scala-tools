@@ -10,50 +10,131 @@ import scala.collection.JavaConversions._
 import java.net.{URL, NoRouteToHostException}
 import com.amazonaws.AmazonServiceException
 
+import ohnosequences.awstools.{ec2 => awstools}
+import com.amazonaws.services.ec2.{model => amazon}
+
 
 object InstanceSpecs {
 
   implicit def getLaunchSpecs(specs: InstanceSpecs) = {
-    val launchSpecs = new LaunchSpecification()
-    launchSpecs.setSecurityGroups(specs.securityGroups)
-    launchSpecs.setInstanceType(specs.instanceType.toAWS)
-    launchSpecs.setImageId(specs.amiId)
-    launchSpecs.setKeyName(specs.keyName)
-    launchSpecs.setUserData(Utils.base64encode(specs.userData))
-    launchSpecs
+    (new LaunchSpecification()
+      .withSecurityGroups(specs.securityGroups)
+      .withInstanceType(specs.instanceType.toAWS)
+      .withImageId(specs.amiId)
+      .withKeyName(specs.keyName)
+      .withUserData(Utils.base64encode(specs.userData))
+      )
   }
 }
 
 
-case class InstanceSpecs(
-  instanceType   : ohnosequences.awstools.ec2.InstanceType,
-  amiId          : String,      
-  securityGroups : List[String] = List(),
-  keyName        : String = "",
-  userData       : String = "")
+case class InstanceSpecs(instanceType: awstools.InstanceType,
+                         amiId: String,
+                         securityGroups: List[String] = List(),
+                         keyName: String = "",
+                         userData: String = "")
 
 
 class EC2(val ec2: AmazonEC2) {
+  awstoolsEC2 =>
+
+  class Instance(instanceId: String) {
+
+    private def getEC2Instance(): amazon.Instance = awstoolsEC2.getEC2InstanceById(instanceId) match {
+      case None => {
+        throw new Error("Invalid instance of Instance class")
+      }
+      case Some(instance) => instance
+    }
+
+    def terminate() {
+      awstoolsEC2.terminateInstance(instanceId)
+    }
+
+    def createTag(tag: ohnosequences.awstools.ec2.Tag) {
+      awstoolsEC2.createTags(instanceId, List(tag))
+    }
+
+    def createTags(tags: List[awstools.Tag]) {
+      awstoolsEC2.createTags(instanceId, tags)
+    }
+
+    def getTagValue(tagName: String): Option[String] = {
+      getEC2Instance().getTags.find(_.getKey == tagName).map(_.getValue)
+
+    }
+
+    def getInstanceId() = instanceId
+
+    def getSSHCommand(): Option[String] = {
+      val instance = getEC2Instance()
+      val keyPairFile = instance.getKeyName + ".pem"
+      val publicDNS = instance.getPublicDnsName
+      if (!publicDNS.isEmpty) {
+        Some("ssh -i " + keyPairFile + " ec2-user@" + publicDNS)
+      } else {
+        None
+      }
+    }
+
+
+    def getState(): String = {
+      getEC2Instance().getState().getName
+    }
+
+    def getPublicDNS(): Option[String] = {
+      val dns = getEC2Instance().getPublicDnsName()
+      if (dns.isEmpty) None else Some(dns)
+    }
+  }
+
+  class SpotInstanceRequest(requestId: String) {
+
+    def getSpotInstanceRequestId() = requestId
+
+
+    private def getEC2Request(): amazon.SpotInstanceRequest = awstoolsEC2.getEC2SpotRequestsById(requestId) match {
+      case None => {
+        throw new Error("Invalid instance of SpotInstanceRequest class")
+      }
+      case Some(requests) => requests
+    }
+
+    def getTagValue(tagName: String): Option[String] = {
+      getEC2Request().getTags.find(_.getKey == tagName).map(_.getValue)
+    }
+
+    def getInstanceId(): Option[String] = {
+      val id = getEC2Request().getInstanceId
+      if(id.isEmpty) None else Some(id)
+    }
+
+    def createTags(tags: List[awstools.Tag]) {
+      awstoolsEC2.createTags(requestId, tags)
+    }
+
+  }
+
 
   def isKeyPairExists(name: String): Boolean = {
     try {
       val pairs = ec2.describeKeyPairs(new DescribeKeyPairsRequest()
         .withKeyNames(name)
       ).getKeyPairs
-     // println("here keypaurs " + pairs)
+      // println("here keypaurs " + pairs)
       !pairs.isEmpty
     } catch {
       case e: Throwable => false
     }
   }
 
-  def createKeyPair(name: String, file: File) {
-    if(!isKeyPairExists(name)) {
+  def createKeyPair(name: String, file: Option[File]) {
+    if (!isKeyPairExists(name)) {
       val keyPair = ec2.createKeyPair(new CreateKeyPairRequest()
-          .withKeyName(name)
-        ).getKeyPair
+        .withKeyName(name)
+      ).getKeyPair
 
-      if(!file.exists()){
+      file.foreach { file =>
         val keyContent = keyPair.getKeyMaterial
         val writer = new PrintWriter(file)
         writer.print(keyContent)
@@ -63,14 +144,9 @@ class EC2(val ec2: AmazonEC2) {
         file.setWritable(false, false)
         file.setReadable(false, false)
         file.setExecutable(false, false)
-        file.setReadable(true, false)
+        file.setReadable(true, true)
       }
-      }
-
-
-
-    //keyPair.getKeyMaterial
-   // println(keyPair.getKeyMaterial)
+    }
   }
 
   def deleteKeyPair(name: String) {
@@ -79,7 +155,7 @@ class EC2(val ec2: AmazonEC2) {
     )
   }
 
-  def deleteSecurityGroup (name: String) {
+  def deleteSecurityGroup(name: String) {
     try {
       ec2.deleteSecurityGroup(new DeleteSecurityGroupRequest()
         .withGroupName(name)
@@ -122,59 +198,63 @@ class EC2(val ec2: AmazonEC2) {
     }
   }
 
-  def requestSpotInstances(amount: Int, price: Double, specs: InstanceSpecs, timeout: Int = 36000): List[ohnosequences.awstools.ec2.SpotInstanceRequest] = {
+  def requestSpotInstances(amount: Int, price: Double, specs: InstanceSpecs, timeout: Int = 36000): List[SpotInstanceRequest] = {
     ec2.requestSpotInstances(new RequestSpotInstancesRequest()
       .withSpotPrice(price.toString)
       .withInstanceCount(amount)
       .withLaunchSpecification(specs)
-
-     // .withValidUntil(new Date(System.currentTimeMillis() + timeout))
-    ).getSpotInstanceRequests.map(SpotInstanceRequest(ec2, _)).toList
+    ).getSpotInstanceRequests.map{ request =>
+      new SpotInstanceRequest(request.getSpotInstanceRequestId)
+    }.toList
   }
 
-  def runInstances(amount: Int, specs: InstanceSpecs): List[ohnosequences.awstools.ec2.Instance] = {
+  def runInstances(amount: Int, specs: InstanceSpecs): List[Instance] = {
     val runRequest = new RunInstancesRequest(specs.amiId, amount, amount)
       .withInstanceType(specs.instanceType.toAWS)
       .withKeyName(specs.keyName)
       .withUserData(Utils.base64encode(specs.userData))
       .withSecurityGroups(specs.securityGroups)
 
-    ec2.runInstances(runRequest).getReservation.getInstances.toList.map{ instance =>
-      Instance(EC2.this, instance.getInstanceId)
+    ec2.runInstances(runRequest).getReservation.getInstances.toList.map {
+      instance =>
+        new Instance(instance.getInstanceId)
     }
   }
 
-  def getCurrentSpotPrice(instanceType: ohnosequences.awstools.ec2.InstanceType, productDescription: String) = {
+  def getCurrentSpotPrice(instanceType: awstools.InstanceType, productDescription: String): Double = {
     val price = ec2.describeSpotPriceHistory(
       new DescribeSpotPriceHistoryRequest()
         .withStartTime(new java.util.Date())
         .withInstanceTypes(instanceType.toString)
         .withProductDescriptions(productDescription)
     ).getSpotPriceHistory.map(_.getSpotPrice.toDouble).fold(0D)(math.max(_, _))
-    println(price)
 
     math.min(1, price)
   }
 
 
-  def createTags(resourceId: String, tags: List[ohnosequences.awstools.ec2.Tag]) {
-    ec2.createTags(new CreateTagsRequest().withResources(resourceId).withTags(tags.map(_.toECTag)))
+  def createTags(resourceId: String, tags: List[awstools.Tag]) {
+    ec2.createTags(new CreateTagsRequest()
+      .withResources(resourceId)
+      .withTags(tags.map(_.toECTag))
+    )
   }
 
-  def listInstancesByFilters(filters: ohnosequences.awstools.ec2.Filter*): List[ohnosequences.awstools.ec2.Instance] = {
+  def listInstancesByFilters(filters: awstools.Filter*): List[Instance] = {
     ec2.describeInstances(
       new DescribeInstancesRequest().withFilters(filters.map(_.toEC2Filter))
-    ).getReservations.flatMap(_.getInstances).map{ instance =>
-      Instance(EC2.this, instance.getInstanceId)
+    ).getReservations.flatMap(_.getInstances).map { instance =>
+        new Instance(instance.getInstanceId)
     }.toList
   }
 
 
-
-  def listRequestsByFilters(filters: ohnosequences.awstools.ec2.Filter*): List[ohnosequences.awstools.ec2.SpotInstanceRequest] = {
+  def listRequestsByFilters(filters: awstools.Filter*): List[SpotInstanceRequest] = {
     ec2.describeSpotInstanceRequests(
       new DescribeSpotInstanceRequestsRequest().withFilters(filters.map(_.toEC2Filter))
-    ).getSpotInstanceRequests.map(SpotInstanceRequest(ec2, _)).toList
+    ).getSpotInstanceRequests.map { request =>
+      new SpotInstanceRequest(request.getSpotInstanceRequestId)
+    }.toList
   }
 
 
@@ -200,16 +280,25 @@ class EC2(val ec2: AmazonEC2) {
     }
   }
 
-  def getCurrentInstance: Option[ohnosequences.awstools.ec2.Instance] = getCurrentInstanceId.flatMap(getInstanceById(_))
+  def getCurrentInstance: Option[Instance] = getCurrentInstanceId.flatMap(getInstanceById(_))
 
-  def getInstanceById(instanceId: String): Option[ohnosequences.awstools.ec2.Instance] = {
-    getEC2InstanceById(instanceId).map{ ec2Instance =>
-      Instance(EC2.this, ec2Instance.getInstanceId)
+  def getInstanceById(instanceId: String): Option[Instance] = {
+    getEC2InstanceById(instanceId).map {
+      ec2Instance =>
+        new Instance(ec2Instance.getInstanceId)
     }
   }
 
-  def getEC2InstanceById(instanceId: String): Option[com.amazonaws.services.ec2.model.Instance] = {
-    ec2.describeInstances(new DescribeInstancesRequest().withInstanceIds(instanceId)).getReservations.flatMap(_.getInstances).headOption
+  def getEC2InstanceById(instanceId: String): Option[amazon.Instance] = {
+    ec2.describeInstances(new DescribeInstancesRequest()
+      .withInstanceIds(instanceId)
+    ).getReservations.flatMap(_.getInstances).headOption
+  }
+
+  def getEC2SpotRequestsById(requestsId: String): Option[amazon.SpotInstanceRequest] = {
+    ec2.describeSpotInstanceRequests(new DescribeSpotInstanceRequestsRequest()
+      .withSpotInstanceRequestIds(requestsId)
+    ).getSpotInstanceRequests.headOption
   }
 
 }
@@ -229,8 +318,5 @@ object EC2 {
     ec2Client.setEndpoint("http://ec2.eu-west-1.amazonaws.com")
     new EC2(ec2Client)
   }
-
-
-
 
 }
