@@ -55,7 +55,7 @@ object awstoolsBuild extends Build {
 
       st.log.info("a normal release")
       st.log.info("artifacts will be uploaded to the releases repo")
-      
+
       Seq (
           "s3cmd", "sync", "-r", "--no-delete-removed", "--disable-multipart",
           "artifacts/releases.era7.com/",

@@ -113,6 +113,14 @@ class EC2(val ec2: AmazonEC2) {
       awstoolsEC2.createTags(requestId, tags)
     }
 
+    def getState(): String = {
+      getEC2Request().getState()
+    }
+
+    def getStatus(): String = {
+      getEC2Request().getState
+    }
+
   }
 
 
