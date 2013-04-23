@@ -169,7 +169,7 @@ class EC2(val ec2: AmazonEC2) {
         .withGroupName(name)
       )
     } catch {
-      case e: AmazonServiceException if e.getErrorCode().equals("InvalidGroup.InUse") => ()
+      case e: AmazonServiceException if e.getErrorCode().equals("InvalidGroup.InUse") => println("Error during removing, security group " + name + " in use"); ()
       case e: AmazonServiceException if e.getErrorCode().equals("InvalidGroup.NotFound") => ()
     }
   }
@@ -267,7 +267,11 @@ class EC2(val ec2: AmazonEC2) {
 
 
   def terminateInstance(instanceId: String) {
-    ec2.terminateInstances(new TerminateInstancesRequest(List(instanceId)))
+    try {
+      ec2.terminateInstances(new TerminateInstancesRequest(List(instanceId)))
+    } catch {
+      case e: AmazonServiceException if e.getErrorCode().equals("InvalidInstanceID.NotFound") => ()
+    }
   }
 
   def cancelSpotRequest(requestId: String) {

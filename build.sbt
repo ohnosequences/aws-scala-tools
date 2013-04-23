@@ -12,7 +12,7 @@ version := "0.2.0"
 
 scalaVersion := "2.10.0"
 
-// crossScalaVersions := Seq("2.10.0.RC1", "2.10.0.RC2")
+//crossScalaVersions := Seq("2.9.1")
 
 publishMavenStyle := true
 

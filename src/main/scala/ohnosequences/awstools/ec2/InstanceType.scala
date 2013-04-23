@@ -24,10 +24,21 @@ object InstanceType {
   }
 
   val T1Micro = InstanceType("t1.micro")
-  val C1Medium = InstanceType("c1.medium")
   val M1Small = InstanceType("m1.small")
   val M1Medium = InstanceType("m1.medium")
   val M1Large = InstanceType("m1.large")
+  val M1Xlarge = InstanceType("m1.xlarge")
+  val M2Xlarge = InstanceType("m2.xlarge")
+  val M22xlarge = InstanceType("m2.2xlarge")
+  val M24xlarge = InstanceType("m2.4xlarge")
+  val M3Xlarge = InstanceType("m3.xlarge")
+  val M32xlarge = InstanceType("m3.2xlarge")
+  val C1Medium = InstanceType("c1.medium")
+  val C1Xlarge = InstanceType("c1.xlarge")
+  val Hi14xlarge = InstanceType("hi1.4xlarge")
+  val Cc14xlarge = InstanceType("cc1.4xlarge")
+  val Cc28xlarge = InstanceType("cc2.8xlarge")
+  val Cg14xlarge = InstanceType("cg1.4xlarge")
 
 }
 

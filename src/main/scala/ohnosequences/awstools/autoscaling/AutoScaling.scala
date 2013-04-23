@@ -8,8 +8,12 @@ import com.amazonaws.services.autoscaling.AmazonAutoScalingClient
 import com.amazonaws.services.autoscaling.model._
 
 import scala.collection.JavaConversions._
-import ohnosequences.awstools.ec2.Utils
+import ohnosequences.awstools.ec2.{Utils}
+
+import ohnosequences.awstools.{ec2 => awstools}
+
 import com.amazonaws.AmazonServiceException
+import com.amazonaws.services.autoscaling.model.Tag
 
 
 class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2) { autoscaling =>
@@ -53,6 +57,22 @@ class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2
       }
     }
 
+  }
+
+  def describeTags(name: String): List[awstools.Tag] = {
+    as.describeTags(new DescribeTagsRequest()
+      .withFilters(
+        new Filter()
+          .withName("auto-scaling-group")
+          .withValues(name)
+      )
+    ).getTags.toList.map { tagDescription =>
+      awstools.Tag(tagDescription.getKey, tagDescription.getValue)
+    }
+  }
+
+  def getTagValue(groupName: String, tagName: String): Option[String] = {
+    describeTags(groupName).find(_.name.equals(tagName)).map(_.value)
   }
 
 
