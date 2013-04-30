@@ -8,11 +8,9 @@ name := "aws-scala-tools"
 
 organization := "ohnosequences"
 
-version := "0.2.0"
+version := "0.2.1"
 
 scalaVersion := "2.10.0"
-
-// crossScalaVersions := Seq("2.10.0.RC1", "2.10.0.RC2")
 
 publishMavenStyle := true
 
@@ -32,13 +30,9 @@ resolvers ++= Seq (
                   )
 
 libraryDependencies ++= Seq (
-                              "com.chuusai" %% "shapeless" % "1.2.3"
+                              "com.amazonaws" % "aws-java-sdk" % "1.3.26"
+                            , "com.novocode" % "junit-interface" % "0.10-M1" % "test"
                             )
-
-libraryDependencies += "com.amazonaws" % "aws-java-sdk" % "1.3.26"
-
-libraryDependencies += "com.novocode" % "junit-interface" % "0.10-M1" % "test"
-
 
 scalacOptions ++= Seq(
                       "-feature",

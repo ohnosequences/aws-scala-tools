@@ -17,16 +17,16 @@ object awstoolsBuild extends Build {
         releaseProcess <<= thisProjectRef apply { ref =>
           Seq[ReleaseStep](
             checkSnapshotDependencies,              // : ReleaseStep
-            inquireVersions,                        // : ReleaseStep
+            // inquireVersions,                        // : ReleaseStep
             runTest,                                // : ReleaseStep
-            setReleaseVersion,                      // : ReleaseStep
-            commitReleaseVersion,                   // : ReleaseStep, performs the initial git checks
+            // setReleaseVersion,                      // : ReleaseStep
+            // commitReleaseVersion,                   // : ReleaseStep, performs the initial git checks
             tagRelease,                             // : ReleaseStep
             publishArtifacts,                       // : ReleaseStep, checks whether `publishTo` is properly set up
-            uploadArtifacts,                        // : ReleaseStep, uploads generated artifacts to s3
-            setNextVersion,                         // : ReleaseStep
-            commitNextVersion,                      // : ReleaseStep
-            pushChanges                             // : ReleaseStep, also checks that an upstream branch is properly configured
+            uploadArtifacts                        // : ReleaseStep, uploads generated artifacts to s3
+            // setNextVersion,                         // : ReleaseStep
+            // commitNextVersion,                      // : ReleaseStep
+            // pushChanges                             // : ReleaseStep, also checks that an upstream branch is properly configured
           )
         }
       )
