@@ -34,6 +34,7 @@ case class InstanceSpecs(instanceType: awstools.InstanceType,
                          keyName: String = "",
                          userData: String = "")
 
+case class InstanceStatus(instanceStatus: String, systemStatus: String)
 
 class EC2(val ec2: AmazonEC2) {
   awstoolsEC2 =>
@@ -80,6 +81,21 @@ class EC2(val ec2: AmazonEC2) {
 
     def getState(): String = {
       getEC2Instance().getState().getName
+    }
+
+    def getInstanceStatus(): Option[awstools.InstanceStatus] = {
+      val statuses = ec2.describeInstanceStatus(new DescribeInstanceStatusRequest()
+        .withInstanceIds(instanceId)
+        ).getInstanceStatuses()
+      if (statuses.isEmpty) None
+      else {
+        val is = statuses.head
+        Some(awstools.InstanceStatus(
+            is.getInstanceStatus().getStatus()
+          , is.getSystemStatus().getStatus()
+          )
+        )
+      }
     }
 
     def getPublicDNS(): Option[String] = {
