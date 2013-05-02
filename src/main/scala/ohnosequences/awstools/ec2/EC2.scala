@@ -34,7 +34,7 @@ case class InstanceSpecs(instanceType: awstools.InstanceType,
                          keyName: String = "",
                          userData: String = "")
 
-case class InstanceStatus(instanceStatus: String, systemStatus: String)
+case class InstanceStatus(val instanceStatus: String, val systemStatus: String)
 
 class EC2(val ec2: AmazonEC2) {
   awstoolsEC2 =>
@@ -83,7 +83,7 @@ class EC2(val ec2: AmazonEC2) {
       getEC2Instance().getState().getName
     }
 
-    def getInstanceStatus(): Option[awstools.InstanceStatus] = {
+    def getStatus(): Option[awstools.InstanceStatus] = {
       val statuses = ec2.describeInstanceStatus(new DescribeInstanceStatusRequest()
         .withInstanceIds(instanceId)
         ).getInstanceStatuses()
