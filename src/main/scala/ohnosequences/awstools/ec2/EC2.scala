@@ -32,7 +32,8 @@ case class InstanceSpecs(instanceType: awstools.InstanceType,
                          amiId: String,
                          securityGroups: List[String] = List(),
                          keyName: String = "",
-                         userData: String = "")
+                         userData: String = "",
+                         instanceProfileARN: String = "")
 
 case class InstanceStatus(val instanceStatus: String, val systemStatus: String)
 
@@ -233,15 +234,20 @@ class EC2(val ec2: AmazonEC2) {
   }
 
   def runInstances(amount: Int, specs: InstanceSpecs): List[Instance] = {
-    val runRequest = new RunInstancesRequest(specs.amiId, amount, amount)
+    val preRequest = new RunInstancesRequest(specs.amiId, amount, amount)
       .withInstanceType(specs.instanceType.toAWS)
       .withKeyName(specs.keyName)
       .withUserData(Utils.base64encode(specs.userData))
       .withSecurityGroups(specs.securityGroups)
 
-    ec2.runInstances(runRequest).getReservation.getInstances.toList.map {
-      instance =>
-        new Instance(instance.getInstanceId)
+    val request = // add IAM instance profile if needed
+      if (specs.instanceProfileARN.isEmpty) preRequest
+      else preRequest.withIamInstanceProfile(
+        new IamInstanceProfileSpecification().withArn(specs.instanceProfileARN)
+      )
+
+    ec2.runInstances(request).getReservation.getInstances.toList.map {
+      instance => new Instance(instance.getInstanceId)
     }
   }
 
