@@ -49,7 +49,7 @@ case class InstanceSpecs(instanceType: awstools.InstanceType,
                          keyName: String = "",
                          deviceMapping: Map[String, String],
                          userData: String = "",
-                         instanceProfileARN: Option[String] = Some(""))
+                         instanceProfileARN: Option[String] = None)
 
 
 case class InstanceStatus(val instanceStatus: String, val systemStatus: String)
