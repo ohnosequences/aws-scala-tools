@@ -12,11 +12,6 @@ version := "0.2.3"
 
 scalaVersion := "2.10.0"
 
-<<<<<<< HEAD
-//crossScalaVersions := Seq("2.9.1")
-
-=======
->>>>>>> 59dcc0fc477693fde13b7996a4825796879eb2d5
 publishMavenStyle := true
 
 publishTo <<= version { (v: String) =>
