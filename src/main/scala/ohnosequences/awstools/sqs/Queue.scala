@@ -4,44 +4,46 @@ import com.amazonaws.services.sqs.model._
 import com.amazonaws.services.sqs.AmazonSQS
 import scala.collection.JavaConversions._
 
-case class Message(body: String, receiptHandle: String)
 
-case class Queue(val sqs: AmazonSQS, val url: String, val name: String) {
+case class Message(sqs: AmazonSQS, url: String, body: String, receiptHandle: String) {
+  def changeVisibilityTimeout(additionalSecs: Int) {
+    sqs.changeMessageVisibility(new ChangeMessageVisibilityRequest()
+      .withQueueUrl(url)
+      .withReceiptHandle(receiptHandle)
+      .withVisibilityTimeout(additionalSecs)
+    )
+  }
+}
+
+case class Queue(sqs: AmazonSQS, url: String, name: String) {
+
+
 
   def sendMessage(message: String) {
     sqs.sendMessage(new SendMessageRequest(url, message))
   }
 
-  //def receiveMessages = sqs.receiveMessage(new ReceiveMessageRequest(url).withMaxNumberOfMessages(10)).getMessages
-
-  def receiveMessage: Option[ohnosequences.awstools.sqs.Message] = {
+  def receiveMessage: Option[Message] = {
     val messages = sqs.receiveMessage(new ReceiveMessageRequest(url).withMaxNumberOfMessages(1)).getMessages
     if (messages.isEmpty) {
       None
     } else {
       val message = messages.get(0)
-      Some(ohnosequences.awstools.sqs.Message(message.getBody, message.getReceiptHandle))
+      Some(Message(sqs, url, message.getBody, message.getReceiptHandle))
     }
   }
 
-  def receiveMessages(amount: Int): List[ohnosequences.awstools.sqs.Message] = {
+  def receiveMessages(amount: Int): List[Message] = {
     val messages = sqs.receiveMessage(new ReceiveMessageRequest(url).withMaxNumberOfMessages(amount)).getMessages
     if (messages.isEmpty) {
-      List[ohnosequences.awstools.sqs.Message]()
+      List[Message]()
     } else {
-      messages.map(message => ohnosequences.awstools.sqs.Message(message.getBody, message.getReceiptHandle)).toList
+      messages.map(message => Message(sqs, url, message.getBody, message.getReceiptHandle)).toList
     }
   }
 
-//  def receiveAndDeleteMessages = {
-//    val messages = receiveMessages
-//    for (message <- messages) {
-//      deleteMessage(message)
-//    }
-//    messages
-//  }
 
-  def deleteMessage(message: ohnosequences.awstools.sqs.Message) {
+  def deleteMessage(message: Message) {
     sqs.deleteMessage(new DeleteMessageRequest(url, message.receiptHandle))
   }
 
@@ -72,12 +74,8 @@ case class Queue(val sqs: AmazonSQS, val url: String, val name: String) {
   }
 
   override def toString = {
-     name
+    name
     //"[ name=" + name + "; " + "url=" + url + "; " + " messages = " + getApproximateNumberOfMessages + " ]"
   }
-
-
-
-
 
 }
