@@ -4,7 +4,7 @@ import java.io.{InputStream, ByteArrayInputStream, File}
 
 import com.amazonaws.auth.{AWSCredentials, BasicAWSCredentials, PropertiesCredentials}
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3Client}
-import com.amazonaws.services.s3.model.{ObjectMetadata, PutObjectRequest}
+import com.amazonaws.services.s3.model.{ObjectListing, S3ObjectSummary, ObjectMetadata, PutObjectRequest}
 
 import scala.collection.JavaConversions._
 import com.amazonaws.services.importexport.model.NoSuchBucketException
@@ -62,6 +62,30 @@ class S3(val s3: AmazonS3) {
 
     }
 
+  }
+
+
+  def listObjects(bucket: String, prefix: String = ""): List[ObjectAddress] = {
+    val result: List[ObjectAddress]
+    var stopped = false
+    while(!stopped) {
+      val listing = s3.listObjects(bucket, prefix)
+      println(listing.getObjectSummaries.map(_.getKey))
+      if(!listing.isTruncated) {
+        stopped = true
+      }
+    }
+  }
+
+  def downloadDirectory(bucket: String, prefix: String) {
+    var stopped = false
+    while(!stopped) {
+      val listing = s3.listObjects(bucket, prefix)
+      println(listing.getObjectSummaries.map(_.getKey))
+      if(!listing.isTruncated) {
+        stopped = true
+      }
+    }
   }
 
 

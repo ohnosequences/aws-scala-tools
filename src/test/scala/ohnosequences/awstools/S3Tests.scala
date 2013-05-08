@@ -28,6 +28,12 @@ class S3Tests {
 
   }
 
+  @Test
+  def directoryTests() {
+    print("here")
+    val s3 = S3.create(new File("AwsCredentials.properties"))
+    s3.downloadDirectory("gridbucket11", "test2")
+  }
 
   def policyTests {
 
