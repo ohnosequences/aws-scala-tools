@@ -12,8 +12,11 @@ version := "0.2.3"
 
 scalaVersion := "2.10.0"
 
+<<<<<<< HEAD
 //crossScalaVersions := Seq("2.9.1")
 
+=======
+>>>>>>> 59dcc0fc477693fde13b7996a4825796879eb2d5
 publishMavenStyle := true
 
 publishTo <<= version { (v: String) =>
@@ -32,13 +35,9 @@ resolvers ++= Seq (
                   )
 
 libraryDependencies ++= Seq (
-                              "com.chuusai" %% "shapeless" % "1.2.3"
+                              "com.amazonaws" % "aws-java-sdk" % "1.3.26"
+                            , "com.novocode" % "junit-interface" % "0.10-M1" % "test"
                             )
-
-libraryDependencies += "com.amazonaws" % "aws-java-sdk" % "1.3.26"
-
-libraryDependencies += "com.novocode" % "junit-interface" % "0.10-M1" % "test"
-
 
 scalacOptions ++= Seq(
                       "-feature",

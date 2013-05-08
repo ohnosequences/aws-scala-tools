@@ -50,10 +50,16 @@ case class InstanceSpecs(instanceType: awstools.InstanceType,
                          amiId: String,
                          securityGroups: List[String] = List(),
                          keyName: String = "",
+<<<<<<< HEAD
                          deviceMapping: Map[String, String],
                          userData: String = "",
                          instanceProfileARN: Option[String] = Some(""))
+=======
+                         userData: String = "",
+                         instanceProfileARN: String = "")
+>>>>>>> 59dcc0fc477693fde13b7996a4825796879eb2d5
 
+case class InstanceStatus(val instanceStatus: String, val systemStatus: String)
 
 class EC2(val ec2: AmazonEC2) {
   awstoolsEC2 =>
@@ -124,6 +130,21 @@ class EC2(val ec2: AmazonEC2) {
 
     def getState(): String = {
       getEC2Instance().getState().getName
+    }
+
+    def getStatus(): Option[awstools.InstanceStatus] = {
+      val statuses = ec2.describeInstanceStatus(new DescribeInstanceStatusRequest()
+        .withInstanceIds(instanceId)
+        ).getInstanceStatuses()
+      if (statuses.isEmpty) None
+      else {
+        val is = statuses.head
+        Some(awstools.InstanceStatus(
+            is.getInstanceStatus().getStatus()
+          , is.getSystemStatus().getStatus()
+          )
+        )
+      }
     }
 
     def getPublicDNS(): Option[String] = {
@@ -267,6 +288,7 @@ class EC2(val ec2: AmazonEC2) {
       .withUserData(Utils.base64encode(specs.userData))
       .withSecurityGroups(specs.securityGroups)
 
+<<<<<<< HEAD
      // add IAM instance profile if needed
     val request = specs.instanceProfileARN match {
       case None => preRequest
@@ -278,6 +300,16 @@ class EC2(val ec2: AmazonEC2) {
     ec2.runInstances(request).getReservation.getInstances.toList.map {
       instance =>
         new Instance(instance.getInstanceId)
+=======
+    val request = // add IAM instance profile if needed
+      if (specs.instanceProfileARN.isEmpty) preRequest
+      else preRequest.withIamInstanceProfile(
+        new IamInstanceProfileSpecification().withArn(specs.instanceProfileARN)
+      )
+
+    ec2.runInstances(request).getReservation.getInstances.toList.map {
+      instance => new Instance(instance.getInstanceId)
+>>>>>>> 59dcc0fc477693fde13b7996a4825796879eb2d5
     }
   }
 
