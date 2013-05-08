@@ -32,6 +32,11 @@ class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2
         .withUserData(Utils.base64encode(launchConfiguration.instanceSpecs.userData))
         .withKeyName(launchConfiguration.instanceSpecs.keyName)
         .withSecurityGroups(launchConfiguration.instanceSpecs.securityGroups)
+        .withBlockDeviceMappings(
+          launchConfiguration.instanceSpecs.deviceMapping.map{ case (key, value) =>
+            new BlockDeviceMapping().withDeviceName(key).withVirtualName(value)
+          }.toList
+        )
       )
     } catch {
       case e: AlreadyExistsException => ;

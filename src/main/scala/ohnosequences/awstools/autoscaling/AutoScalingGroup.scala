@@ -21,7 +21,9 @@ case class LaunchConfiguration(
   instanceSpecs: InstanceSpecs
 )
 
+
 object LaunchConfiguration {
+
   def fromAWS(launchConfiguration: com.amazonaws.services.autoscaling.model.LaunchConfiguration): LaunchConfiguration = {
     LaunchConfiguration(
       name = launchConfiguration.getLaunchConfigurationName,
@@ -31,6 +33,7 @@ object LaunchConfiguration {
         amiId = launchConfiguration.getImageId,
         keyName = launchConfiguration.getKeyName,
         securityGroups = launchConfiguration.getSecurityGroups.toList,
+        deviceMapping = launchConfiguration.getBlockDeviceMappings.map(m => (m.getDeviceName, m.getVirtualName)).toMap,
         userData = launchConfiguration.getUserData
       )
     )
