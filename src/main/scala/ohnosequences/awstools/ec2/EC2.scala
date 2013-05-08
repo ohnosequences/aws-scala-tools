@@ -14,6 +14,10 @@ import ohnosequences.awstools.{ec2 => awstools}
 import com.amazonaws.services.ec2.{model => amazon}
 
 
+
+case class InstanceStatus(val instanceStatus: String, val systemStatus: String)
+
+
 object InstanceSpecs {
 
   implicit def getLaunchSpecs(specs: InstanceSpecs) = {
@@ -22,17 +26,33 @@ object InstanceSpecs {
       .withInstanceType(specs.instanceType.toAWS)
       .withImageId(specs.amiId)
       .withKeyName(specs.keyName)
+      .withBlockDeviceMappings(specs.deviceMapping.map{ case (key, value) =>
+        new BlockDeviceMapping()
+          .withDeviceName(key)
+          .withVirtualName(value)
+      })
       .withUserData(Utils.base64encode(specs.userData))
       )
   }
 }
 
 
+//case class DeviceMapping() {
+//
+//}
+//
+//object DeviceMapping {
+//  def fromAWS()
+//}
+
+
 case class InstanceSpecs(instanceType: awstools.InstanceType,
                          amiId: String,
                          securityGroups: List[String] = List(),
                          keyName: String = "",
-                         userData: String = "")
+                         deviceMapping: Map[String, String],
+                         userData: String = "",
+                         instanceProfileARN: Option[String] = Some(""))
 
 
 class EC2(val ec2: AmazonEC2) {
@@ -77,6 +97,30 @@ class EC2(val ec2: AmazonEC2) {
       }
     }
 
+    def getAMI(): String = {
+      val instance = getEC2Instance()
+      instance.getImageId()
+    }
+
+    def getInstanceType(): awstools.InstanceType = {
+      val instance = getEC2Instance()
+      awstools.InstanceType.fromName(instance.getInstanceType)
+    }
+
+    def getStatus(): Option[awstools.InstanceStatus] = {
+      val statuses = ec2.describeInstanceStatus(new DescribeInstanceStatusRequest()
+        .withInstanceIds(instanceId)
+      ).getInstanceStatuses()
+      if (statuses.isEmpty) None
+      else {
+        val is = statuses.head
+        Some(awstools.InstanceStatus(
+            is.getInstanceStatus().getStatus()
+          , is.getSystemStatus().getStatus()
+        )
+        )
+      }
+    }
 
     def getState(): String = {
       getEC2Instance().getState().getName
@@ -217,13 +261,21 @@ class EC2(val ec2: AmazonEC2) {
   }
 
   def runInstances(amount: Int, specs: InstanceSpecs): List[Instance] = {
-    val runRequest = new RunInstancesRequest(specs.amiId, amount, amount)
+    val preRequest = new RunInstancesRequest(specs.amiId, amount, amount)
       .withInstanceType(specs.instanceType.toAWS)
       .withKeyName(specs.keyName)
       .withUserData(Utils.base64encode(specs.userData))
       .withSecurityGroups(specs.securityGroups)
 
-    ec2.runInstances(runRequest).getReservation.getInstances.toList.map {
+     // add IAM instance profile if needed
+    val request = specs.instanceProfileARN match {
+      case None => preRequest
+      case Some(profile) => preRequest.withIamInstanceProfile(
+        new IamInstanceProfileSpecification().withArn(profile)
+      )
+    }     
+
+    ec2.runInstances(request).getReservation.getInstances.toList.map {
       instance =>
         new Instance(instance.getInstanceId)
     }
@@ -302,9 +354,13 @@ class EC2(val ec2: AmazonEC2) {
   }
 
   def getEC2InstanceById(instanceId: String): Option[amazon.Instance] = {
+    try {
     ec2.describeInstances(new DescribeInstancesRequest()
       .withInstanceIds(instanceId)
     ).getReservations.flatMap(_.getInstances).headOption
+    } catch {
+      case e: AmazonServiceException if e.getErrorCode().equals("InvalidInstanceID.NotFound") => None
+    }
   }
 
   def getEC2SpotRequestsById(requestsId: String): Option[amazon.SpotInstanceRequest] = {

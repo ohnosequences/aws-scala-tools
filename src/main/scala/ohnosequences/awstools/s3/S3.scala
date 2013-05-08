@@ -65,17 +65,17 @@ class S3(val s3: AmazonS3) {
   }
 
 
-  def listObjects(bucket: String, prefix: String = ""): List[ObjectAddress] = {
-    val result: List[ObjectAddress]
-    var stopped = false
-    while(!stopped) {
-      val listing = s3.listObjects(bucket, prefix)
-      println(listing.getObjectSummaries.map(_.getKey))
-      if(!listing.isTruncated) {
-        stopped = true
-      }
-    }
-  }
+//  def listObjects(bucket: String, prefix: String = ""): List[ObjectAddress] = {
+//    val result: List[ObjectAddress]
+//    var stopped = false
+//    while(!stopped) {
+//      val listing = s3.listObjects(bucket, prefix)
+//      println(listing.getObjectSummaries.map(_.getKey))
+//      if(!listing.isTruncated) {
+//        stopped = true
+//      }
+//    }
+//  }
 
   def downloadDirectory(bucket: String, prefix: String) {
     var stopped = false
