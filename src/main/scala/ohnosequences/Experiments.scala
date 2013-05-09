@@ -11,6 +11,7 @@ import java.util.Map.Entry
 import com.amazonaws.auth.{QueryStringSigner, PropertiesCredentials}
 
 import scala.collection.JavaConversions._
+import org.apache.http.HttpRequestFactory
 
 object Experiments {
   def main(args: Array[String]) {
@@ -58,6 +59,12 @@ object Experiments {
     val signer = new QueryStringSigner()
     signer.sign(request, credentials)
     println(request.getParameters)
+    println(request.getContent)
+    println(request.getResourcePath)
+    //val httpRequestFactory = new HttpRequestFactory()
+
+   // httpRequest = httpRequestFactory.createHttpRequest(request, config, entity, executionContext)
+
   }
 
 }

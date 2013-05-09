@@ -48,7 +48,12 @@ case class Queue(sqs: AmazonSQS, url: String, name: String) {
   }
 
   def delete() {
-    sqs.deleteQueue(new DeleteQueueRequest(url))
+    try {
+      sqs.deleteQueue(new DeleteQueueRequest(url))
+    } catch {
+      case t: Throwable => println("error during topic queue " + url + " : " + t.getMessage); t.printStackTrace()
+    }
+
   }
 
   def getAttribute(name: QueueAttributeName) = sqs.getQueueAttributes(

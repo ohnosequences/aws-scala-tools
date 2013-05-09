@@ -28,6 +28,15 @@ class S3(val s3: AmazonS3) {
     scala.io.Source.fromInputStream(objectStream).mkString
   }
 
+  def readObject(objectAddress: ObjectAddress): Option[String] = {
+    try {
+      val objectStream = s3.getObject(objectAddress.bucket, objectAddress.key).getObjectContent
+      Some(scala.io.Source.fromInputStream(objectStream).mkString)
+    } catch {
+      case t: Throwable => None
+    }
+  }
+
   def getObjectStream(objectAddress: ObjectAddress): InputStream = {
     s3.getObject(objectAddress.bucket, objectAddress.key).getObjectContent
   }

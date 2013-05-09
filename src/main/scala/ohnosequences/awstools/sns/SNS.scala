@@ -8,7 +8,9 @@ import com.amazonaws.services.sns.model.{ListTopicsRequest, DeleteTopicRequest, 
 
 class SNS(val sns: AmazonSNS) {
 
-  def createTopic(name: String) = Topic(sns, sns.createTopic(new CreateTopicRequest(name)).getTopicArn, name)
+  def createTopic(name: String) = {
+    Topic(sns, sns.createTopic(new CreateTopicRequest(name)).getTopicArn, name)
+  }
 
   def shutdown() {
     sns.shutdown()

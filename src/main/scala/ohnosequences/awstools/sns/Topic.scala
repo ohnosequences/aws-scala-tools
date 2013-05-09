@@ -76,6 +76,10 @@ case class Topic(sns: AmazonSNS, topicArn: String, name: String) {
   }
 
   def delete() {
-    sns.deleteTopic(new DeleteTopicRequest(topicArn))
+    try {
+      sns.deleteTopic(new DeleteTopicRequest(topicArn))
+    } catch {
+      case t: Throwable => println("error during topic deletion " + topicArn + " : " +  t.getMessage); t.printStackTrace()
+    }
   }
 }

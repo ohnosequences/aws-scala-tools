@@ -207,14 +207,23 @@ class EC2(val ec2: AmazonEC2) {
     )
   }
 
-  def deleteSecurityGroup(name: String) {
+  def deleteSecurityGroup(name: String, attempts: Int = 0): Boolean = {
     try {
       ec2.deleteSecurityGroup(new DeleteSecurityGroupRequest()
         .withGroupName(name)
       )
+      true
     } catch {
-      case e: AmazonServiceException if e.getErrorCode().equals("InvalidGroup.InUse") => println("Error during removing, security group " + name + " in use"); ()
-      case e: AmazonServiceException if e.getErrorCode().equals("InvalidGroup.NotFound") => ()
+      case e: AmazonServiceException if e.getErrorCode().equals("InvalidGroup.InUse") => {
+        if(attempts > 0) {
+          Thread.sleep(2000)
+          println("security group: " + name + " in use, waiting...")
+          deleteSecurityGroup(name, attempts-1)
+        } else {
+          false
+        }
+      }
+      case e: AmazonServiceException if e.getErrorCode().equals("InvalidGroup.NotFound") => true
     }
   }
 
