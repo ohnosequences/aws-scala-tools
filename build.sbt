@@ -30,9 +30,10 @@ resolvers ++= Seq (
                   )
 
 libraryDependencies ++= Seq (
-                              "com.amazonaws" % "aws-java-sdk" % "1.3.26"
-                            , "com.novocode" % "junit-interface" % "0.10-M1" % "test"
-                            )
+  "com.amazonaws" % "aws-java-sdk" % "1.3.26",
+  "com.novocode" % "junit-interface" % "0.10-M1" % "test",
+  "net.databinder.dispatch" %% "dispatch-core" % "0.10.0"
+)
 
 scalacOptions ++= Seq(
                       "-feature",

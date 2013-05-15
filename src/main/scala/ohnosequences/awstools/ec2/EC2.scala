@@ -34,14 +34,6 @@ object InstanceSpecs {
 }
 
 
-//case class DeviceMapping() {
-//
-//}
-//
-//object DeviceMapping {
-//  def fromAWS()
-//}
-
 
 case class InstanceSpecs(instanceType: awstools.InstanceType,
                          amiId: String,
