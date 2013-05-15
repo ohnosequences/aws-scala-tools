@@ -18,10 +18,10 @@ object awstoolsBuild extends Build {
           Seq[ReleaseStep](
             checkSnapshotDependencies,              // : ReleaseStep
             // inquireVersions,                        // : ReleaseStep
-            runTest,                                // : ReleaseStep
+        //    runTest,                                // : ReleaseStep
             // setReleaseVersion,                      // : ReleaseStep
             // commitReleaseVersion,                   // : ReleaseStep, performs the initial git checks
-            tagRelease,                             // : ReleaseStep
+          //  tagRelease,                             // : ReleaseStep
             publishArtifacts,                       // : ReleaseStep, checks whether `publishTo` is properly set up
             uploadArtifacts                        // : ReleaseStep, uploads generated artifacts to s3
             // setNextVersion,                         // : ReleaseStep
