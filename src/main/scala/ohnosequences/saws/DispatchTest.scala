@@ -1,11 +1,13 @@
-package ohnosequences.saws.signing
+package ohnosequences.saws
 
 import com.amazonaws.services.sqs.model.{SendMessageRequest, ListQueuesRequest}
 import com.amazonaws.services.sqs.model.transform.{SendMessageRequestMarshaller, ListQueuesRequestMarshaller}
-import java.net.{URI}
+import java.net.URI
 
-import ohnosequences.saws.signing.v4.{V4Signer}
+import ohnosequences.saws.signing.v4.V4Signer
 import ohnosequences.saws.signing.v4.dispatch.{DispatchUtils, DispatchV4Data}
+import java.util.concurrent.CountDownLatch
+import ohnosequences.saws.signing.Credentials
 
 object DispatchTest {
 
@@ -36,12 +38,15 @@ object DispatchTest {
     //sending request
     val result = Http(dispatchRequestSigned OK as.String)
 
+    val latch = new CountDownLatch(1)
     for (c <- result) {
       println(c)
+      latch.countDown()
+
     }
 
    // dreq.build()
-    Thread.sleep(10000)
+    latch.await()
 
     println("---------------")
 

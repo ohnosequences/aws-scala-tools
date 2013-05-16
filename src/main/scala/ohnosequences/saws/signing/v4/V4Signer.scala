@@ -1,6 +1,6 @@
 package ohnosequences.saws.signing.v4
 
-import ohnosequences.saws.signing.{Utils, Credentials}
+import ohnosequences.saws.signing.{Signer, Utils, Credentials}
 import java.lang.{String}
 import scala.Predef._
 import java.util
@@ -12,9 +12,13 @@ import org.apache.http.client.utils.URLEncodedUtils
 import org.apache.http.NameValuePair
 
 import java.text.SimpleDateFormat
+import javax.crypto.spec.SecretKeySpec
+import javax.crypto.Mac
 
 
-object V4Signer {
+object V4Signer extends Signer {
+
+  type Version = V4
 
   val AWS_HMAC = "AWS4-HMAC-SHA256"
   val TERMINATOR = "aws4_request"
@@ -188,5 +192,10 @@ object V4Signer {
 
   }
 
-
+  def hmac(data: Array[Byte], key: Array[Byte]): Array[Byte] = {
+    val alg: String = "HmacSHA256"
+    val mac: Mac = Mac.getInstance(alg)
+    mac.init(new SecretKeySpec(key, alg))
+    return mac.doFinal(data)
+  }
 }
