@@ -25,13 +25,21 @@ object V4Signer extends Signer {
 
   def sign[R](request: R, credentials: Credentials)(v4data: V4Data[R]): Map[String, String] = {
 
+    val additionalHeaders = v4data.getAdditionalHeaders(request)
+    val parameters = v4data.getParameters(request)
+    val headers = v4data.getHeaders(request) ++ additionalHeaders
+    val method = v4data.getMethod(request)
+    val path = v4data.getResourcePath(request)
+    val content = v4data.getContent(request)
+
     //create canonical
     val HTTPRequestMethod: String = v4data.getMethod(request)
-    val CanonicalURI: String = getCanonicalizedResourcePath(v4data.getResourcePath(request))
-    val CanonicalQueryString: String = getCanonicalizedQueryString(request)(v4data)
-    val CanonicalHeaders = getCanonicalizedHeaderString(request)(v4data)
-    val SignedHeaders = getSignedHeadersString(request)(v4data)
+    val CanonicalURI: String = getCanonicalizedResourcePath(path)
+    val CanonicalQueryString: String = getCanonicalizedQueryString(method, content, parameters)
+    val CanonicalHeaders = getCanonicalizedHeaderString(headers)
+    val SignedHeaders = getSignedHeadersString(headers)
     val contentSha256 = v4data.getContentSha256(request)(v4data)
+
     val canonicalRequest = HTTPRequestMethod + "\n" + CanonicalURI + "\n" + CanonicalQueryString + "\n" + CanonicalHeaders + "\n" + SignedHeaders + "\n" + contentSha256
 
 //    Predef.println("canonical request:")
@@ -68,27 +76,27 @@ object V4Signer extends Signer {
 
 
     val credentialsAuthorizationHeader: String = "Credential=" + signingCredentials
-    val signedHeadersAuthorizationHeader: String = "SignedHeaders=" + getSignedHeadersString(request)(v4data)
+    val signedHeadersAuthorizationHeader: String = "SignedHeaders=" + getSignedHeadersString(headers)
     val signatureAuthorizationHeader: String = "Signature=" + Utils.toHex(signature)
     val authorizationHeader: String = AWS_HMAC + " " + credentialsAuthorizationHeader + ", " + signedHeadersAuthorizationHeader + ", " + signatureAuthorizationHeader
 
    // Predef.println("authorizationHeader: " + authorizationHeader)
-    val additionalParams = v4data.getAdditionalHeaders(request) ++ Map[String, String](
+    val additionalParams = additionalHeaders ++ Map[String, String](
       "Authorization" -> authorizationHeader
     )
     additionalParams
   }
 
 
-  def usePayloadForQueryParameters[R](request: R)(v4data: V4Data[R]): Boolean = {
-    val requestIsPOST: Boolean = "POST".equals(v4data.getMethod(request))
-    val requestHasNoPayload: Boolean = (v4data.getContent(request) == null)
+  def usePayloadForQueryParameters(method: String, content: InputStream): Boolean = {
+    val requestIsPOST: Boolean = "POST".equals(method)
+    val requestHasNoPayload: Boolean = (content == null)
     requestIsPOST && requestHasNoPayload
   }
 
-  def getCanonicalizedQueryString[R](request: R)(v4data: V4Data[R]): String = {
-    if (usePayloadForQueryParameters(request)(v4data)) return ""
-    else getCanonicalizedQueryString2(v4data.getParameters(request))
+  def getCanonicalizedQueryString[R](method: String, content: InputStream, parameters: Map[String, String]): String = {
+    if (usePayloadForQueryParameters(method, content)) ""
+    else getCanonicalizedQueryString2(parameters)
   }
 
   def getCanonicalizedQueryString2(parameters: java.util.Map[String, String]): String = {
@@ -120,22 +128,22 @@ object V4Signer extends Signer {
     }
   }
 
-  def getCanonicalizedHeaderString[R](request: R)(v4data: V4Data[R]): String = {
+  def getCanonicalizedHeaderString(headers: Map[String, String]): String = {
     val sortedHeaders: java.util.List[String] = new java.util.ArrayList[String]()
-    sortedHeaders.addAll(v4data.getHeaders(request).keySet)
+    sortedHeaders.addAll(headers.keySet)
     Collections.sort(sortedHeaders, String.CASE_INSENSITIVE_ORDER)
     val buffer = new java.lang.StringBuilder
 
     for (header <- sortedHeaders) {
-      buffer.append(header.toLowerCase.replaceAll("\\s+", " ") + ":" + v4data.getHeaders(request)(header).replaceAll("\\s+", " "))
+      buffer.append(header.toLowerCase.replaceAll("\\s+", " ") + ":" + headers(header).replaceAll("\\s+", " "))
       buffer.append("\n")
     }
     buffer.toString
   }
 
-  def getSignedHeadersString[R](request: R)(v4data: V4Data[R]): String = {
+  def getSignedHeadersString(headers: Map[String, String]): String = {
     val sortedHeaders: java.util.List[String] = new java.util.ArrayList[String]()
-    sortedHeaders.addAll(v4data.getHeaders(request).keySet)
+    sortedHeaders.addAll(headers.keySet)
     Collections.sort(sortedHeaders, String.CASE_INSENSITIVE_ORDER)
     val buffer: java.lang.StringBuilder = new java.lang.StringBuilder
 
@@ -148,9 +156,9 @@ object V4Signer extends Signer {
 
   val DEFAULT_ENCODING: String = "UTF-8"
 
-  def getBinaryRequestPayloadStream[R](request: R)(v4data: V4Data[R]): InputStream = {
-    if (usePayloadForQueryParameters(request)(v4data)) {
-      val encodedParameters: String = encodeParameters(request)(v4data)
+  def getBinaryRequestPayloadStream(method: String, content: InputStream, parameters: Map[String, String]): InputStream = {
+    if (usePayloadForQueryParameters(method, content)) {
+      val encodedParameters: String = encodeParameters(parameters)
       if (encodedParameters == null) return new ByteArrayInputStream(new Array[Byte](0))
       try {
         return new ByteArrayInputStream(encodedParameters.getBytes(DEFAULT_ENCODING))
@@ -161,16 +169,16 @@ object V4Signer extends Signer {
         }
       }
     }
-    getBinaryRequestPayloadStreamWithoutQueryParams(v4data.getContent(request))
+    getBinaryRequestPayloadStreamWithoutQueryParams(content)
   }
 
 
-  def encodeParameters[R](request: R)(v4data: V4Data[R]): String = {
+  def encodeParameters(parameters: Map[String, String]): String = {
     var nameValuePairs: java.util.List[NameValuePair] = null
-    if (v4data.getParameters(request).size > 0) {
-      nameValuePairs = new util.ArrayList[NameValuePair](v4data.getParameters(request).size)
-      import scala.collection.JavaConversions._
-      for (entry <- v4data.getParameters(request).entrySet) {
+    if (parameters.size > 0) {
+      nameValuePairs = new util.ArrayList[NameValuePair](parameters.size)
+
+      for (entry <- parameters.entrySet) {
         nameValuePairs.add(new BasicNameValuePair(entry.getKey, entry.getValue))
       }
     }

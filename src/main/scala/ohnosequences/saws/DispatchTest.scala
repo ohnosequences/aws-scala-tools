@@ -18,10 +18,11 @@ object DispatchTest {
     //SQS request
     val listQueuesRequest = new ListQueuesRequest()
 
-    val sendMessageRequest =  new SendMessageRequest().withQueueUrl("http://sqs.eu-west-1.amazonaws.com/393321850454/gridTest").withMessageBody("amsterdam")
+    val message = System.currentTimeMillis() + "test"
+    val sendMessageRequest =  new SendMessageRequest().withQueueUrl("http://sqs.eu-west-1.amazonaws.com/393321850454/gridTest").withMessageBody(message)
 
     //HTTP abstraction for it
-    //val request = new ListQueuesRequestMarshaller().marshall(listQueuesRequest)
+   // val request = new ListQueuesRequestMarshaller().marshall(listQueuesRequest)
     val request = new SendMessageRequestMarshaller().marshall(sendMessageRequest)
     request.setEndpoint(new URI("http://sqs.eu-west-1.amazonaws.com"))
 

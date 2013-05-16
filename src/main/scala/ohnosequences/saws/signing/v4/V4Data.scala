@@ -21,8 +21,13 @@ trait V4Data[R] {
   def getContent(r: R): InputStream
   def getResourcePath(r: R): String
 
-  def getContentSha256[R](request: R)(v4data: V4Data[R]): String =  {
-    val payloadStream: InputStream = V4Signer.getBinaryRequestPayloadStream(request)(v4data)
+  def getContentSha256(request: R)(v4data: V4Data[R]): String =  {
+
+    val payloadStream: InputStream = V4Signer.getBinaryRequestPayloadStream(
+      getMethod(request),
+      getContent(request),
+      getParameters(request)
+    )
     payloadStream.mark(-1)
     val contentSha256: String = Utils.toHex(Utils.hash(payloadStream))
 
