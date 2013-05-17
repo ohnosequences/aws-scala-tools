@@ -62,9 +62,9 @@ object DispatchV3Test {
     new FakeAWSV3().sign(request, awsCredentials)
 
     ///checks
-    for(i <- 0 to fake.length) {
-      if()
-    }
+//    for(i <- 0 to fake.length) {
+//      if()
+//    }
 
     //val dispatchRequestSigned = DispatchUtils.applySigningResult(dispatchRequest, additionalHeaders)
 
