@@ -1,6 +1,6 @@
 package ohnosequences.saws.signing.v3
 
-import ohnosequences.saws.signing.{Utils, Utils2, Credentials, Signer}
+import ohnosequences.saws.signing.{Utils, Credentials, Signer}
 
 import scala.Predef.String
 import java.util._
@@ -28,10 +28,10 @@ object V3Signer extends Signer {
 
 
     val stringToSign = method + "\n" +
-      Utils2.getCanonicalizedResourcePath(path) + "\n" +
-      Utils2.getCanonicalizedQueryString(parameters) + "\n" +
+      Utils.getCanonicalizedResourcePath(path) + "\n" +
+      Utils.getCanonicalizedQueryString(parameters) + "\n" +
       getCanonicalizedHeadersForStringToSign(headers) + "\n" +
-      Utils2.getRequestPayloadWithoutQueryParams(content)
+      Utils.getRequestPayloadWithoutQueryParams(content)
 
      val bytesToSign: Array[Byte] = Utils.hash(stringToSign)
 
@@ -52,7 +52,7 @@ object V3Signer extends Signer {
 
 
     val signatureRaw = Utils.hmac(bytesToSign, credentials.accessKey)
-    val signature: String = Utils2.base64Encode(signatureRaw)
+    val signature: String = Utils.base64Encode(signatureRaw)
 
     val builder = new java.lang.StringBuilder()
     builder.append(if (isHttps) HTTPS_SCHEME else HTTP_SCHEME).append(" ")

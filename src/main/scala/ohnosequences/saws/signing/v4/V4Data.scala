@@ -11,7 +11,7 @@ import java.text.SimpleDateFormat
 import java.util.{Date, SimpleTimeZone}
 import com.amazonaws.AmazonClientException
 import Predef._
-import ohnosequences.saws.signing.Utils
+import ohnosequences.saws.signing.{Utils}
 
 trait V4Data[R] {
   def getEndPoint(r: R): String
@@ -29,6 +29,7 @@ trait V4Data[R] {
       getParameters(request)
     )
     payloadStream.mark(-1)
+
     val contentSha256: String = Utils.toHex(Utils.hash(payloadStream))
 
     try {

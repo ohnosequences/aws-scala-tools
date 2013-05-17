@@ -144,7 +144,7 @@ class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2
 //
 //  }
 
-//  * <b>NOTE:</b> To remove all instances before calling
+//  * <data>NOTE:</data> To remove all instances before calling
 //    * DeleteAutoScalingGroup, you can call UpdateAutoScalingGroup to set the
 //  * minimum and maximum size of the AutoScalingGroup to zero.
 //  * </p>

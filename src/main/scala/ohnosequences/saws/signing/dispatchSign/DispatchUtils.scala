@@ -7,44 +7,38 @@ import java.net.URL
 object DispatchUtils {
   def awsToDispatch(request: com.amazonaws.Request[_]): com.ning.http.client.RequestBuilder = {
 
-    import dispatch._, Defaults._
+    import dispatch._
 
+    var file = if(request.getResourcePath == null) "/" else request.getResourcePath
 
-
-    var file = request.getResourcePath
     if(!file.startsWith("/")) {
       file = "/" + file
     }
-    val url2 = new URL(request.getEndpoint.toURL.getProtocol, request.getEndpoint.toURL.getHost,file)
 
+    val url = new URL(request.getEndpoint.toURL.getProtocol, request.getEndpoint.toURL.getHost, file)
+    val fullURL = url.toString
 
+    //println(fullURL)
 
-    println(url2)
-    var dreq = if (request.getHttpMethod.toString.equals("GET")) {
-      new RequestBuilder(request.getHttpMethod.toString, true).setUrl(url2.toString).GET
+    var dispatchRequest = new RequestBuilder(request.getHttpMethod.toString, true).setUrl(fullURL.toString)
+
+    if (request.getHttpMethod.toString.equals("GET")) {
+      dispatchRequest = dispatchRequest.GET
     } else {
-      (:/("www.test.com") / "test").POST
+      dispatchRequest = dispatchRequest.POST
     }
-    // vrequest.getContent
+    // todo content!!!!
+
     val params: Map[String, String] = request.getParameters.toMap
-
-
     for ((p1, p2) <- params) {
-      dreq = dreq.addParameter(p1, p2)
+      dispatchRequest = dispatchRequest.addParameter(p1, p2)
     }
-
-    println(new URL(dreq.build().getUrl).getPath)
-
-
-//    for ((p1, p2) <- request.getOriginalRequest.copyPrivateRequestParameters()) {
-//      dreq = dreq.addParameter(p1, p2)
-//    }
 
     val header: Map[String, String] = request.getHeaders.toMap
     for ((h1, h2) <- header) {
-      dreq = dreq.addHeader(h1, h2)
+      dispatchRequest = dispatchRequest.addHeader(h1, h2)
     }
-    dreq
+    dispatchRequest
   }
 
   def applySigningResult(requestBuilder: RequestBuilder, additionalHeaders: Map[String, String]): RequestBuilder = {

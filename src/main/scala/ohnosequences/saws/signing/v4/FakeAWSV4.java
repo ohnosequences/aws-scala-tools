@@ -120,8 +120,8 @@ public class FakeAWSV4 extends AbstractAWSSigner {
                         getSignedHeadersString(request) + "\n" +
                         contentSha256;
 
-        System.out.println("fake canonical request:");
-        System.out.println(canonicalRequest);
+        //System.out.println("fake canonical request:");
+        //System.out.println(canonicalRequest);
 
 
 
@@ -135,8 +135,8 @@ public class FakeAWSV4 extends AbstractAWSSigner {
                         scope + "\n" +
                         BinaryUtils.toHex(hash(canonicalRequest));
 
-        System.out.println("fake string to sign:");
-        System.out.println(stringToSign);
+        //System.out.println("fake string to sign:");
+       // System.out.println(stringToSign);
         log.debug("AWS4 String to Sign: '\"" + stringToSign + "\"");
 
         // AWS4 uses a series of derived keys, formed by hashing different pieces of data
@@ -166,7 +166,7 @@ public class FakeAWSV4 extends AbstractAWSSigner {
                 + signedHeadersAuthorizationHeader + ", "
                 + signatureAuthorizationHeader;
 
-        System.out.println("authorizationHeader: " + authorizationHeader);
+       // System.out.println("authorizationHeader: " + authorizationHeader);
         request.addHeader("Authorization", authorizationHeader);
     }
 

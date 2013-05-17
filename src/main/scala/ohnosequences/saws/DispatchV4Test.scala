@@ -9,6 +9,8 @@ import ohnosequences.saws.signing.v4.V4Signer
 import java.util.concurrent.CountDownLatch
 import ohnosequences.saws.signing.Credentials
 import ohnosequences.saws.signing.dispatchSign.{DispatchV4Data, DispatchUtils}
+import com.amazonaws.auth.{PropertiesCredentials, FakeAWSV4}
+import java.io.File
 
 object DispatchV4Test {
 
@@ -35,6 +37,7 @@ object DispatchV4Test {
     val additionalHeaders = V4Signer.sign(dispatchRequest.build(), credentials)(DispatchV4Data)
     val dispatchRequestSigned = DispatchUtils.applySigningResult(dispatchRequest, additionalHeaders)
 
+    new FakeAWSV4().sign(request, new PropertiesCredentials(new File("AwsCredentials.properties")))
 
     import dispatch._, Defaults._
     //sending request
@@ -52,8 +55,8 @@ object DispatchV4Test {
 
     println("---------------")
 
-    // testing AWS v4 signer....
-   // new FakeAWSV4().sign(request, new PropertiesCredentials("AwsCredentials.properties"))
+  //  testing AWS v4 signer....
+
   }
 
 }

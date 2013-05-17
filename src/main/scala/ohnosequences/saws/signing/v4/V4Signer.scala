@@ -1,19 +1,14 @@
 package ohnosequences.saws.signing.v4
 
-import ohnosequences.saws.signing.{Utils2, Signer, Utils, Credentials}
-import java.lang.{String}
+import ohnosequences.saws.signing.{Utils, Signer, Credentials}
 import scala.Predef._
-import java.util
 import scala.collection.JavaConversions._
-import java.util.{Date, SimpleTimeZone, Collections}
-import java.io.{UnsupportedEncodingException, ByteArrayInputStream, InputStream}
-import org.apache.http.message.BasicNameValuePair
-import org.apache.http.client.utils.URLEncodedUtils
-import org.apache.http.NameValuePair
+import java.util.{Date, SimpleTimeZone}
+import java.io.{ByteArrayInputStream, InputStream}
+
 
 import java.text.SimpleDateFormat
-import javax.crypto.spec.SecretKeySpec
-import javax.crypto.Mac
+
 
 
 object V4Signer extends Signer {
@@ -34,13 +29,13 @@ object V4Signer extends Signer {
 
     //create canonical
     val HTTPRequestMethod: String = v4data.getMethod(request)
-    val CanonicalURI: String = Utils2.getCanonicalizedResourcePath(path)
+    val CanonicalURI: String = Utils.getCanonicalizedResourcePath(path)
     val CanonicalQueryString: String = getCanonicalizedQueryString(method, content, parameters)
     val CanonicalHeaders = getCanonicalizedHeaderString(headers)
     val SignedHeaders = getSignedHeadersString(headers)
-    val contentSha256 = v4data.getContentSha256(request)(v4data)
+    val ContentSha256 = v4data.getContentSha256(request)(v4data)
 
-    val canonicalRequest = HTTPRequestMethod + "\n" + CanonicalURI + "\n" + CanonicalQueryString + "\n" + CanonicalHeaders + "\n" + SignedHeaders + "\n" + contentSha256
+    val canonicalRequest = HTTPRequestMethod + "\n" + CanonicalURI + "\n" + CanonicalQueryString + "\n" + CanonicalHeaders + "\n" + SignedHeaders + "\n" + ContentSha256
 
 //    Predef.println("canonical request:")
 //    Predef.println(canonicalRequest)
@@ -67,7 +62,7 @@ object V4Signer extends Signer {
 //    Predef.println(stringToSign)
 
 
-    val kSecret = ("AWS4" + credentials.secretKey).getBytes()
+    val kSecret = "AWS4" + credentials.secretKey
     val kDate = Utils.hmac(dateStamp, kSecret)
     val kRegion = Utils.hmac(v4data.getRegionName(request), kDate)
     val kService = Utils.hmac(v4data.getServiceName(request), kRegion)
@@ -87,92 +82,45 @@ object V4Signer extends Signer {
     additionalParams
   }
 
-
   def usePayloadForQueryParameters(method: String, content: InputStream): Boolean = {
     val requestIsPOST: Boolean = "POST".equals(method)
     val requestHasNoPayload: Boolean = (content == null)
     requestIsPOST && requestHasNoPayload
   }
 
-  def getCanonicalizedQueryString[R](method: String, content: InputStream, parameters: Map[String, String]): String = {
+  def getCanonicalizedQueryString(method: String, content: InputStream, parameters: Map[String, String]): String = {
     if (usePayloadForQueryParameters(method, content)) ""
-    else Utils2.getCanonicalizedQueryString(parameters)
+    else Utils.getCanonicalizedQueryString(parameters)
   }
 
-
-
-
-
   def getCanonicalizedHeaderString(headers: Map[String, String]): String = {
-    val sortedHeaders: java.util.List[String] = new java.util.ArrayList[String]()
-    sortedHeaders.addAll(headers.keySet)
-    Collections.sort(sortedHeaders, String.CASE_INSENSITIVE_ORDER)
     val buffer = new java.lang.StringBuilder
-
-    for (header <- sortedHeaders) {
+    for (header <- Utils.getSortedHeaders(headers)) {
       buffer.append(header.toLowerCase.replaceAll("\\s+", " ") + ":" + headers(header).replaceAll("\\s+", " "))
       buffer.append("\n")
     }
     buffer.toString
   }
 
-  def getSignedHeadersString(headers: Map[String, String]): String = {
-    val sortedHeaders: java.util.List[String] = new java.util.ArrayList[String]()
-    sortedHeaders.addAll(headers.keySet)
-    Collections.sort(sortedHeaders, String.CASE_INSENSITIVE_ORDER)
-    val buffer: java.lang.StringBuilder = new java.lang.StringBuilder
 
-    for (header <- sortedHeaders) {
+  def getSignedHeadersString(headers: Map[String, String]): String = {
+    val buffer: java.lang.StringBuilder = new java.lang.StringBuilder
+    for (header <- Utils.getSortedHeaders(headers)) {
       if (buffer.length > 0) buffer.append(";")
       buffer.append(header.toLowerCase)
     }
     buffer.toString
   }
 
-  val DEFAULT_ENCODING: String = "UTF-8"
 
   def getBinaryRequestPayloadStream(method: String, content: InputStream, parameters: Map[String, String]): InputStream = {
     if (usePayloadForQueryParameters(method, content)) {
-      val encodedParameters: String = encodeParameters(parameters)
-      if (encodedParameters == null) return new ByteArrayInputStream(new Array[Byte](0))
-      try {
-        return new ByteArrayInputStream(encodedParameters.getBytes(DEFAULT_ENCODING))
+      Utils.encodeParameters(parameters) match {
+        case Some(encodedParameters) =>  new ByteArrayInputStream(encodedParameters.getBytes(Utils.UTF8_ENCODING))
+        case None => new ByteArrayInputStream(new Array[Byte](0))
       }
-      catch {
-        case e: UnsupportedEncodingException => {
-          throw new Error("Unable to encode string into bytes")
-        }
-      }
+    } else {
+      Utils.getBinaryRequestPayloadStreamWithoutQueryParams(content)
     }
-    Utils2.getBinaryRequestPayloadStreamWithoutQueryParams(content)
-  }
-
-
-  def encodeParameters(parameters: Map[String, String]): String = {
-    var nameValuePairs: java.util.List[NameValuePair] = null
-    if (parameters.size > 0) {
-      nameValuePairs = new util.ArrayList[NameValuePair](parameters.size)
-
-      for (entry <- parameters.entrySet) {
-        nameValuePairs.add(new BasicNameValuePair(entry.getKey, entry.getValue))
-      }
-    }
-    var encodedParams: String = null
-
-
-
-    if (nameValuePairs != null) {
-      encodedParams = URLEncodedUtils.format(nameValuePairs, DEFAULT_ENCODING)
-    }
-    encodedParams
-  }
-
-
-
-  def hmac(data: Array[Byte], key: Array[Byte]): Array[Byte] = {
-    val alg: String = "HmacSHA256"
-    val mac: Mac = Mac.getInstance(alg)
-    mac.init(new SecretKeySpec(key, alg))
-    return mac.doFinal(data)
   }
 }
