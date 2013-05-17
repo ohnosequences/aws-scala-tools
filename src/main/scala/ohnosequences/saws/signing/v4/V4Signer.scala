@@ -4,12 +4,8 @@ import ohnosequences.saws.signing.{Utils, Signer, Credentials}
 import scala.Predef._
 import scala.collection.JavaConversions._
 import java.util.{Date, SimpleTimeZone}
-import java.io.{ByteArrayInputStream, InputStream}
-
-
 import java.text.SimpleDateFormat
-import scala.collection.parallel.mutable
-import scala.collection
+
 
 
 object V4Signer extends Signer {
@@ -32,7 +28,7 @@ object V4Signer extends Signer {
     val region = v4data.getRegionName(request)
     val service = v4data.getServiceName(request)
 
-    val canonicalRequest = (new collection.mutable.StringBuilder()
+    val canonicalRequest = (new StringBuilder()
       .append(method).append("\n")
       .append(Utils.getCanonicalizedResourcePath(path)).append("\n")
       .append(if (usePayloadForQueryParameters) "" else Utils.getCanonicalizedQueryString(parameters)).append("\n")
@@ -82,20 +78,20 @@ object V4Signer extends Signer {
   }
 
   def getCanonicalizedHeaderString(headers: Map[String, String]): String = {
-    val buffer = new java.lang.StringBuilder
+    val builder = new StringBuilder()
     for (header <- Utils.getSortedHeaders(headers)) {
-      buffer.append(header.toLowerCase.replaceAll("\\s+", " ") + ":" + headers(header).replaceAll("\\s+", " "))
-      buffer.append("\n")
+      builder.append(header.toLowerCase.replaceAll("\\s+", " ") + ":" + headers(header).replaceAll("\\s+", " "))
+      builder.append("\n")
     }
-    buffer.toString
+    builder.toString()
   }
 
   def getSignedHeadersString(headers: Map[String, String]): String = {
-    val buffer: java.lang.StringBuilder = new java.lang.StringBuilder
+    val builder = new StringBuilder()
     for (header <- Utils.getSortedHeaders(headers)) {
-      if (buffer.length > 0) buffer.append(";")
-      buffer.append(header.toLowerCase)
+      if (builder.length > 0) builder.append(";")
+      builder.append(header.toLowerCase)
     }
-    buffer.toString
+    builder.toString()
   }
 }

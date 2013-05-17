@@ -1,17 +1,11 @@
 package ohnosequences.saws.signing.v4
 
 import java.io.{ByteArrayInputStream, IOException, InputStream}
-import com.ning.http.client.{Request}
-
-import scala.collection.JavaConversions._
-
-import com.amazonaws.util.{BinaryUtils, HttpUtils}
 import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.{Date, SimpleTimeZone}
-import com.amazonaws.AmazonClientException
 import Predef._
-import ohnosequences.saws.signing.{Utils}
+import ohnosequences.saws.signing.Utils
 
 trait V4Data[R] {
   def getEndPoint(r: R): String
@@ -53,7 +47,7 @@ trait V4Data[R] {
     }
     catch {
       case e: IOException => {
-        throw new AmazonClientException("Unable to reset stream after calculating AWS4 signature", e)
+        throw new Error("Unable to reset stream after calculating AWS4 signature", e)
       }
     }
     contentSha256
