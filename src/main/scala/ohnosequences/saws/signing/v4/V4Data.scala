@@ -1,6 +1,6 @@
 package ohnosequences.saws.signing.v4
 
-import java.io.{IOException, InputStream}
+import java.io.{ByteArrayInputStream, IOException, InputStream}
 import com.ning.http.client.{Request}
 
 import scala.collection.JavaConversions._
@@ -21,9 +21,25 @@ trait V4Data[R] {
   def getContent(r: R): InputStream
   def getResourcePath(r: R): String
 
-  def getContentSha256(request: R)(v4data: V4Data[R]): String =  {
+  def getBinaryRequestPayloadStream(method: String, content: InputStream, parameters: Map[String, String]): InputStream = {
+    if (usePayloadForQueryParameters(method, content)) {
+      Utils.encodeParameters(parameters) match {
+        case Some(encodedParameters) =>  new ByteArrayInputStream(encodedParameters.getBytes(Utils.UTF8_ENCODING))
+        case None => new ByteArrayInputStream(new Array[Byte](0))
+      }
+    } else {
+      Utils.getBinaryRequestPayloadStreamWithoutQueryParams(content)
+    }
+  }
 
-    val payloadStream: InputStream = V4Signer.getBinaryRequestPayloadStream(
+  def usePayloadForQueryParameters(method: String, content: InputStream): Boolean = {
+    val requestIsPOST: Boolean = "POST".equals(method)
+    val requestHasNoPayload: Boolean = (content == null)
+    requestIsPOST && requestHasNoPayload
+  }
+
+  def getContentSha256(request: R): String =  {
+    val payloadStream: InputStream = getBinaryRequestPayloadStream(
       getMethod(request),
       getContent(request),
       getParameters(request)
@@ -33,14 +49,13 @@ trait V4Data[R] {
     val contentSha256: String = Utils.toHex(Utils.hash(payloadStream))
 
     try {
-      payloadStream.reset
+      payloadStream.reset()
     }
     catch {
       case e: IOException => {
         throw new AmazonClientException("Unable to reset stream after calculating AWS4 signature", e)
       }
     }
-
     contentSha256
   }
 
@@ -64,7 +79,7 @@ trait V4Data[R] {
     Map[String, String](
       "Host" -> hostHeader,
       "X-Amz-Date" -> dateTime,
-      "x-amz-content-sha256" -> getContentSha256(r)(this)
+      "x-amz-content-sha256" -> getContentSha256(r)
     )
   }
 

@@ -8,7 +8,8 @@ import java.io.{ByteArrayInputStream, InputStream}
 
 
 import java.text.SimpleDateFormat
-
+import scala.collection.parallel.mutable
+import scala.collection
 
 
 object V4Signer extends Signer {
@@ -26,34 +27,31 @@ object V4Signer extends Signer {
     val method = v4data.getMethod(request)
     val path = v4data.getResourcePath(request)
     val content = v4data.getContent(request)
+    val usePayloadForQueryParameters = v4data.usePayloadForQueryParameters(method, content)
+    val content256 = v4data.getContentSha256(request)
+    val region = v4data.getRegionName(request)
+    val service = v4data.getServiceName(request)
 
-    //create canonical
-    val HTTPRequestMethod: String = v4data.getMethod(request)
-    val CanonicalURI: String = Utils.getCanonicalizedResourcePath(path)
-    val CanonicalQueryString: String = getCanonicalizedQueryString(method, content, parameters)
-    val CanonicalHeaders = getCanonicalizedHeaderString(headers)
-    val SignedHeaders = getSignedHeadersString(headers)
-    val ContentSha256 = v4data.getContentSha256(request)(v4data)
-
-    val canonicalRequest = HTTPRequestMethod + "\n" + CanonicalURI + "\n" + CanonicalQueryString + "\n" + CanonicalHeaders + "\n" + SignedHeaders + "\n" + ContentSha256
+    val canonicalRequest = (new collection.mutable.StringBuilder()
+      .append(method).append("\n")
+      .append(Utils.getCanonicalizedResourcePath(path)).append("\n")
+      .append(if (usePayloadForQueryParameters) "" else Utils.getCanonicalizedQueryString(parameters)).append("\n")
+      .append(getCanonicalizedHeaderString(headers)).append("\n")
+      .append(getSignedHeadersString(headers)).append("\n")
+      .append(content256)
+    ).toString()
 
 //    Predef.println("canonical request:")
 //    Predef.println(canonicalRequest)
 
-
+    val date: Date = new Date
     val dateStampFormat = new SimpleDateFormat("yyyyMMdd")
     dateStampFormat.setTimeZone(new SimpleTimeZone(0, "UTC"))
-
-
-    var date: Date = new Date
     val dateStamp: String = dateStampFormat.format(date)
-
     val dateTimeFormat = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'")
     dateTimeFormat.setTimeZone(new SimpleTimeZone(0, "UTC"))
     val dateTime: String = dateTimeFormat.format(date)
-    val scope: String = dateStamp + "/" + v4data.getRegionName(request) + "/" + v4data.getServiceName(request) + "/" + TERMINATOR
-
-
+    val scope: String = dateStamp + "/" + region + "/" + service + "/" + TERMINATOR
     val signingCredentials: String = credentials.accessKey + "/" + scope
 
 
@@ -61,36 +59,26 @@ object V4Signer extends Signer {
 //    Predef.println("string to sign:")
 //    Predef.println(stringToSign)
 
-
     val kSecret = "AWS4" + credentials.secretKey
     val kDate = Utils.hmac(dateStamp, kSecret)
-    val kRegion = Utils.hmac(v4data.getRegionName(request), kDate)
-    val kService = Utils.hmac(v4data.getServiceName(request), kRegion)
+    val kRegion = Utils.hmac(region, kDate)
+    val kService = Utils.hmac(service, kRegion)
     val kSigning = Utils.hmac(TERMINATOR, kService)
     val signature = Utils.hmac(stringToSign, kSigning)
 
-
-    val credentialsAuthorizationHeader: String = "Credential=" + signingCredentials
-    val signedHeadersAuthorizationHeader: String = "SignedHeaders=" + getSignedHeadersString(headers)
-    val signatureAuthorizationHeader: String = "Signature=" + Utils.toHex(signature)
-    val authorizationHeader: String = AWS_HMAC + " " + credentialsAuthorizationHeader + ", " + signedHeadersAuthorizationHeader + ", " + signatureAuthorizationHeader
+    val credentialsAuthorizationHeader = "Credential=" + signingCredentials
+    val signedHeadersAuthorizationHeader = "SignedHeaders=" + getSignedHeadersString(headers)
+    val signatureAuthorizationHeader = "Signature=" + Utils.toHex(signature)
+    val authorizationHeader = AWS_HMAC + " " +
+      credentialsAuthorizationHeader + ", " +
+      signedHeadersAuthorizationHeader + ", " +
+      signatureAuthorizationHeader
 
    // Predef.println("authorizationHeader: " + authorizationHeader)
     val additionalParams = additionalHeaders ++ Map[String, String](
       "Authorization" -> authorizationHeader
     )
     additionalParams
-  }
-
-  def usePayloadForQueryParameters(method: String, content: InputStream): Boolean = {
-    val requestIsPOST: Boolean = "POST".equals(method)
-    val requestHasNoPayload: Boolean = (content == null)
-    requestIsPOST && requestHasNoPayload
-  }
-
-  def getCanonicalizedQueryString(method: String, content: InputStream, parameters: Map[String, String]): String = {
-    if (usePayloadForQueryParameters(method, content)) ""
-    else Utils.getCanonicalizedQueryString(parameters)
   }
 
   def getCanonicalizedHeaderString(headers: Map[String, String]): String = {
@@ -102,7 +90,6 @@ object V4Signer extends Signer {
     buffer.toString
   }
 
-
   def getSignedHeadersString(headers: Map[String, String]): String = {
     val buffer: java.lang.StringBuilder = new java.lang.StringBuilder
     for (header <- Utils.getSortedHeaders(headers)) {
@@ -110,17 +97,5 @@ object V4Signer extends Signer {
       buffer.append(header.toLowerCase)
     }
     buffer.toString
-  }
-
-
-  def getBinaryRequestPayloadStream(method: String, content: InputStream, parameters: Map[String, String]): InputStream = {
-    if (usePayloadForQueryParameters(method, content)) {
-      Utils.encodeParameters(parameters) match {
-        case Some(encodedParameters) =>  new ByteArrayInputStream(encodedParameters.getBytes(Utils.UTF8_ENCODING))
-        case None => new ByteArrayInputStream(new Array[Byte](0))
-      }
-    } else {
-      Utils.getBinaryRequestPayloadStreamWithoutQueryParams(content)
-    }
   }
 }
