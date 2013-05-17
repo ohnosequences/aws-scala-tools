@@ -1,6 +1,5 @@
 package ohnosequences.saws.signing;
 
-import com.amazonaws.AmazonClientException;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -12,6 +11,7 @@ import java.security.MessageDigest;
 import java.util.Locale;
 
 public class Utils {
+
     public static byte[] hmac(byte[] data, byte[] key) throws Exception {
         String alg = "HmacSHA256";
         Mac mac = Mac.getInstance(alg);
@@ -21,6 +21,14 @@ public class Utils {
 
     public static byte[] hmac(String data, byte[] key) throws Exception {
         return hmac(data.getBytes(), key);
+    }
+
+    public static byte[] hmac(byte[] data, String key) throws Exception {
+        return hmac(data, key.getBytes());
+    }
+
+    public static byte[] hmac(String data, String key) throws Exception {
+        return hmac(data.getBytes(), key.getBytes());
     }
 
     public static String toHex(byte[] data) {
@@ -56,6 +64,8 @@ public class Utils {
     }
 
     public static String urlEncode(String value, boolean path) {
+
+
         if (value == null) return "";
 
         try {

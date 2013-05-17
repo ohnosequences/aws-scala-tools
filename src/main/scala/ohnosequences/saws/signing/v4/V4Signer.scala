@@ -1,6 +1,6 @@
 package ohnosequences.saws.signing.v4
 
-import ohnosequences.saws.signing.{Signer, Utils, Credentials}
+import ohnosequences.saws.signing.{Utils2, Signer, Utils, Credentials}
 import java.lang.{String}
 import scala.Predef._
 import java.util
@@ -34,7 +34,7 @@ object V4Signer extends Signer {
 
     //create canonical
     val HTTPRequestMethod: String = v4data.getMethod(request)
-    val CanonicalURI: String = getCanonicalizedResourcePath(path)
+    val CanonicalURI: String = Utils2.getCanonicalizedResourcePath(path)
     val CanonicalQueryString: String = getCanonicalizedQueryString(method, content, parameters)
     val CanonicalHeaders = getCanonicalizedHeaderString(headers)
     val SignedHeaders = getSignedHeadersString(headers)
@@ -96,37 +96,12 @@ object V4Signer extends Signer {
 
   def getCanonicalizedQueryString[R](method: String, content: InputStream, parameters: Map[String, String]): String = {
     if (usePayloadForQueryParameters(method, content)) ""
-    else getCanonicalizedQueryString2(parameters)
+    else Utils2.getCanonicalizedQueryString(parameters)
   }
 
-  def getCanonicalizedQueryString2(parameters: java.util.Map[String, String]): String = {
-    val sorted = new util.TreeMap[String, String]
-    sorted.putAll(parameters)
-    val builder = new java.lang.StringBuilder()
 
-    val pairs: java.util.Iterator[java.util.Map.Entry[String, String]] = sorted.entrySet.iterator
-    while (pairs.hasNext) {
-      val pair: java.util.Map.Entry[String, String] = pairs.next
-      val key: String = pair.getKey
-      val value: String = pair.getValue
-      builder.append(Utils.urlEncode(key, false))
-      builder.append("=")
-      builder.append(Utils.urlEncode(value, false))
-      if (pairs.hasNext) {
-        builder.append("&")
-      }
-    }
-    builder.toString
-  }
 
-  def getCanonicalizedResourcePath(resourcePath: String): String = {
-    if (resourcePath == null || resourcePath.length == 0) {
-      "/"
-    }
-    else {
-      Utils.urlEncode(resourcePath, true)
-    }
-  }
+
 
   def getCanonicalizedHeaderString(headers: Map[String, String]): String = {
     val sortedHeaders: java.util.List[String] = new java.util.ArrayList[String]()
@@ -169,7 +144,7 @@ object V4Signer extends Signer {
         }
       }
     }
-    getBinaryRequestPayloadStreamWithoutQueryParams(content)
+    Utils2.getBinaryRequestPayloadStreamWithoutQueryParams(content)
   }
 
 
@@ -192,13 +167,7 @@ object V4Signer extends Signer {
     encodedParams
   }
 
-  def getBinaryRequestPayloadStreamWithoutQueryParams(content: InputStream): InputStream = {
-    if (!content.markSupported) {
-      throw new Error("Unable to read request payload to sign request.")
-    }
-    if (content == null) new ByteArrayInputStream(new Array[Byte](0)) else content
 
-  }
 
   def hmac(data: Array[Byte], key: Array[Byte]): Array[Byte] = {
     val alg: String = "HmacSHA256"

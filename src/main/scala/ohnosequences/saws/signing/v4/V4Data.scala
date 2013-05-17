@@ -57,7 +57,7 @@ trait V4Data[R] {
 
     val dateTime: String = dateTimeFormat.format(date)
 
-
+    //fix host!!!
     val hostHeader: String = new URL(getEndPoint(r)).getHost
 
     Map[String, String](
