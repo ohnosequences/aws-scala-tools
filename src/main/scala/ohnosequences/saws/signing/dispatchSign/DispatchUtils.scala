@@ -34,6 +34,14 @@ object DispatchUtils {
       dispatchRequest = dispatchRequest.addParameter(p1, p2)
     }
 
+//    for ((p1, p2) <- request.getOriginalRequest.copyPrivateRequestParameters()) {
+//      dispatchRequest = dispatchRequest.addParameter(p1, p2)
+//    }
+
+//    for (Entry<String, String> entry : request.getOriginalRequest().copyPrivateRequestParameters().entrySet()) {
+//      request.addParameter(entry.getKey(), entry.getValue());
+//    }
+
     val header: Map[String, String] = request.getHeaders.toMap
     for ((h1, h2) <- header) {
       dispatchRequest = dispatchRequest.addHeader(h1, h2)

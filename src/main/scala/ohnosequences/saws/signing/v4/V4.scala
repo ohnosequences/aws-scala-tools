@@ -1,6 +1,6 @@
 package ohnosequences.saws.signing.v4
 
-import ohnosequences.saws.signing.Version
+import ohnosequences.saws.signing.{VersionAux, Version}
 
 
 trait V4Input {
@@ -15,3 +15,4 @@ trait V4Input {
 }
 
 case object v4 extends Version[V4Input, Map[String, String]]
+

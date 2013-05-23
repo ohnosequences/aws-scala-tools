@@ -12,7 +12,7 @@ trait Version[I, O] extends VersionAux {
 }
 
 
-trait SigningProcessAux {
+sealed trait SigningProcessAux {
   type Version <: VersionAux
 }
 
@@ -22,7 +22,7 @@ abstract class SigningProcess[V <: VersionAux](val v: V) extends SigningProcessA
   def apply(input: v.Input, credentials: Credentials): v.Output
 }
 
-trait SignerAux {
+sealed trait SignerAux {
   type SigningProcess <: SigningProcessAux
 }
 

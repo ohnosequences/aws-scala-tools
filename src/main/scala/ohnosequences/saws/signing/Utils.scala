@@ -95,17 +95,21 @@ object Utils {
     def compare(x: String, y: String): Int =  String.CASE_INSENSITIVE_ORDER.compare(x, y)
   }
 
-  def sort(entities: Traversable[(String, String)]): scala.collection.immutable.TreeMap[String, String] = {
+  def sortCaseIns(entities: Traversable[(String, String)]): scala.collection.immutable.TreeMap[String, String] = {
     new scala.collection.immutable.TreeMap[String, String]()(caseInsensitiveOrder) ++ entities
+  }
+
+  def sort(entities: Traversable[(String, String)]): scala.collection.immutable.TreeMap[String, String] = {
+    new scala.collection.immutable.TreeMap[String, String]() ++ entities
   }
 
 
 
-  def getCanonicalizedQueryString(parameters: Traversable[(String, String)]): String = {
+  def getCanonicalizedQueryString(sortedParameters: Map[String, String]): String = {
 
     val builder = new java.lang.StringBuilder()
 
-    sort(parameters).foreach { case (key, value) =>
+    sortedParameters.foreach { case (key, value) =>
       if (builder.length > 0) {
         builder.append("&")
       }

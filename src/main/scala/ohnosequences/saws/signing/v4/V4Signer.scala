@@ -67,15 +67,17 @@ object V4SigningProcess extends SigningProcess(v4) {
 
 
     //sort...
-    val headers = Utils.sort(input.headers) ++ additionalHeaders
+    val sortedParams = Utils.sortCaseIns(parameters)
+    val headers = Utils.sortCaseIns(input.headers) ++ additionalHeaders
+
 
     val canonicalRequest = (new StringBuilder()
       .append(method).append("\n")
       .append(Utils.getCanonicalizedResourcePath(resource)).append("\n")
-      .append(if (usePayload(method, content)) "" else Utils.getCanonicalizedQueryString(parameters)).append("\n")
+      .append(if (usePayload(method, content)) "" else Utils.getCanonicalizedQueryString(sortedParams)).append("\n")
       .append(getCanonicalizedHeaderString(headers)).append("\n")
       .append(getSignedHeadersString(headers)).append("\n")
-      .append(getContentSha256(method, content, parameters))
+      .append(contentSha256)
     ).toString()
 
 //    Predef.println("canonical request:")

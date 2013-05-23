@@ -8,7 +8,7 @@ import ohnosequences.saws.signing.v4.{V4SigningProcess, V4Input}
 
 import java.util.concurrent.CountDownLatch
 import ohnosequences.saws.signing.{Signer, Credentials}
-import ohnosequences.saws.signing.dispatchSign.{DispatchV4, DispatchUtils}
+import ohnosequences.saws.signing.dispatchSign.{DispatchImplicits, DispatchUtils}
 import com.amazonaws.auth.{PropertiesCredentials, FakeAWSV4}
 import java.io.File
 import com.ning.http.client.RequestBuilder
@@ -37,8 +37,8 @@ object DispatchV4Test {
     val credentials = Credentials.fromFile("AwsCredentials.properties")
     val signer = new Signer[V4SigningProcess.v.type, V4SigningProcess.type](V4SigningProcess)
 
-    import DispatchV4._
-  //  val additionalHeaders = V4SigningProcess.apply(new DispatchV4(dispatchRequest.build()), credentials)
+    import DispatchImplicits._
+  //  val additionalHeaders = V4SigningProcess.apply(new DispatchImplicits(dispatchRequest.build()), credentials)
     val dispatchRequestSigned = signer.sign(dispatchRequest.build(), credentials)
 
     //val dispatchRequestSigned = DispatchUtils.applySigningResult(dispatchRequest, additionalHeaders)
