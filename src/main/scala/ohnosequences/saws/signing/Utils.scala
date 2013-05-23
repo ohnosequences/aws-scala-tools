@@ -11,7 +11,6 @@ import javax.crypto.spec.SecretKeySpec
 import org.apache.http.NameValuePair
 import org.apache.http.message.BasicNameValuePair
 import org.apache.http.client.utils.URLEncodedUtils
-import scala.collection.JavaConversions._
 import Predef._
 
 
@@ -37,6 +36,12 @@ object Utils {
       i += 1
     }
     sb.toString().toLowerCase(Locale.getDefault)
+  }
+
+  def hash(data: Array[Byte]): Array[Byte] = {
+    val md: MessageDigest = MessageDigest.getInstance(SHA_256)
+    md.update(data)
+    md.digest
   }
 
   def hash(text: String): Array[Byte] = {
@@ -86,31 +91,29 @@ object Utils {
     }
   }
 
-  def getSortedHeaders(headers: Map[String, String]): Iterable[String] = {
-    val sortedHeaders: java.util.List[String] = new java.util.ArrayList[String]()
-    sortedHeaders.addAll(headers.keySet)
-    Collections.sort(sortedHeaders, String.CASE_INSENSITIVE_ORDER)
-    sortedHeaders.toIterable
+  object caseInsensitiveOrder extends Ordering[String] {
+    def compare(x: String, y: String): Int =  String.CASE_INSENSITIVE_ORDER.compare(x, y)
+  }
+
+  def sort(entities: Traversable[(String, String)]): scala.collection.immutable.TreeMap[String, String] = {
+    new scala.collection.immutable.TreeMap[String, String]()(caseInsensitiveOrder) ++ entities
   }
 
 
-  def getCanonicalizedQueryString(parameters: java.util.Map[String, String]): String = {
-    val sorted = new util.TreeMap[String, String]
-    sorted.putAll(parameters)
+
+  def getCanonicalizedQueryString(parameters: Traversable[(String, String)]): String = {
+
     val builder = new java.lang.StringBuilder()
 
-    val pairs: java.util.Iterator[java.util.Map.Entry[String, String]] = sorted.entrySet.iterator
-    while (pairs.hasNext) {
-      val pair: java.util.Map.Entry[String, String] = pairs.next
-      val key: String = pair.getKey
-      val value: String = pair.getValue
+    sort(parameters).foreach { case (key, value) =>
+      if (builder.length > 0) {
+        builder.append("&")
+      }
       builder.append(Utils.urlEncode(key, false))
       builder.append("=")
       builder.append(Utils.urlEncode(value, false))
-      if (pairs.hasNext) {
-        builder.append("&")
-      }
     }
+
     builder.toString
   }
 
@@ -121,6 +124,7 @@ object Utils {
 
   def getBinaryRequestPayloadWithoutQueryParams(content: InputStream): Array[Byte] = {
     val content2: InputStream = getBinaryRequestPayloadStreamWithoutQueryParams(content)
+
     try {
       content2.mark(-1)
       val byteArrayOutputStream: ByteArrayOutputStream = new ByteArrayOutputStream
@@ -167,7 +171,7 @@ object Utils {
     }
   }
 
-  def encodeParameters(parameters: Predef.Map[String, String]): Option[String] = {
+  def encodeParameters(parameters: Traversable[(String, String)]): Option[String] = {
     val nameValuePairs = new util.ArrayList[NameValuePair](parameters.size)
     parameters.foreach{ case (key, value) =>
       nameValuePairs.add(new BasicNameValuePair(key, value))

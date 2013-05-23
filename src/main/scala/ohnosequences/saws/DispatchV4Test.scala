@@ -4,13 +4,14 @@ import com.amazonaws.services.sqs.model.{SendMessageRequest, ListQueuesRequest}
 import com.amazonaws.services.sqs.model.transform.{SendMessageRequestMarshaller, ListQueuesRequestMarshaller}
 import java.net.URI
 
-import ohnosequences.saws.signing.v4.V4Signer
+import ohnosequences.saws.signing.v4.{V4SigningProcess, V4Input}
 
 import java.util.concurrent.CountDownLatch
-import ohnosequences.saws.signing.Credentials
-import ohnosequences.saws.signing.dispatchSign.{DispatchV4Data, DispatchUtils}
+import ohnosequences.saws.signing.{Signer, Credentials}
+import ohnosequences.saws.signing.dispatchSign.{DispatchV4, DispatchUtils}
 import com.amazonaws.auth.{PropertiesCredentials, FakeAWSV4}
 import java.io.File
+import com.ning.http.client.RequestBuilder
 
 object DispatchV4Test {
 
@@ -34,14 +35,23 @@ object DispatchV4Test {
 
 
     val credentials = Credentials.fromFile("AwsCredentials.properties")
-    val additionalHeaders = V4Signer.sign(dispatchRequest.build(), credentials)(DispatchV4Data)
-    val dispatchRequestSigned = DispatchUtils.applySigningResult(dispatchRequest, additionalHeaders)
+    val signer = new Signer[V4SigningProcess.v.type, V4SigningProcess.type](V4SigningProcess)
 
-    new FakeAWSV4().sign(request, new PropertiesCredentials(new File("AwsCredentials.properties")))
+    import DispatchV4._
+  //  val additionalHeaders = V4SigningProcess.apply(new DispatchV4(dispatchRequest.build()), credentials)
+    val dispatchRequestSigned = signer.sign(dispatchRequest.build(), credentials)
+
+    //val dispatchRequestSigned = DispatchUtils.applySigningResult(dispatchRequest, additionalHeaders)
+
+    //new FakeAWSV4().sign(request, new PropertiesCredentials(new File("AwsCredentials.properties")))
+
+
+
+
 
     import dispatch._, Defaults._
     //sending request
-    val result = Http(dispatchRequestSigned OK as.String)
+    val result = Http(new RequestBuilder(dispatchRequestSigned) OK as.String)
 
     val latch = new CountDownLatch(1)
     for (c <- result) {

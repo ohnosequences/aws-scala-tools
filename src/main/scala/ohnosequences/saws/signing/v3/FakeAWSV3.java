@@ -25,7 +25,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.UUID;
 
-import ohnosequences.saws.DispatchV3Test;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -112,7 +111,7 @@ public class FakeAWSV3 extends AbstractAWSSigner {
             bytesToSign = hash(stringToSign);
         }
        System.out.println("Fake V3 Calculated StringToSign: -------------\n" + stringToSign + "\n---");
-        DispatchV3Test.setFake(stringToSign);
+        //DispatchV3Test.setFake(stringToSign);
 
         System.out.println(stringToSign.length());
         String signature = signAndBase64Encode(bytesToSign, sanitizedCredentials.getAWSSecretKey(), algorithm);
