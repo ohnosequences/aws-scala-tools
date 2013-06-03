@@ -25,6 +25,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.UUID;
 
+import ohnosequences.saws.signing.Utils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -113,7 +114,7 @@ public class FakeAWSV3 extends AbstractAWSSigner {
        System.out.println("Fake V3 Calculated StringToSign: -------------\n" + stringToSign + "\n---");
         //DispatchV3Test.setFake(stringToSign);
 
-        System.out.println(stringToSign.length());
+        System.out.println("bytes V3: " + Utils.toHex(bytesToSign));
         String signature = signAndBase64Encode(bytesToSign, sanitizedCredentials.getAWSSecretKey(), algorithm);
 
         StringBuilder builder = new StringBuilder();
@@ -128,6 +129,7 @@ public class FakeAWSV3 extends AbstractAWSSigner {
         builder.append("Signature=" + signature);
         System.out.println("fake: " + builder.toString());
         request.addHeader(AUTHORIZATION_HEADER, builder.toString());
+        System.out.println(builder.toString());
     }
 
     private String getSignedHeadersComponent(Request<?> request) {

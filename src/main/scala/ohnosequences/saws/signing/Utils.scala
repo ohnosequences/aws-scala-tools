@@ -158,6 +158,11 @@ object Utils {
     new String(getBinaryRequestPayloadWithoutQueryParams(content), "UTF-8")
   }
 
+  def getRequestPayloadWithoutQueryParams(content: Array[Byte]): String = {
+    new String(content, "UTF-8")
+  }
+
+
   def base64Encode(data: Array[Byte]): String = {
     new String(Base64.encodeBase64(data))
   }

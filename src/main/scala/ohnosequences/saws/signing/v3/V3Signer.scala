@@ -1,124 +1,82 @@
-//package ohnosequences.saws.signing.v3
-//
-//import ohnosequences.saws.signing.{Utils, Credentials, Signer}
-//
-//import scala.Predef.String
-//import java.util._
-//import scala.collection.JavaConversions._
-//import scala.Predef.Map
-//import scala.List
-//import java.lang.{StringBuilder, String}
-//import scala.Predef.String
-//import scala.StringBuilder
-//import ohnosequences.saws.DispatchV3Test
-//
-//
-//object V3Signer extends Signer {
-//  type Version = V3
-//
-//  def sign[R](request: R, credentials: Credentials)(v3data: V3Data[R]): Map[String, String] = {
-//    val nonce: String = UUID.randomUUID.toString
-//
-//    val additionalHeaders = v3data.getAdditionalHeaders(request)
-//    val parameters = v3data.getParameters(request)
-//    val headers = v3data.getHeaders(request) ++ additionalHeaders
-//    val method = v3data.getMethod(request)
-//    val path = v3data.getResourcePath(request)
-//    val content = v3data.getContent(request)
-//
-//
-//    val stringToSign = method + "\n" +
-//      Utils.getCanonicalizedResourcePath(path) + "\n" +
-//      Utils.getCanonicalizedQueryString(parameters) + "\n" +
-//      getCanonicalizedHeadersForStringToSign(headers) + "\n" +
-//      Utils.getRequestPayloadWithoutQueryParams(content)
-//
-//     val bytesToSign: Array[Byte] = Utils.hash(stringToSign)
-//
-//    Predef.println("V3: Calculated StringToSign: ----------\n" + stringToSign + "\n----------")
-//    Predef.println(stringToSign.length)
-//    DispatchV3Test.setS3(stringToSign)
-//
-//    val isHttps = false
-//
-//
-//
-//
-//    val AUTHORIZATION_HEADER: String = "X-Amzn-Authorization"
-//    val NONCE_HEADER: String = "x-amz-nonce"
-//    val HTTP_SCHEME: String = "AWS3"
-//    val HTTPS_SCHEME: String = "AWS3-HTTPS"
-//    val algorithm = "HmacSHA256"
-//
-//
-//    val signatureRaw = Utils.hmac(bytesToSign, credentials.accessKey)
-//    val signature: String = Utils.base64Encode(signatureRaw)
-//
-//    val builder = new java.lang.StringBuilder()
-//    builder.append(if (isHttps) HTTPS_SCHEME else HTTP_SCHEME).append(" ")
-//    builder.append("AWSAccessKeyId=" + credentials.accessKey + ",")
-//    builder.append("Algorithm=" + algorithm + ",")
-//
-//    if (!isHttps) {
-//      builder.append(getSignedHeadersComponent(headers) + ",")
-//    }
-//
-//    builder.append("Signature=" + signature)
-//
-//    Predef.println("v3  : " + builder.toString)
-//
-//   // request.addHeader(AUTHORIZATION_HEADER, builder.toString)
-//
-//
-//    //!!
-//    //    request.addHeader("Date", date)
-//    //    request.addHeader("X-Amz-Date", date)
-//    Map[String, String]()
-//
-//  }
-//
-//  def getCanonicalizedHeadersForStringToSign(headers: Map[String, String]): String = {
-//    val headersToSign: List[String] = getHeadersForStringToSign(headers).map(_.toLowerCase)
-//
-//    val sortedHeaderMap: SortedMap[String, String] = new TreeMap[String, String]
-//
-//    for (entry <- headers.entrySet) {
-//      if (headersToSign.contains(entry.getKey.toLowerCase)) {
-//        sortedHeaderMap.put(entry.getKey.toLowerCase, entry.getValue)
-//      }
-//    }
-//    val builder = new java.lang.StringBuilder
-//
-//    for (entry <- sortedHeaderMap.entrySet) {
-//      builder.append(entry.getKey.toLowerCase).append(":").append(entry.getValue).append("\n")
-//    }
-//    builder.toString
-//  }
-//
-//  def getHeadersForStringToSign(headers: Map[String, String]): List[String] = {
-//    val headersToSign = new java.util.ArrayList[String]()
-//
-//    for (entry <- headers.entrySet) {
-//      val key: String = entry.getKey
-//      val lowerCaseKey: String = key.toLowerCase
-//      if (lowerCaseKey.startsWith("x-amz") || (lowerCaseKey == "host")) {
-//        headersToSign.add(key)
-//      }
-//    }
-//    Collections.sort(headersToSign)
-//    headersToSign.toList
-//  }
-//
-//  private def getSignedHeadersComponent(headers: Map[String, String]): String = {
-//    val builder = new java.lang.StringBuilder
-//    builder.append("SignedHeaders=")
-//    var first: Boolean = true
-//
-//    for (header <- getHeadersForStringToSign(headers)) {
-//      if (!first) builder.append(";")
-//      builder.append(header)
-//      first = false
-//    }
-//    builder.toString
-//  }
-//}
+package ohnosequences.saws.signing.v3
+
+import ohnosequences.saws.signing.{Utils, Credentials, SigningProcess}
+import java.text.SimpleDateFormat
+import java.util.{Locale, Date, SimpleTimeZone}
+import java.net.URL
+import scala.collection.immutable.TreeMap
+
+
+object V3SigningProcess extends SigningProcess(v3) {
+  def apply(input: V3Input, credentials: Credentials): Map[String, String] = {
+    val method = input.method
+    val content = input.content
+    val parameters = input.parameters
+    val endpoint = input.endpoint
+    val service = input.service
+    val region = input.region
+    val resource = input.resource
+
+    val additionalHeaders = calculateAdditionalHeaders(endpoint)
+    val sortedParams = Utils.sortCaseIns(parameters)
+    val headers = Utils.sortCaseIns(input.headers) ++ additionalHeaders
+
+    val canonicalRequest = (new StringBuilder()
+      .append(method).append("\n")
+      .append(Utils.getCanonicalizedResourcePath(resource)).append("\n")
+      .append(Utils.getCanonicalizedQueryString(sortedParams)).append("\n")
+      .append(getCanonicalizedHeaderString(headers)).append("\n")
+      .append(Utils.getRequestPayloadWithoutQueryParams(content))
+    ).toString()
+
+    //println("V3 : -------------\n" + canonicalRequest + "\n---")
+    val bytesToSign = Utils.hash(canonicalRequest)
+    //println("bytes V3: " + Utils.toHex(bytesToSign))
+
+    val signature = Utils.base64Encode(Utils.hmac(canonicalRequest, credentials.secretKey))
+
+    //todo isHttps ? HTTPS_SCHEME : HTTP_SCHEME
+
+    val signatureHeader = (new StringBuilder()
+      .append("AWS3").append(" ")
+      .append("AWSAccessKeyId=" + credentials.accessKey + ",")
+      .append("Algorithm=" + Utils.HMAC_SHA_256 + ",")
+      .append("Signature=", signature)
+    ).toString()
+
+    Map[String, String](
+      "X-Amzn-Authorization" -> signatureHeader
+    )
+  }
+
+  def getCanonicalizedHeaderString(sortedHeaders: TreeMap[String, String]): String = {
+    val builder = new StringBuilder()
+    sortedHeaders.foreach {
+      case (key, value) if (key.toLowerCase.startsWith("x-amz") || key.toLowerCase.startsWith("host")) =>
+        builder.append(key.toLowerCase + ":" + value)
+        builder.append("\n")
+      case _ => ()
+    }
+    builder.toString()
+  }
+
+  def calculateAdditionalHeaders(endpoint: String): Map[String, String] = {
+    val rfc822DateFormat: SimpleDateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US)
+    rfc822DateFormat.setTimeZone(new SimpleTimeZone(0, "GMT"))
+
+    val date: Date = new Date()
+
+    val dateTime: String = rfc822DateFormat.format(date)
+
+    //fix host!!!
+    val hostHeader: String = new URL(endpoint).getHost
+    /** RFC 822 format */
+
+    //todo not standart port
+    Map[String, String](
+      "Date" -> dateTime,
+      "X-Amz-Date" -> dateTime,
+      "Host" -> hostHeader
+    )
+  }
+}

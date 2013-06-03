@@ -1,6 +1,6 @@
 package ohnosequences.saws.signing.v2
 
-import ohnosequences.saws.signing.{VersionAux, Version}
+import ohnosequences.saws.signing.Version
 
 
 trait V2Input {
