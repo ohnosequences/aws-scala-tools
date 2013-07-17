@@ -8,11 +8,45 @@ import com.amazonaws.services.s3.model.{ObjectListing, S3ObjectSummary, ObjectMe
 
 import scala.collection.JavaConversions._
 import com.amazonaws.services.importexport.model.NoSuchBucketException
+import com.amazonaws.services.s3.transfer.{Transfer, TransferManager}
 
 
 case class ObjectAddress(bucket: String, key: String)
 
+case class LoadingManager(transferManager: TransferManager) {
+
+  val transferWaiter: (Transfer => Unit) = {
+    transfer =>
+      while(!transfer.isDone)   {
+        println("Transfer: " + transfer.getDescription())
+        println("  - State: " + transfer.getState())
+        println("  - Progress: " +   transfer.getProgress().getBytesTransfered())
+        // Do work while we wait for our upload to complete...
+        Thread.sleep(500)
+      }
+  }
+
+  def upload(objectAddress: ObjectAddress, file: File, transferWaiter: (Transfer => Unit) = transferWaiter) {
+    val upload = transferManager.upload(objectAddress.bucket, objectAddress.key, file)
+    transferWaiter(upload)
+
+  }
+
+  def download(objectAddress: ObjectAddress, file: File, transferWaiter: (Transfer => Unit) = transferWaiter) {
+    val download = transferManager.download(objectAddress.bucket, objectAddress.key, file)
+    transferWaiter(download)
+  }
+
+  //def shutdown() {
+    //transferManager.shutdownNow()
+  //}
+}
+
 class S3(val s3: AmazonS3) {
+
+  def createLoadingManager(): LoadingManager = new LoadingManager(new TransferManager(s3))
+
+
 
   def createBucket(name: String) = {
     if (!s3.doesBucketExist(name)) s3.createBucket(name)
@@ -53,6 +87,10 @@ class S3(val s3: AmazonS3) {
   def putObject(objectAddress: ObjectAddress, file: File) {
     s3.putObject(objectAddress.bucket, objectAddress.key, file)
   }
+
+
+
+
 
   def deleteObject(objectAddress: ObjectAddress) {
     s3.deleteObject(objectAddress.bucket, objectAddress.key)
@@ -105,14 +143,6 @@ class S3(val s3: AmazonS3) {
     }
 
   }
-
-
-
-
-
-//  def shutdown() {
-//    s3.s
-//  }
 
 
 }
