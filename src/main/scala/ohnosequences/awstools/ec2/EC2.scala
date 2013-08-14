@@ -47,7 +47,7 @@ case class InstanceSpecs(instanceType: awstools.InstanceType,
                          amiId: String,
                          securityGroups: List[String] = List(),
                          keyName: String = "",
-                         deviceMapping: Map[String, String],
+                         deviceMapping: Map[String, String] = Map[String, String](),
                          userData: String = "",
                          instanceProfileARN: Option[String] = None)
 

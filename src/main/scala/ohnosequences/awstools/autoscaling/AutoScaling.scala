@@ -14,6 +14,7 @@ import ohnosequences.awstools.{ec2 => awstools}
 
 import com.amazonaws.AmazonServiceException
 import com.amazonaws.services.autoscaling.model.Tag
+import java.util.Date
 
 
 class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2) { autoscaling =>
@@ -139,6 +140,14 @@ class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2
       .withDesiredCapacity(capacity)
     )
   }
+
+  def getCreatedTime(name: String): Option[Date] = {
+    as.describeAutoScalingGroups(new DescribeAutoScalingGroupsRequest()
+      .withAutoScalingGroupNames(name)
+    ).getAutoScalingGroups.headOption.map(_.getCreatedTime)
+  }
+
+
 
 //  def getDesiredCapacity = {
 //

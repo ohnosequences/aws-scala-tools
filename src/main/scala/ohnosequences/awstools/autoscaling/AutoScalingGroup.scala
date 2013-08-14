@@ -2,6 +2,7 @@ package ohnosequences.awstools.autoscaling
 
 import ohnosequences.awstools.ec2.{InstanceType, InstanceSpecs}
 import scala.collection.JavaConversions._
+import java.util.Date
 
 case class AutoScalingGroup(
   name: String = "",
@@ -11,6 +12,8 @@ case class AutoScalingGroup(
   desiredCapacity: Int,
   availabilityZones: List[String] = List("eu-west-1a", "eu-west-1b", "eu-west-1c")
 ) {
+
+
 
 
 }
@@ -43,13 +46,14 @@ object LaunchConfiguration {
 object AutoScalingGroup {
   def fromAWS(autoScalingGroup: com.amazonaws.services.autoscaling.model.AutoScalingGroup, autoscaling: AutoScaling): Option[AutoScalingGroup] = {
     autoscaling.getLaunchConfigurationByName(autoScalingGroup.getLaunchConfigurationName) match {
-      case None => None //since launch configuration deleted this autoscaling group will be deleted soon
+      case None => None;//since launch configuration deleted this autoscaling group will be deleted soon
       case Some(launchConfiguration) => Some(AutoScalingGroup(
         name = autoScalingGroup.getAutoScalingGroupName,
         launchingConfiguration = launchConfiguration,
         minSize = autoScalingGroup.getMinSize,
         maxSize = autoScalingGroup.getMaxSize,
         desiredCapacity = autoScalingGroup.getDesiredCapacity
+
       ))
     }
   }

@@ -8,17 +8,19 @@ name := "aws-scala-tools"
 
 organization := "ohnosequences"
 
-version := "0.2.4"
+version := "0.2.5"
 
-scalaVersion := "2.10.0"
+scalaVersion := "2.10.2"
 
 publishMavenStyle := true
 
-publishTo <<= version { (v: String) =>
-  if (v.trim.endsWith("SNAPSHOT"))
-    Some(Resolver.file("local-snapshots", file("artifacts/snapshots.era7.com")))
-  else
-    Some(Resolver.file("local-releases", file("artifacts/releases.era7.com")))
+s3credentialsFile in Global := Some("/home/evdokim/era7.prop")
+
+
+publishTo <<= (isSnapshot, s3credentials) {
+                (snapshot,   credentials) =>
+  val prefix = if (snapshot) "snapshots" else "releases"
+  credentials map s3resolver("Era7 "+prefix+" S3 bucket", "s3://"+prefix+".era7.com")
 }
 
 resolvers ++= Seq (
@@ -30,7 +32,7 @@ resolvers ++= Seq (
                   )
 
 libraryDependencies ++= Seq (
-                              "com.amazonaws" % "aws-java-sdk" % "1.3.26"
+                              "com.amazonaws" % "aws-java-sdk" % "1.5.1"
                             , "com.novocode" % "junit-interface" % "0.10-M1" % "test"
                             )
 
