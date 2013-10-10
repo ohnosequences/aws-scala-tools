@@ -2,7 +2,7 @@ package ohnosequences.awstools.autoscaling
 
 import java.io.File
 
-import com.amazonaws.auth.{AWSCredentials, BasicAWSCredentials, PropertiesCredentials}
+import com.amazonaws.auth._
 import com.amazonaws.services.autoscaling.AmazonAutoScaling
 import com.amazonaws.services.autoscaling.AmazonAutoScalingClient
 import com.amazonaws.services.autoscaling.model._
@@ -15,6 +15,9 @@ import ohnosequences.awstools.{ec2 => awstools}
 import com.amazonaws.AmazonServiceException
 import com.amazonaws.services.autoscaling.model.Tag
 import java.util.Date
+import com.amazonaws.regions.Regions
+import com.amazonaws.internal.StaticCredentialsProvider
+import scala.Some
 
 
 class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2) { autoscaling =>
@@ -23,22 +26,45 @@ class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2
     as.shutdown()
   }
 
+  def fixAutoScalingGroupUserData(group: AutoScalingGroup, fixedUserData: String): AutoScalingGroup = {
+    val specs = group.launchingConfiguration.instanceSpecs.copy(userData = fixedUserData)
+    val lc = group.launchingConfiguration.copy(instanceSpecs = specs)
+    val fixedGroup = group.copy(launchingConfiguration = lc)
+    fixedGroup
+  }
+
   def createLaunchingConfiguration(launchConfiguration: ohnosequences.awstools.autoscaling.LaunchConfiguration) {
     try {
-      as.createLaunchConfiguration(new CreateLaunchConfigurationRequest()
+
+      var lcr = new CreateLaunchConfigurationRequest()
         .withLaunchConfigurationName(launchConfiguration.name)
-        .withSpotPrice(launchConfiguration.spotPrice.toString)
         .withImageId(launchConfiguration.instanceSpecs.amiId)
         .withInstanceType(launchConfiguration.instanceSpecs.instanceType.toString)
         .withUserData(Utils.base64encode(launchConfiguration.instanceSpecs.userData))
         .withKeyName(launchConfiguration.instanceSpecs.keyName)
         .withSecurityGroups(launchConfiguration.instanceSpecs.securityGroups)
         .withBlockDeviceMappings(
-          launchConfiguration.instanceSpecs.deviceMapping.map{ case (key, value) =>
-            new BlockDeviceMapping().withDeviceName(key).withVirtualName(value)
-          }.toList
-        )
-      )
+        launchConfiguration.instanceSpecs.deviceMapping.map{ case (key, value) =>
+          new BlockDeviceMapping().withDeviceName(key).withVirtualName(value)
+        }.toList)
+
+
+      lcr = launchConfiguration.purchaseModel match {
+        case Spot(price) => lcr.withSpotPrice(price.toString)
+        case SpotAuto => {
+          val price = SpotAuto.getCurrentPrice(ec2, launchConfiguration.instanceSpecs.instanceType)
+          lcr.withSpotPrice(price.toString)
+        }
+        case OnDemand => lcr
+      }
+
+      lcr = launchConfiguration.instanceSpecs.instanceProfile match {
+        case Some(name) => lcr.withIamInstanceProfile(name)
+        case None => lcr
+      }
+
+      as.createLaunchConfiguration(lcr)
+
     } catch {
       case e: AlreadyExistsException => ;
     }
@@ -121,17 +147,17 @@ class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2
 
   def deleteLaunchConfiguration(name: String) {
     try {
-    as.deleteLaunchConfiguration(
-      new DeleteLaunchConfigurationRequest()
-        .withLaunchConfigurationName(name)
-    )
-  } catch {
-    case e: AmazonServiceException   => ;
-  }
+      as.deleteLaunchConfiguration(
+        new DeleteLaunchConfigurationRequest()
+          .withLaunchConfigurationName(name)
+      )
+    } catch {
+      case e: AmazonServiceException => ()
+    }
   }
 
   def deleteAutoScalingGroup(name: String) {
-    getAutoScalingGroupByName(name).map(deleteAutoScalingGroup(_))
+    getAutoScalingGroupByName(name).map(deleteAutoScalingGroup)
   }
 
   def setDesiredCapacity(group: ohnosequences.awstools.autoscaling.AutoScalingGroup, capacity: Int) {
@@ -148,10 +174,6 @@ class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2
   }
 
 
-
-//  def getDesiredCapacity = {
-//
-//  }
 
 //  * <b>NOTE:</b> To remove all instances before calling
 //    * DeleteAutoScalingGroup, you can call UpdateAutoScalingGroup to set the
@@ -177,17 +199,21 @@ class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2
 
 object AutoScaling {
 
+  def create(ec2: ohnosequences.awstools.ec2.EC2): AutoScaling = {
+    create(new InstanceProfileCredentialsProvider(), ec2)
+  }
+
   def create(credentialsFile: File, ec2: ohnosequences.awstools.ec2.EC2): AutoScaling = {
-    create(new PropertiesCredentials(credentialsFile), ec2)
+    create(new StaticCredentialsProvider(new PropertiesCredentials(credentialsFile)), ec2)
   }
 
   def create(accessKey: String, secretKey: String, ec2: ohnosequences.awstools.ec2.EC2): AutoScaling = {
-    create(new BasicAWSCredentials(accessKey, secretKey), ec2)
+    create(new StaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)), ec2)
   }
 
-  def create(credentials: AWSCredentials, ec2: ohnosequences.awstools.ec2.EC2): AutoScaling = {
+  def create(credentials: AWSCredentialsProvider, ec2: ohnosequences.awstools.ec2.EC2): AutoScaling = {
     val asClient = new AmazonAutoScalingClient(credentials)
-    asClient.setEndpoint("http://autoscaling.eu-west-1.amazonaws.com")
+    asClient.setRegion(com.amazonaws.regions.Region.getRegion(Regions.EU_WEST_1))
     new AutoScaling(asClient, ec2)
   }
 }

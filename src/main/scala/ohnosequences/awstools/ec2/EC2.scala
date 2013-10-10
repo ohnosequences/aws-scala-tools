@@ -1,24 +1,25 @@
 package ohnosequences.awstools.ec2
 
-import java.io.{PrintWriter, File}
+import java.io.{IOException, PrintWriter, File}
 
-import com.amazonaws.auth.{BasicAWSCredentials, AWSCredentials, PropertiesCredentials}
+import com.amazonaws.auth._
 import com.amazonaws.services.ec2.{AmazonEC2Client, AmazonEC2}
 import com.amazonaws.services.ec2.model._
 
 import scala.collection.JavaConversions._
-import java.net.{URL, NoRouteToHostException}
 import com.amazonaws.AmazonServiceException
 
 import ohnosequences.awstools.{ec2 => awstools}
 import com.amazonaws.services.ec2.{model => amazon}
-
+import com.amazonaws.regions.Regions
+import com.amazonaws.internal.StaticCredentialsProvider
+import scala.Some
 
 
 object InstanceSpecs {
 
   implicit def getLaunchSpecs(specs: InstanceSpecs) = {
-    (new LaunchSpecification()
+    val ls = new LaunchSpecification()
       .withSecurityGroups(specs.securityGroups)
       .withInstanceType(specs.instanceType.toAWS)
       .withImageId(specs.amiId)
@@ -29,7 +30,11 @@ object InstanceSpecs {
           .withVirtualName(value)
       })
       .withUserData(Utils.base64encode(specs.userData))
-      )
+
+    specs.instanceProfile match {
+      case Some(name) => ls.withIamInstanceProfile(new IamInstanceProfileSpecification().withName(name))
+      case None => ls
+    }
   }
 }
 
@@ -45,11 +50,11 @@ object InstanceSpecs {
 
 case class InstanceSpecs(instanceType: awstools.InstanceType,
                          amiId: String,
-                         securityGroups: List[String] = List(),
                          keyName: String = "",
-                         deviceMapping: Map[String, String] = Map[String, String](),
                          userData: String = "",
-                         instanceProfileARN: Option[String] = None)
+                         instanceProfile: Option[String] = None,
+                         securityGroups: List[String] = List(),
+                         deviceMapping: Map[String, String] = Map[String, String]())
 
 
 case class InstanceStatus(val instanceStatus: String, val systemStatus: String)
@@ -277,21 +282,21 @@ class EC2(val ec2: AmazonEC2) {
       .withSecurityGroups(specs.securityGroups)
 
      // add IAM instance profile if needed
-    val request = specs.instanceProfileARN match {
-      case None => preRequest
-      case Some(profile) => preRequest.withIamInstanceProfile(
-        new IamInstanceProfileSpecification().withArn(profile)
-      )
-    }     
+//    val request = specs.instanceProfileARN match {
+//      case None => preRequest
+//      case Some(profile) => preRequest.withIamInstanceProfile(
+//        new IamInstanceProfileSpecification().withArn(profile)
+//      )
+//    }
 
-    ec2.runInstances(request).getReservation.getInstances.toList.map {
+    ec2.runInstances(preRequest).getReservation.getInstances.toList.map {
       instance =>
         new Instance(instance.getInstanceId)
 
     }
   }
 
-  def getCurrentSpotPrice(instanceType: awstools.InstanceType, productDescription: String): Double = {
+  def getCurrentSpotPrice(instanceType: awstools.InstanceType, productDescription: String = "Linux/UNIX"): Double = {
     val price = ec2.describeSpotPriceHistory(
       new DescribeSpotPriceHistoryRequest()
         .withStartTime(new java.util.Date())
@@ -346,10 +351,10 @@ class EC2(val ec2: AmazonEC2) {
 
   def getCurrentInstanceId: Option[String] = {
     try {
-      val currentIdURL = new URL("http://169.254.169.254/latest/meta-data/instance-id")
-      Some(io.Source.fromURL(currentIdURL).mkString)
+      val m = new com.amazonaws.internal.EC2MetadataClient()
+      Some(m.readResource("/latest/meta-data/instance-id"))
     } catch {
-      case t: NoRouteToHostException => None
+      case t: IOException => None
 
     }
   }
@@ -383,17 +388,21 @@ class EC2(val ec2: AmazonEC2) {
 
 object EC2 {
 
+  def create(): EC2 = {
+    create(new InstanceProfileCredentialsProvider())
+  }
+
   def create(credentialsFile: File): EC2 = {
-    create(new PropertiesCredentials(credentialsFile))
+    create(new StaticCredentialsProvider(new PropertiesCredentials(credentialsFile)))
   }
 
   def create(accessKey: String, secretKey: String): EC2 = {
-    create(new BasicAWSCredentials(accessKey, secretKey))
+    create(new StaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
   }
 
-  private def create(credentials: AWSCredentials): EC2 = {
+  def create(credentials: AWSCredentialsProvider): EC2 = {
     val ec2Client = new AmazonEC2Client(credentials)
-    ec2Client.setEndpoint("http://ec2.eu-west-1.amazonaws.com")
+    ec2Client.setRegion(com.amazonaws.regions.Region.getRegion(Regions.EU_WEST_1))
     new EC2(ec2Client)
   }
 

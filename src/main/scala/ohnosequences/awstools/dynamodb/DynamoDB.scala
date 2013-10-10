@@ -2,12 +2,15 @@ package ohnosequences.awstools.dynamodb
 
 import java.io.File
 
-import com.amazonaws.auth.{AWSCredentials, BasicAWSCredentials, PropertiesCredentials}
+import com.amazonaws.auth._
 import com.amazonaws.services.dynamodb.AmazonDynamoDBClient
 import com.amazonaws.services.dynamodb.model._
 
 import com.amazonaws.services.dynamodb.datamodeling.DynamoDBMapper
 import scala.collection.JavaConversions._
+import com.amazonaws.regions.Regions
+import com.amazonaws.internal.StaticCredentialsProvider
+
 
 abstract sealed class KeyType {
   type ValueType
@@ -78,6 +81,37 @@ case class Table(ddb: AmazonDynamoDBClient, name: String, hashKey: HashKey, rang
     Thread.sleep(5000)
   }
 
+  //todo add ytpes here!
+  def putItem(hash: String, range: String, map: Map[String, String]) {
+
+
+    val keys = Map[String, AttributeValue] (
+      hashKey.name -> hashKey.keyType.constructValue(hash),
+      rangeKey.name -> rangeKey.keyType.constructValue(hash)
+    )
+
+    ddb.putItem(new PutItemRequest()
+      .withTableName(name)
+      .withItem(map.mapValues(StringValue(_).getAttributeValue) ++ keys)
+    )
+  }
+
+  def getItem(hash: String, range: String): Option[Map[String, String]] = {
+
+    val key = new Key(hashKey.keyType.constructValue(hash), rangeKey.keyType.constructValue(range))
+    val item = ddb.getItem(new GetItemRequest()
+      .withTableName(name)
+      .withKey(key)
+    )
+
+    if (item == null || item.getItem == null) {
+      None
+
+    } else {
+      Some(item.getItem.mapValues(_.getS).toMap)
+    }
+  }
+
   def incrementCounter(counterName: String, hashKeyValue: String, rangeKeyValue: String) = {
     ddb.updateItem(new UpdateItemRequest()
       .withTableName(name)
@@ -98,6 +132,8 @@ class DynamoDB(val ddb: AmazonDynamoDBClient) {
   def shutdown() {
     ddb.shutdown()
   }
+
+
 
   def createMapper = DynamoObjectMapper(ddb, new DynamoDBMapper(ddb))
 
@@ -185,18 +221,22 @@ class DynamoDB(val ddb: AmazonDynamoDBClient) {
 
 object DynamoDB {
 
+  def create(): DynamoDB = {
+    create(new InstanceProfileCredentialsProvider())
+  }
+
   def create(credentialsFile: File): DynamoDB = {
-    create(new PropertiesCredentials(credentialsFile))
+    create(new StaticCredentialsProvider(new PropertiesCredentials(credentialsFile)))
   }
 
   def create(accessKey: String, secretKey: String): DynamoDB = {
-    create(new BasicAWSCredentials(accessKey, secretKey))
+    create(new StaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
   }
 
-  def create(credentials: AWSCredentials): DynamoDB = {
+  def create(credentials: AWSCredentialsProvider): DynamoDB = {
 
     val ddbClient = new AmazonDynamoDBClient(credentials)
-    ddbClient.setEndpoint("http://dynamodb.eu-west-1.amazonaws.com")
+    ddbClient.setRegion(com.amazonaws.regions.Region.getRegion(Regions.EU_WEST_1))
     new DynamoDB(ddbClient)
   }
 }
