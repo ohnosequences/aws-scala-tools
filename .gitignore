@@ -1,4 +1,3 @@
-
 # sbt specific
 dist/*
 target/
@@ -37,4 +36,7 @@ gridClient/project/
 gridClient/target/
 gridServer/project/
 gridServer/target/
+
+#fasta
+fasta.sbt
 
