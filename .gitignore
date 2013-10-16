@@ -1,4 +1,5 @@
 # sbt specific
+prop
 dist/*
 target/
 boot/

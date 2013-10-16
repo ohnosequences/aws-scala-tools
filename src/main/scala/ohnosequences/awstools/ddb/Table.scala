@@ -3,80 +3,119 @@ package ohnosequences.awstools.ddb
 import scala.collection.mutable
 import com.amazonaws.services.dynamodbv2.model._
 import scala.collection.JavaConversions._
+import java.util
+
 
 
 class Table[AS <: Attributes](ddb: DynamoDB, name: String, val attributes: AS) {
 
-  class ItemBuilder() {
-    val map = new java.util.HashMap[String, AttributeValue]()
-    map.put("constant", new AttributeValue().withN("1"))
+  case class PutOperation(map: java.util.HashMap[String, AttributeValue]) {
 
-    def withV[R](attr: attributes.Attr[R], v: R): ItemBuilder = {
+    def putItemRequest: PutItemRequest = {
+      new PutItemRequest()
+        .withTableName(name)
+        .withItem(map)
+    }
+
+    def putRequest: PutRequest = {
+      new PutRequest()
+        .withItem(map)
+    }
+
+    def writeRequest: WriteRequest = {
+      new WriteRequest()
+        .withPutRequest(putRequest)
+    }
+
+  }
+
+  class PutOperationBuilder(hash: Int) {
+    val map = new java.util.HashMap[String, AttributeValue]()
+    map.put("hash", new AttributeValue().withN(hash.toString))
+
+    def withV[R](attr: attributes.Attr[R], v: R): PutOperationBuilder = {
       map.put(attr.name, attr.attrType.write(v))
       this
     }
 
-    def put() {
-      ddb.ddb.putItem(new PutItemRequest()
-        .withTableName(name)
-        .withItem(map)
-      )
+    def build(): PutOperation = {
+      PutOperation(map)      
     }
   }
 
-  def put(item: Map[attributes.AttrAux, String]) {
-    val res = new java.util.HashMap[String, AttributeValue]()
-    item.foreach{ case (attr, v) =>
-      res.put(attr.name, attr.attrType.write(attr.attrType.fromString(v)))
-    }
-    res.put("constant", new AttributeValue().withN("1"))
-    ddb.ddb.putItem(new PutItemRequest()
-      .withTableName(name)
-      .withItem(res)
-    )
+  def createPutOperation(hash: Int) = new PutOperationBuilder(hash)
+  
+  def put(putOperation: PutOperation) {
+    ddb.ddb.putItem(putOperation.putItemRequest)
   }
 
-  def put(item: Map[attributes.AttrAux, Any]) {
+  def putOps(writeOperations: java.util.ArrayList[WriteRequest]) {
+
+    val map = new util.HashMap[String, java.util.List[WriteRequest]]()
+
+    map.put(name, writeOperations)
+
     ddb.ddb.batchWriteItem(new BatchWriteItemRequest()
-      .withRequestItems()
+      .withRequestItems(map)
     )
-    val res = new java.util.HashMap[String, AttributeValue]()
-    item.foreach{ case (attr, v) =>
-      res.put(attr.name, attr.attrType.write(attr.attrType.fromString(v)))
-    }
-    res.put("constant", new AttributeValue().withN("1"))
-    ddb.ddb.putItem(new PutItemRequest()
-      .withTableName(name)
-      .withItem(res)
-    )
+
   }
 
-  def put() = new ItemBuilder()
-
-  private def get[R, S](key: attributes.Attr[R], v: R): Map[String, AttributeValue] = {
-    ddb.ddb.getItem(new GetItemRequest()
-      .withTableName(name)
-      .withKey(Map(
-      "constant" -> new AttributeValue().withN("1"),
-      key.name -> key.attrType.write(v)
-    ))
-    ).getItem.toMap
-  }
-
-
-  def get[R, S](key: attributes.Attr[R], v: R, attr: attributes.Attr[S]): S = {
-    val res = get(key, v)
-    attr.attrType.read(res(attr.name))
-  }
-
-  def get[R, S1, S2](key: attributes.Attr[R], v: R, attr1: attributes.Attr[S1], attr2: attributes.Attr[S2]): (S1, S2) = {
-    val res = get(key, v)
-    (attr1.attrType.read(res(attr1.name)), attr2.attrType.read(res(attr2.name)))
-  }
-
-
-
+//  def put(putOperations: List[PutOperation]) {
+//    putOps(putOperations.map(_.writeRequest))
+//  }
 }
+
+class ParallelUploader[AS <: Attributes](table: Table[AS], workersCount: Int) {
+  val batchSize = 1
+
+  //val operationsQueue = new java.util.concurrent.ArrayBlockingQueue[Option[table.PutOperation]](workersCount * 25 * 2)
+  val operationsQueue = new java.util.concurrent.ArrayBlockingQueue[Option[WriteRequest]](workersCount * batchSize * 2)
+
+  class Worker(id: Int) extends Thread("upload_worker_" + id) {
+
+    var stopped = false
+
+    var buffer = new java.util.ArrayList[WriteRequest]()
+
+    override def run() {
+      println(getName + " runned")
+      while(!stopped) {
+        for(i <- 1 to batchSize) {
+          operationsQueue.take() match {
+            case None => stopped = true
+            case Some(op) => buffer.add(op)
+          }
+        }
+
+        if(!buffer.isEmpty) {
+          println(getName + " publishing ")
+          println(buffer)
+          table.putOps(buffer)
+          buffer.clear()
+        }
+      }
+      println(getName + " stopped")
+    }
+  }
+
+  def putToQueue(operation: WriteRequest) {
+    operationsQueue.put(Some(operation))
+  }
+
+  def stopPutting() {
+    for(i <- 1 to workersCount * batchSize * 2) {
+      operationsQueue.put(None)
+    }
+  }
+
+  val workers =  (for(i <- 1 to workersCount) yield new Worker(i)).toList
+
+  def start() {
+    workers.foreach(_.start())
+  }
+}
+
 
 
 trait BaseAttr {
