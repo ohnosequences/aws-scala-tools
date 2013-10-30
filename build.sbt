@@ -3,7 +3,7 @@ name := "aws-scala-tools"
 
 organization := "ohnosequences"
 
-version := "0.4.0-SNAPSHOT"
+version := "0.4.0"
 
 scalaVersion := "2.10.2"
 
