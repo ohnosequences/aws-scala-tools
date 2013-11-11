@@ -10,7 +10,7 @@ object Utils {
     do {
       current = resourceCheck
       iteration += 1
-      Thread.sleep(1000)
+      Thread.sleep(5000)
     } while (current.isEmpty && iteration < limit)
 
     current

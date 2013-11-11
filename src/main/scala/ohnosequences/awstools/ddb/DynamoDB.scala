@@ -9,7 +9,6 @@ import com.amazonaws.services.dynamodbv2.model._
 
 import scala.collection.JavaConversions._
 import ohnosequences.awstools.utils.Utils
-import org.slf4j.Logger
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper
 
 
@@ -22,7 +21,7 @@ class DynamoDB(val ddb: AmazonDynamoDB) {
 //  )
 
 
-  def createTable[AS <: Attributes](name: String, attributes: AS, logger: Option[Logger] = None) = {
+  def createTable[AS <: Attributes](name: String, attributes: AS) = {
     try {
 
       val hash = new AttributeDefinition("hash", ScalarAttributeType.N)
@@ -52,7 +51,9 @@ class DynamoDB(val ddb: AmazonDynamoDB) {
 
   //fix race conditions!
     Utils.waitForResource {
-      logger.foreach(_.info("waiting for table"))
+      //logger.foreach(_.info("waiting for table"))
+
+      println("waiting for table")
       getTableState(name).flatMap{
         case "ACTIVE" => Some("ACTIVE")
         case _ => None
