@@ -9,7 +9,6 @@ import com.amazonaws.services.dynamodbv2.model._
 
 import scala.collection.JavaConversions._
 import ohnosequences.awstools.utils.Utils
-import org.slf4j.Logger
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper
 
 
@@ -20,12 +19,14 @@ class DynamoDB(val ddb: AmazonDynamoDB) {
 //  .withLocalSecondaryIndexes(new LocalSecondaryIndex()
 //    .withKeySchema(new KeySchemaElement("length", "HASH"))
 //  )
-  def createTable[AS <: Attributes](name: String, attributes: AS, logger: Option[Logger]) = {
+
+
+  def createTable[AS <: Attributes](name: String, attributes: AS) = {
     try {
 
-      val constantId = new AttributeDefinition("constant", ScalarAttributeType.N)
-      val schema = new KeySchemaElement(constantId.getAttributeName, "HASH") :: attributes.getKeySchema
-      val definitions = constantId :: attributes.getKeyDefinitions
+      val hash = new AttributeDefinition("hash", ScalarAttributeType.N)
+      val schema = new KeySchemaElement(hash.getAttributeName, "HASH") :: attributes.getKeySchema
+      val definitions = hash :: attributes.getKeyDefinitions
 
       ddb.createTable(new CreateTableRequest()
         .withTableName(name)
@@ -50,7 +51,9 @@ class DynamoDB(val ddb: AmazonDynamoDB) {
 
   //fix race conditions!
     Utils.waitForResource {
-      logger.foreach(_.info("waiting for table"))
+      //logger.foreach(_.info("waiting for table"))
+
+      println("waiting for table")
       getTableState(name).flatMap{
         case "ACTIVE" => Some("ACTIVE")
         case _ => None
@@ -61,36 +64,27 @@ class DynamoDB(val ddb: AmazonDynamoDB) {
 
   }
 
-  //def createTable(name: String, logger: Option[Logger]) {
+
+
+//  def createTable[AS <: Attributes](name: String, attributes: AS, logger: Option[Logger] = None, workersCount: Int) = {
 //    try {
+//
+//      val hash = new AttributeDefinition("hash", ScalarAttributeType.N)
+//      val schema = new KeySchemaElement(hash.getAttributeName, "HASH") :: attributes.getKeySchema
+//      val definitions = hash :: attributes.getKeyDefinitions
+//
 //      ddb.createTable(new CreateTableRequest()
 //        .withTableName(name)
-//        .withAttributeDefinitions(List(
-//        new AttributeDefinition("idC", ScalarAttributeType.S),
-//        new AttributeDefinition("id", ScalarAttributeType.S),
-//        new AttributeDefinition("length", ScalarAttributeType.N)
-//      ))
+//        .withAttributeDefinitions(definitions)
 //        .withProvisionedThroughput(new ProvisionedThroughput(1, 1))
-//        .withKeySchema(
-//        new KeySchemaElement("idC", "HASH"),
-//        new KeySchemaElement("id", "RANGE")
-//      )
-//        .withLocalSecondaryIndexes(new LocalSecondaryIndex()
-//        .withProjection(new Projection()
-//        .withProjectionType(ProjectionType.ALL)
-//      )
-//        .withIndexName("length")
-//        .withKeySchema(
-//        new KeySchemaElement("idC", "HASH"),
-//        new KeySchemaElement("length", "RANGE")
-//      )
-//      )
+//        .withKeySchema(schema)
 //      )
 //    } catch {
 //      case r: ResourceInUseException => ()
 //    }
 //    // new AttributeDefinition("content", ScalarAttributeType.S)
 //
+//    //fix race conditions!
 //    Utils.waitForResource {
 //      logger.foreach(_.info("waiting for table"))
 //      getTableState(name).flatMap{
@@ -98,7 +92,12 @@ class DynamoDB(val ddb: AmazonDynamoDB) {
 //        case _ => None
 //      }
 //    }
+//
+//    new Table(DynamoDB.this, name, attributes)
+//
 //  }
+
+
 
   def createMapper(): DynamoObjectMapper = {
     new DynamoObjectMapper(new DynamoDBMapper(ddb))
