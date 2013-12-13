@@ -6,6 +6,7 @@ import com.amazonaws.auth._
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3Client}
 import com.amazonaws.services.s3.model._
 
+
 import scala.collection.JavaConversions._
 import com.amazonaws.services.importexport.model.NoSuchBucketException
 import com.amazonaws.services.s3.transfer.{Transfer, TransferManager}
@@ -14,22 +15,44 @@ import com.amazonaws.AmazonServiceException
 import scala.collection.mutable.ListBuffer
 import com.amazonaws.regions.Regions
 import com.amazonaws.internal.StaticCredentialsProvider
+import com.amazonaws.event._
+import com.amazonaws.event.{ProgressListener => PListener, ProgressEvent => PEvent}
 
 
 
 case class ObjectAddress(bucket: String, key: String)
 
+case class TransferListener(transfer: Transfer) extends PListener {
+  def progressChanged(progressEvent: PEvent) { 
+    import PEvent._
+    progressEvent.getEventCode() match {
+      case STARTED_EVENT_CODE  => println("Started")
+      case CANCELED_EVENT_CODE  => println("Canceled!")
+      case COMPLETED_EVENT_CODE  => println("Completed!")
+      case FAILED_EVENT_CODE  => println("Failed!")
+      case PART_COMPLETED_EVENT_CODE  => println("Completed part: "+ transfer.getProgress.getBytesTransferred)
+      // case PART_FAILED_EVENT_CODE  => println("")
+      // case PART_STARTED_EVENT_CODE  => println("")
+      // case PREPARING_EVENT_CODE  => println("")
+      // case RESET_EVENT_CODE  => println("")
+      case _ => ()
+    }
+  }
+}
+
 case class LoadingManager(transferManager: TransferManager) {
 
-  val transferWaiter: (Transfer => Unit) = {
-    transfer =>
-      while(!transfer.isDone)   {
-        println("Transfer: " + transfer.getDescription)
-        println("  - State: " + transfer.getState)
-        println("  - Progress: " +   transfer.getProgress.getBytesTransferred)
-        // Do work while we wait for our upload to complete...
-        Thread.sleep(500)
-      }
+  val transferWaiter: (Transfer => Unit) = { transfer =>
+    while(!transfer.isDone) {
+      println(" - Progress: " + transfer.getProgress.getBytesTransferred + " bytes")
+      Thread.sleep(500)
+    }
+    println("Finished: " + transfer.getState)
+  }
+
+  // Asinchronous progress listener
+  val transferListener: (Transfer => Unit) = { transfer =>
+    transfer.addProgressListener(TransferListener(transfer))
   }
 
   def upload(
@@ -37,6 +60,8 @@ case class LoadingManager(transferManager: TransferManager) {
     file: File, 
     transferWaiter: (Transfer => Unit) = transferWaiter
   ) {
+    println("Uploading to: " + objectAddress.toString)
+    println("File: " + file.getAbsolutePath)
     val upload = transferManager.upload(objectAddress.bucket, objectAddress.key, file)
     transferWaiter(upload)
   }
@@ -44,10 +69,12 @@ case class LoadingManager(transferManager: TransferManager) {
   def uploadDirectory(
     objectAddress: ObjectAddress, 
     directory: File, 
-    recursive: Boolean = true, 
+    recursively: Boolean = true, 
     transferWaiter: (Transfer => Unit) = transferWaiter
   ) {
-    val upload = transferManager.upload(objectAddress.bucket, objectAddress.key, directory)
+    println("Uploading to: " + objectAddress.toString)
+    println("Directory: " + directory.getCanonicalPath + (if (recursively) " (recursively)" else ""))
+    val upload = transferManager.uploadDirectory(objectAddress.bucket, objectAddress.key, directory, recursively)
     transferWaiter(upload)
   }
 
@@ -56,7 +83,20 @@ case class LoadingManager(transferManager: TransferManager) {
     file: File, 
     transferWaiter: (Transfer => Unit) = transferWaiter
   ) {
+    println("Dowloading from: " + objectAddress.toString)
+    println("File: " + file.getAbsolutePath)
     val download = transferManager.download(objectAddress.bucket, objectAddress.key, file)
+    transferWaiter(download)
+  }
+
+  def downloadDirectory(
+    objectAddress: ObjectAddress, 
+    destinationDir: File, 
+    transferWaiter: (Transfer => Unit) = transferWaiter
+  ) {
+    println("Dowloading from: " + objectAddress.toString)
+    println("To directory: " + destinationDir.getAbsolutePath)
+    val download = transferManager.downloadDirectory(objectAddress.bucket, objectAddress.key, destinationDir)
     transferWaiter(download)
   }
 
