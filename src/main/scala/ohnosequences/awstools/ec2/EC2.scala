@@ -282,17 +282,15 @@ class EC2(val ec2: AmazonEC2) {
       .withSecurityGroups(specs.securityGroups)
 
      // add IAM instance profile if needed
-//    val request = specs.instanceProfileARN match {
-//      case None => preRequest
-//      case Some(profile) => preRequest.withIamInstanceProfile(
-//        new IamInstanceProfileSpecification().withArn(profile)
-//      )
-//    }
+    val request = specs.instanceProfile match {
+      case None => preRequest
+      case Some(name) => preRequest.withIamInstanceProfile(
+        new IamInstanceProfileSpecification().withName(name)
+      )
+    }
 
-    ec2.runInstances(preRequest).getReservation.getInstances.toList.map {
-      instance =>
-        new Instance(instance.getInstanceId)
-
+    ec2.runInstances(request).getReservation.getInstances.toList.map {
+      instance => new Instance(instance.getInstanceId)
     }
   }
 
