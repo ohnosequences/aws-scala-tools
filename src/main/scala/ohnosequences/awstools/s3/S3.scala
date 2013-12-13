@@ -32,13 +32,30 @@ case class LoadingManager(transferManager: TransferManager) {
       }
   }
 
-  def upload(objectAddress: ObjectAddress, file: File, transferWaiter: (Transfer => Unit) = transferWaiter) {
+  def upload(
+    objectAddress: ObjectAddress, 
+    file: File, 
+    transferWaiter: (Transfer => Unit) = transferWaiter
+  ) {
     val upload = transferManager.upload(objectAddress.bucket, objectAddress.key, file)
     transferWaiter(upload)
-
   }
 
-  def download(objectAddress: ObjectAddress, file: File, transferWaiter: (Transfer => Unit) = transferWaiter) {
+  def uploadDirectory(
+    objectAddress: ObjectAddress, 
+    directory: File, 
+    recursive: Boolean = true, 
+    transferWaiter: (Transfer => Unit) = transferWaiter
+  ) {
+    val upload = transferManager.upload(objectAddress.bucket, objectAddress.key, directory)
+    transferWaiter(upload)
+  }
+
+  def download(
+    objectAddress: ObjectAddress, 
+    file: File, 
+    transferWaiter: (Transfer => Unit) = transferWaiter
+  ) {
     val download = transferManager.download(objectAddress.bucket, objectAddress.key, file)
     transferWaiter(download)
   }
