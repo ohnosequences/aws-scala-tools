@@ -1,0 +1,9 @@
+* S3:
+  - Improved LoadingManager; 
+  - Added asynchronous listener; 
+  - Prettified progress output
+  - Added directory uploading to LoadingManager;
+* EC2:
+  - Fixed setting of instance profile in runInstances request; 
+* General:
+  - Updated to java aws sdk 1.6.5;
