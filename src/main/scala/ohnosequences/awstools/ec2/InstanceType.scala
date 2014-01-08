@@ -39,6 +39,11 @@ object InstanceType {
   val Cc14xlarge = InstanceType("cc1.4xlarge")
   val Cc28xlarge = InstanceType("cc2.8xlarge")
   val Cg14xlarge = InstanceType("cg1.4xlarge")
+  val С3Large = InstanceType("c3.large")
+  val С3XLarge = InstanceType("c3.xlarge")
+  val С32XLarge = InstanceType("c3.2xlarge")
+  val С34XLarge = InstanceType("c3.4xlarge")
+  val С38XLarge = InstanceType("c3.8xlarge")
 
 }
 
