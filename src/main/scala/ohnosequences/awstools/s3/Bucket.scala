@@ -26,7 +26,7 @@ case class Bucket(s3: AmazonS3, name: String) {
 //    var putRequest = new PutObjectRequest(name, key, IOUtils.toInputStream(s))
 //  }
 
-  def delete {
+  def delete() {
     s3.deleteBucket(name)
   }
 

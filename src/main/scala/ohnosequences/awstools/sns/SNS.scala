@@ -2,10 +2,11 @@ package ohnosequences.awstools.sns
 
 import java.io.File
 
+import ohnosequences.awstools.regions.Region._
+
 import com.amazonaws.auth._
 import com.amazonaws.services.sns.{AmazonSNSClient, AmazonSNS}
 import com.amazonaws.services.sns.model.{CreateTopicRequest}
-import com.amazonaws.regions.Regions
 import com.amazonaws.internal.StaticCredentialsProvider
 
 class SNS(val sns: AmazonSNS) {
@@ -36,7 +37,7 @@ object SNS {
 
   def create(credentials: AWSCredentialsProvider): SNS = {
     val snsClient = new AmazonSNSClient(credentials)
-    snsClient.setRegion(com.amazonaws.regions.Region.getRegion(Regions.EU_WEST_1))
+    snsClient.setRegion(Ireland)
     new SNS(snsClient)
   }
 }
