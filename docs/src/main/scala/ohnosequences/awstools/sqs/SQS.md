@@ -18,6 +18,8 @@
             + [Filters.scala](../ec2/Filters.md)
             + [InstanceType.scala](../ec2/InstanceType.md)
             + [Utils.scala](../ec2/Utils.md)
+          + regions
+            + [Region.scala](../regions/Region.md)
           + s3
             + [Bucket.scala](../s3/Bucket.md)
             + [S3.scala](../s3/S3.md)
@@ -44,14 +46,16 @@
 package ohnosequences.awstools.sqs
 
 import java.io.File
+
+import scala.collection.JavaConversions._
+
+import ohnosequences.awstools.regions.Region._
+
 import com.amazonaws.services.sqs._
 import com.amazonaws.services.sqs.model._
 import com.amazonaws.auth._
-import scala.collection.JavaConversions._
 import com.amazonaws.AmazonServiceException
-import com.amazonaws.regions.Regions
 import com.amazonaws.internal.StaticCredentialsProvider
-
 
 
 class SQS(val sqs: AmazonSQS) {
@@ -95,7 +99,7 @@ object SQS {
 
   def create(provider: AWSCredentialsProvider): SQS = {
     val sqsClient = new AmazonSQSClient(provider)
-    sqsClient.setRegion(com.amazonaws.regions.Region.getRegion(Regions.EU_WEST_1))
+    sqsClient.setRegion(Ireland)
     new SQS(sqsClient)
   }
 

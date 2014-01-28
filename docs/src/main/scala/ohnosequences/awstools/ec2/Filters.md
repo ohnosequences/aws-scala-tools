@@ -18,6 +18,8 @@
             + [Filters.scala](Filters.md)
             + [InstanceType.scala](InstanceType.md)
             + [Utils.scala](Utils.md)
+          + regions
+            + [Region.scala](../regions/Region.md)
           + s3
             + [Bucket.scala](../s3/Bucket.md)
             + [S3.scala](../s3/S3.md)

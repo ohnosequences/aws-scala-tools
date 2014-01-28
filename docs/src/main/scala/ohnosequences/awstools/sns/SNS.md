@@ -18,6 +18,8 @@
             + [Filters.scala](../ec2/Filters.md)
             + [InstanceType.scala](../ec2/InstanceType.md)
             + [Utils.scala](../ec2/Utils.md)
+          + regions
+            + [Region.scala](../regions/Region.md)
           + s3
             + [Bucket.scala](../s3/Bucket.md)
             + [S3.scala](../s3/S3.md)
@@ -45,10 +47,11 @@ package ohnosequences.awstools.sns
 
 import java.io.File
 
+import ohnosequences.awstools.regions.Region._
+
 import com.amazonaws.auth._
 import com.amazonaws.services.sns.{AmazonSNSClient, AmazonSNS}
 import com.amazonaws.services.sns.model.{CreateTopicRequest}
-import com.amazonaws.regions.Regions
 import com.amazonaws.internal.StaticCredentialsProvider
 
 class SNS(val sns: AmazonSNS) {
@@ -79,7 +82,7 @@ object SNS {
 
   def create(credentials: AWSCredentialsProvider): SNS = {
     val snsClient = new AmazonSNSClient(credentials)
-    snsClient.setRegion(com.amazonaws.regions.Region.getRegion(Regions.EU_WEST_1))
+    snsClient.setRegion(Ireland)
     new SNS(snsClient)
   }
 }

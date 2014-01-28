@@ -18,6 +18,8 @@
             + [Filters.scala](../ec2/Filters.md)
             + [InstanceType.scala](../ec2/InstanceType.md)
             + [Utils.scala](../ec2/Utils.md)
+          + regions
+            + [Region.scala](../regions/Region.md)
           + s3
             + [Bucket.scala](Bucket.md)
             + [S3.scala](S3.md)
@@ -69,7 +71,7 @@ case class Bucket(s3: AmazonS3, name: String) {
 //    var putRequest = new PutObjectRequest(name, key, IOUtils.toInputStream(s))
 //  }
 
-  def delete {
+  def delete() {
     s3.deleteBucket(name)
   }
 

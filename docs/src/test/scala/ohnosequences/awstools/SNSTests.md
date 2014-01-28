@@ -18,6 +18,8 @@
             + [Filters.scala](../../../../main/scala/ohnosequences/awstools/ec2/Filters.md)
             + [InstanceType.scala](../../../../main/scala/ohnosequences/awstools/ec2/InstanceType.md)
             + [Utils.scala](../../../../main/scala/ohnosequences/awstools/ec2/Utils.md)
+          + regions
+            + [Region.scala](../../../../main/scala/ohnosequences/awstools/regions/Region.md)
           + s3
             + [Bucket.scala](../../../../main/scala/ohnosequences/awstools/s3/Bucket.md)
             + [S3.scala](../../../../main/scala/ohnosequences/awstools/s3/S3.md)

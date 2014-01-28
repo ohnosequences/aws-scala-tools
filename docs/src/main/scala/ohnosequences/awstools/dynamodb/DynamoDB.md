@@ -18,6 +18,8 @@
             + [Filters.scala](../ec2/Filters.md)
             + [InstanceType.scala](../ec2/InstanceType.md)
             + [Utils.scala](../ec2/Utils.md)
+          + regions
+            + [Region.scala](../regions/Region.md)
           + s3
             + [Bucket.scala](../s3/Bucket.md)
             + [S3.scala](../s3/S3.md)
@@ -45,13 +47,14 @@ package ohnosequences.awstools.dynamodb
 
 import java.io.File
 
+import ohnosequences.awstools.regions.Region._
+
 import com.amazonaws.auth._
 import com.amazonaws.services.dynamodb.AmazonDynamoDBClient
 import com.amazonaws.services.dynamodb.model._
 
 import com.amazonaws.services.dynamodb.datamodeling.DynamoDBMapper
 import scala.collection.JavaConversions._
-import com.amazonaws.regions.Regions
 import com.amazonaws.internal.StaticCredentialsProvider
 
 
@@ -279,7 +282,7 @@ object DynamoDB {
   def create(credentials: AWSCredentialsProvider): DynamoDB = {
 
     val ddbClient = new AmazonDynamoDBClient(credentials)
-    ddbClient.setRegion(com.amazonaws.regions.Region.getRegion(Regions.EU_WEST_1))
+    ddbClient.setRegion(Ireland)
     new DynamoDB(ddbClient)
   }
 }
