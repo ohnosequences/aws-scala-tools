@@ -1,0 +1,1 @@
+Fixed bug in conversion of InstanceType and Region to java types

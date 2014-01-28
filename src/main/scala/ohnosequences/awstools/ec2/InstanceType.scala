@@ -2,7 +2,7 @@ package ohnosequences.awstools.ec2
 
 import com.amazonaws.services.ec2.model.{InstanceType => JavaInstanceType}
 
-sealed class InstanceType(name: String) {
+sealed class InstanceType(val name: String) {
   override def toString = name
 
   @deprecated("There is an implicit conversion for that in ohnosequences.awstools.ec2.InstanceType, just import it",

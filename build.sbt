@@ -1,4 +1,4 @@
-import Nice.scalaProject
+Nice.scalaProject
 
 name := "aws-scala-tools"
 
