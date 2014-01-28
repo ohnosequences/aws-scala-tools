@@ -1,6 +1,7 @@
 package ohnosequences.awstools.regions
 
-import com.amazonaws.regions.{Regions => JavaRegion}
+import com.amazonaws.regions.{Regions => JavaRegions}
+import com.amazonaws.regions.{Region => JavaRegion}
 
 sealed abstract class Region(name: String) { override def toString = name }
 
@@ -17,8 +18,11 @@ object Region {
   case object US_WEST_2      extends Region("us-west-2")      // Oregon
   case object GovCloud       extends Region("us-gov-west-1")  // Secret cloud for CIA
 
+  implicit def toJavaRegions(r: Region): JavaRegions =
+    JavaRegions.fromName(r.name)
+
   implicit def toJavaRegion(r: Region): JavaRegion =
-    JavaRegion.fromName(r.name)
+    JavaRegion.getRegion(toJavaRegions(r))
 
   // Nice geographical synonims:
   val Tokyo              = AP_NORTHEAST_1

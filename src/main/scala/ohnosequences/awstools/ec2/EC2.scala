@@ -2,6 +2,9 @@ package ohnosequences.awstools.ec2
 
 import java.io.{IOException, PrintWriter, File}
 
+import ohnosequences.awstools.regions.Region._
+import ohnosequences.awstools.{ec2 => awstools}
+
 import com.amazonaws.auth._
 import com.amazonaws.services.ec2.{AmazonEC2Client, AmazonEC2}
 import com.amazonaws.services.ec2.model._
@@ -9,9 +12,7 @@ import com.amazonaws.services.ec2.model._
 import scala.collection.JavaConversions._
 import com.amazonaws.AmazonServiceException
 
-import ohnosequences.awstools.{ec2 => awstools}
 import com.amazonaws.services.ec2.{model => amazon}
-import com.amazonaws.regions.Regions
 import com.amazonaws.internal.StaticCredentialsProvider
 import scala.Some
 
@@ -400,7 +401,7 @@ object EC2 {
 
   def create(credentials: AWSCredentialsProvider): EC2 = {
     val ec2Client = new AmazonEC2Client(credentials)
-    ec2Client.setRegion(com.amazonaws.regions.Region.getRegion(Regions.EU_WEST_1))
+    ec2Client.setRegion(Ireland)
     new EC2(ec2Client)
   }
 

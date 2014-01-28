@@ -2,13 +2,14 @@ package ohnosequences.awstools.dynamodb
 
 import java.io.File
 
+import ohnosequences.awstools.regions.Region._
+
 import com.amazonaws.auth._
 import com.amazonaws.services.dynamodb.AmazonDynamoDBClient
 import com.amazonaws.services.dynamodb.model._
 
 import com.amazonaws.services.dynamodb.datamodeling.DynamoDBMapper
 import scala.collection.JavaConversions._
-import com.amazonaws.regions.Regions
 import com.amazonaws.internal.StaticCredentialsProvider
 
 
@@ -236,7 +237,7 @@ object DynamoDB {
   def create(credentials: AWSCredentialsProvider): DynamoDB = {
 
     val ddbClient = new AmazonDynamoDBClient(credentials)
-    ddbClient.setRegion(com.amazonaws.regions.Region.getRegion(Regions.EU_WEST_1))
+    ddbClient.setRegion(Ireland)
     new DynamoDB(ddbClient)
   }
 }

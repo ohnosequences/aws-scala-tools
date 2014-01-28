@@ -2,10 +2,11 @@ package ohnosequences.awstools.s3
 
 import java.io.{InputStream, ByteArrayInputStream, File}
 
+import ohnosequences.awstools.regions.Region._
+
 import com.amazonaws.auth._
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3Client}
 import com.amazonaws.services.s3.model._
-
 
 import scala.collection.JavaConversions._
 import com.amazonaws.services.importexport.model.NoSuchBucketException
@@ -13,7 +14,6 @@ import com.amazonaws.services.s3.transfer.{Transfer, TransferManager}
 
 import com.amazonaws.AmazonServiceException
 import scala.collection.mutable.ListBuffer
-import com.amazonaws.regions.Regions
 import com.amazonaws.internal.StaticCredentialsProvider
 import com.amazonaws.event._
 import com.amazonaws.event.{ProgressListener => PListener, ProgressEvent => PEvent}
@@ -262,7 +262,7 @@ object S3 {
 
   def create(credentials: AWSCredentialsProvider): S3 = {
     val s3Client = new AmazonS3Client(credentials)
-    s3Client.setRegion(com.amazonaws.regions.Region.getRegion(Regions.EU_WEST_1))
+    s3Client.setRegion(Ireland)
     new S3(s3Client)
   }
 }

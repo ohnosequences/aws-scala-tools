@@ -2,10 +2,11 @@ package ohnosequences.awstools.cloudwatch
 
 import java.io.File
 
+import ohnosequences.awstools.regions.Region._
+
 import com.amazonaws.auth._
 import com.amazonaws.services.cloudwatch.{model, AmazonCloudWatchClient, AmazonCloudWatch}
 import com.amazonaws.services.cloudwatch.model.{GetMetricStatisticsRequest, StandardUnit, MetricDatum, PutMetricDataRequest}
-import com.amazonaws.regions.Regions
 import com.amazonaws.internal.StaticCredentialsProvider
 
 class CloudWatch(val cw: AmazonCloudWatch) {
@@ -55,7 +56,7 @@ object CloudWatch {
 
   def create(credentials: AWSCredentialsProvider): CloudWatch = {
     val cwClient = new AmazonCloudWatchClient(credentials)
-    cwClient.setRegion(com.amazonaws.regions.Region.getRegion(Regions.EU_WEST_1))
+    cwClient.setRegion(Ireland)
     new CloudWatch(cwClient)
   }
 }
