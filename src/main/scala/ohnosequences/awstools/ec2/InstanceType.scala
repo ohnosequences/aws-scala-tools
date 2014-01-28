@@ -5,7 +5,7 @@ import com.amazonaws.services.ec2.model.{InstanceType => JavaInstanceType}
 sealed class InstanceType(name: String) {
   override def toString = name
 
-  @deprecated("There is an implicit conversion for that in ohnosequences.awstools.ec2.InstanceType, just import it.",
+  @deprecated("There is an implicit conversion for that in ohnosequences.awstools.ec2.InstanceType, just import it",
               since = "v0.6.0")
   def toAWS = JavaInstanceType.fromValue(name)
 }
@@ -42,8 +42,8 @@ object InstanceType {
   case object g2_2xlarge  extends InstanceType("g2.2xlarge")
   case object cg1_4xlarge extends InstanceType("cg1.4xlarge")
 
-  implicit def toJavaAWS(t: InstanceType): JavaInstanceType = 
-    JavaInstanceType.fromValue(t.toString)
+  implicit def toJavaInstanceType(t: InstanceType): JavaInstanceType = 
+    JavaInstanceType.fromValue(t.name)
 
   // only for back compatibility:
   @deprecated("Use conversion from an arbitrary String carefully", since = "v0.6.0")
