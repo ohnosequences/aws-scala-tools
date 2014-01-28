@@ -205,19 +205,42 @@ class S3(val s3: AmazonS3) {
   }
 
 
-  def listObjects(bucket: String, prefix: String = ""): List[ObjectAddress] = {
-    val result = ListBuffer[ObjectAddress]()
-    var stopped = false
-    while(!stopped) {
-      val listing = s3.listObjects(bucket, prefix)
+  // def listObjects(bucket: String, prefix: String = ""): List[ObjectAddress] = {
+  //   val result = ListBuffer[ObjectAddress]()
+  //   var stopped = false
+  //   while(!stopped) {
+  //     val listing = s3.listObjects(bucket, prefix)
 
+  //     result ++= listing.getObjectSummaries.map{ summary =>
+  //       ObjectAddress(bucket, summary.getKey)
+  //     }
+
+  //     if(!listing.isTruncated) {
+  //       stopped = true
+  //     }
+  //   }
+  //   result.toList
+  // }
+
+  def listObjects(bucket: String, prefix: String = ""): List[ObjectAddress] = {
+    println("lsitObject")
+    val result = ListBuffer[ObjectAddress]()
+    //var stopped = false
+    var listing = s3.listObjects(bucket, prefix)
+
+    result ++= listing.getObjectSummaries.map{ summary =>
+        ObjectAddress(bucket, summary.getKey)
+    }
+
+     while (listing.isTruncated) {
+      //listing = Some(s3.listObjects(bucket, prefix))
+     // println(".")
+      
+      listing = s3.listNextBatchOfObjects(listing)
       result ++= listing.getObjectSummaries.map{ summary =>
         ObjectAddress(bucket, summary.getKey)
-      }
+      }   
 
-      if(!listing.isTruncated) {
-        stopped = true
-      }
     }
     result.toList
   }
