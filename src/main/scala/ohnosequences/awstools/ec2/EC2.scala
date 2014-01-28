@@ -21,7 +21,7 @@ object InstanceSpecs {
   implicit def getLaunchSpecs(specs: InstanceSpecs) = {
     val ls = new LaunchSpecification()
       .withSecurityGroups(specs.securityGroups)
-      .withInstanceType(specs.instanceType.toAWS)
+      .withInstanceType(specs.instanceType)
       .withImageId(specs.amiId)
       .withKeyName(specs.keyName)
       .withBlockDeviceMappings(specs.deviceMapping.map{ case (key, value) =>
@@ -276,7 +276,7 @@ class EC2(val ec2: AmazonEC2) {
 
   def runInstances(amount: Int, specs: InstanceSpecs): List[Instance] = {
     val preRequest = new RunInstancesRequest(specs.amiId, amount, amount)
-      .withInstanceType(specs.instanceType.toAWS)
+      .withInstanceType(specs.instanceType)
       .withKeyName(specs.keyName)
       .withUserData(Utils.base64encode(specs.userData))
       .withSecurityGroups(specs.securityGroups)
