@@ -223,7 +223,7 @@ class S3(val s3: AmazonS3) {
   // }
 
   def listObjects(bucket: String, prefix: String = ""): List[ObjectAddress] = {
-    println("lsitObject")
+   // println("lsitObject")
     val result = ListBuffer[ObjectAddress]()
     //var stopped = false
     var listing = s3.listObjects(bucket, prefix)
