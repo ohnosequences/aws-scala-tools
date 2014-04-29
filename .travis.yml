@@ -2,8 +2,9 @@ language: scala
 scala:
   - 2.10.3
 env:
-  - secure: "NkBORJGyKKoGv7sOEifM1v8reMoumsN8HaU5lWv/Gg00uxjpGyoNupl0CIEIlxC+f6f4Twv9oIiKtJriaMuKtyJOVX3fBX7JrXmxmXqZr3NVR/LNmh3Qzu5cyc6kd5goaXZjS6EBMqGuz5dObd1qPKLgvXXA8A4IlARwVKqXqMo="
-  - secure: "bVHdBlIN1M6bZpsd8UK/h0yfHvHNbR7E6nM22O22UYRtfyh23UlHSKpV42MRR6bdUZjweEhXO/wTEilfOXo/3qbDc+bpo6JBwHNF8eYEC6dxqKqVCKohL9+j9VUpezNznwMcNSEvYvSyYAsjRAMIl9t8Y2nPaS3dWfpAkFFT5zU="
+  global:
+    - secure: "NkBORJGyKKoGv7sOEifM1v8reMoumsN8HaU5lWv/Gg00uxjpGyoNupl0CIEIlxC+f6f4Twv9oIiKtJriaMuKtyJOVX3fBX7JrXmxmXqZr3NVR/LNmh3Qzu5cyc6kd5goaXZjS6EBMqGuz5dObd1qPKLgvXXA8A4IlARwVKqXqMo="
+    - secure: "bVHdBlIN1M6bZpsd8UK/h0yfHvHNbR7E6nM22O22UYRtfyh23UlHSKpV42MRR6bdUZjweEhXO/wTEilfOXo/3qbDc+bpo6JBwHNF8eYEC6dxqKqVCKohL9+j9VUpezNznwMcNSEvYvSyYAsjRAMIl9t8Y2nPaS3dWfpAkFFT5zU="
 script:
   - "sbt publish"
 jdk:
