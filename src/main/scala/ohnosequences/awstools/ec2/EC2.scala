@@ -399,9 +399,9 @@ object EC2 {
     create(new StaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
   }
 
-  def create(credentials: AWSCredentialsProvider): EC2 = {
+  def create(credentials: AWSCredentialsProvider, region: ohnosequences.awstools.regions.Region = Ireland): EC2 = {
     val ec2Client = new AmazonEC2Client(credentials)
-    ec2Client.setRegion(Ireland)
+    ec2Client.setRegion(region)
     new EC2(ec2Client)
   }
 

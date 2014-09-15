@@ -6,7 +6,7 @@ description := "AWS Scala tools"
 
 organization := "ohnosequences"
 
-bucketSuffix := "frutero.org"
+bucketSuffix := "era7.com"
 
 libraryDependencies ++= Seq(
   "com.amazonaws" % "aws-java-sdk" % "1.7.3",

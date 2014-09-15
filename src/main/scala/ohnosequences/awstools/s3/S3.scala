@@ -20,7 +20,13 @@ import com.amazonaws.event.{ProgressListener => PListener, ProgressEvent => PEve
 
 
 
-case class ObjectAddress(bucket: String, key: String)
+case class ObjectAddress(bucket: String, key: String) {
+
+  def /(path: String): ObjectAddress = {
+    val newKey = key.replaceAll("/$", "") + "/" + path.replaceAll("^/", "")
+    ObjectAddress(bucket, newKey)
+  }
+}
 
 case class TransferListener(transfer: Transfer) extends PListener {
   def progressChanged(progressEvent: PEvent) { 
@@ -265,6 +271,24 @@ class S3(val s3: AmazonS3) {
     s3.listObjects(name).getObjectSummaries.foreach { objectSummary =>
       s3.deleteObject(objectSummary.getBucketName, objectSummary.getKey)
     }
+  }
+
+  def objectExists(address: ObjectAddress): Boolean = {
+    try {
+      s3.getObject(address.bucket, address.key)
+      true
+    } catch {
+      case e: AmazonServiceException if "NoSuchKey".equals(e.getErrorCode)=> false
+      case t: Throwable => throw t
+    }
+  }
+
+  def generateTemporaryURL(address: ObjectAddress, time: Int): String = {
+    val exp = new java.util.Date()
+    var expMs = exp.getTime()
+    expMs += 1000 * time
+    exp.setTime(expMs)
+    s3.generatePresignedUrl(address.bucket, address.key, exp).toString
   }
 
 }
