@@ -52,9 +52,9 @@ object SQS {
     create(new StaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
   }
 
-  def create(provider: AWSCredentialsProvider): SQS = {
+  def create(provider: AWSCredentialsProvider, region: ohnosequences.awstools.regions.Region = Ireland): SQS = {
     val sqsClient = new AmazonSQSClient(provider)
-    sqsClient.setRegion(Ireland)
+    sqsClient.setRegion(region)
     new SQS(sqsClient)
   }
 

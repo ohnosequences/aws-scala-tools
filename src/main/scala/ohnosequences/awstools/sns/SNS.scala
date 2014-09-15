@@ -35,9 +35,9 @@ object SNS {
     create(new StaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
   }
 
-  def create(credentials: AWSCredentialsProvider): SNS = {
+  def create(credentials: AWSCredentialsProvider, region: ohnosequences.awstools.regions.Region = Ireland): SNS = {
     val snsClient = new AmazonSNSClient(credentials)
-    snsClient.setRegion(Ireland)
+    snsClient.setRegion(region)
     new SNS(snsClient)
   }
 }

@@ -54,9 +54,9 @@ object CloudWatch {
     create(new StaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
   }
 
-  def create(credentials: AWSCredentialsProvider): CloudWatch = {
+  def create(credentials: AWSCredentialsProvider, region: ohnosequences.awstools.regions.Region = Ireland): CloudWatch = {
     val cwClient = new AmazonCloudWatchClient(credentials)
-    cwClient.setRegion(Ireland)
+    cwClient.setRegion(region)
     new CloudWatch(cwClient)
   }
 }
