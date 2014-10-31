@@ -1,18 +1,19 @@
 package ohnosequences.awstools.s3
 
-import java.io.{InputStream, ByteArrayInputStream, File}
+import java.io.{IOException, InputStream, ByteArrayInputStream, File}
 
 import ohnosequences.awstools.regions.Region._
 
 import com.amazonaws.auth._
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3Client}
 import com.amazonaws.services.s3.model._
+import ohnosequences.logging.Logger
 
 import scala.collection.JavaConversions._
 import com.amazonaws.services.importexport.model.NoSuchBucketException
 import com.amazonaws.services.s3.transfer.{Transfer, TransferManager}
 
-import com.amazonaws.AmazonServiceException
+import com.amazonaws.{AmazonClientException, AmazonServiceException}
 import scala.collection.mutable.ListBuffer
 import com.amazonaws.internal.StaticCredentialsProvider
 import com.amazonaws.event._
@@ -26,6 +27,10 @@ case class ObjectAddress(bucket: String, key: String) {
     val newKey = key.replaceAll("/$", "") + "/" + path.replaceAll("^/", "")
     ObjectAddress(bucket, newKey)
   }
+
+  def url = "s3://" + bucket + "/" + key
+
+  override def toString = url
 }
 
 case class TransferListener(transfer: Transfer) extends PListener {
@@ -273,15 +278,15 @@ class S3(val s3: AmazonS3) {
     }
   }
 
-  def objectExists(address: ObjectAddress): Boolean = {
+  def objectExists(address: ObjectAddress, logger: Option[Logger] = None): Boolean = {
 
     try {
-      val obj = s3.getObject(address.bucket, address.key)
-      obj.close()
-      true
+      val metadata = s3.getObjectMetadata(address.bucket, address.key)
+      metadata != null
     } catch {
-      case e: AmazonServiceException if "NoSuchKey".equals(e.getErrorCode)=> false
-      case t: Throwable => throw t
+      case e: AmazonServiceException => logger.foreach { _.warn("object " + address + " is not accessible + " + e.getMessage() + " " + e.getErrorMessage())}; false
+      case eClient: AmazonClientException => logger.foreach { _.warn("object " + address + " is not accessible + " + eClient.getMessage())}; false
+      case eio: IOException => logger.foreach { _.warn("object " + address + " is not accessible + " + eio.getMessage())}; false
     }
   }
 
