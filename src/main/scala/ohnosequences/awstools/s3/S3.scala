@@ -274,8 +274,10 @@ class S3(val s3: AmazonS3) {
   }
 
   def objectExists(address: ObjectAddress): Boolean = {
+
     try {
-      s3.getObject(address.bucket, address.key)
+      val obj = s3.getObject(address.bucket, address.key)
+      obj.close()
       true
     } catch {
       case e: AmazonServiceException if "NoSuchKey".equals(e.getErrorCode)=> false
