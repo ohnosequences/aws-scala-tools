@@ -1,13 +1,42 @@
 package ohnosequences.awstools.dynamodb
 
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient
+import com.amazonaws.services.dynamodbv2.model._
+import ohnosequences.awstools.regions.Region
+import ohnosequences.logging.ConsoleLogger
 import org.junit.Test
 import org.junit.Assert._
 
 import java.io.File
 import com.amazonaws.services.dynamodb.datamodeling._
 import annotation.Annotation
+import scala.collection.JavaConversions._
 
 class DynamoDBTests {
+
+  @Test
+  def utilsTest: Unit = {
+
+
+    val provider = new com.amazonaws.auth.PropertiesFileCredentialsProvider(new java.io.File(System.getProperty("user.home"), "ohno.prop").getAbsolutePath)
+    val ddb = new AmazonDynamoDBClient(provider)
+    ddb.setRegion(Region.Ireland)
+    val logger = new ConsoleLogger("test")
+
+    val tableName = "utilsTestTable"
+    Utils.createTable(ddb, tableName, new AttributeDefinition("id", ScalarAttributeType.S), None, logger)
+    val requests: List[WriteRequest] = (1 to 102).toList.map { i =>
+      val item =  Map(
+        "id" -> new AttributeValue().withS(i.toString),
+        "val" -> new AttributeValue().withS(i.toString)
+      )
+      new WriteRequest(new PutRequest(item))
+    }
+    logger.benchExecute("batch")(Utils.writeWriteRequests(ddb, tableName, requests, logger))
+
+  //  logger.benchExecute("batch")(Utils.writeWriteRequestsNonBatch(ddb, tableName, requests, logger, System.currentTimeMillis(), requests.size))
+    //ddb.createTable("", HashKey("id", StringType))
+  }
 
   // @Test
   def policyTests {

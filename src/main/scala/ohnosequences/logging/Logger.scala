@@ -8,11 +8,16 @@ import ohnosequences.awstools.s3.{ObjectAddress, S3}
 
 
 trait Logger {
-  def warn(s: String)
 
-  def error(s: String)
+  def warn(s: String): Unit
 
-  def info(s: String)
+  def warn(t: Throwable): Unit =  { warn(t.toString) }
+
+  def error(t: Throwable): Unit =  { error(t.toString) }
+
+  def error(s: String): Unit
+
+  def info(s: String): Unit
 
   def benchExecute[T](description: String)(statement: =>T): T = {
     val t1 = System.currentTimeMillis()
@@ -34,7 +39,7 @@ object unitLogger extends Logger {
 
 
 
-class LogFormatter(prefix: String) extends Logger {
+class LogFormatter(prefix: String) {
 
   val format = new SimpleDateFormat("HH:mm:ss.SSS")
 
@@ -43,15 +48,15 @@ class LogFormatter(prefix: String) extends Logger {
   }
 
 
-  def info(s: String) = {
+  def info(s: String): String = {
     "[" + "INFO " + prefix + "]: " + s
   }
 
-  def error(s: String) {
+  def error(s: String): String = {
     "[" + "ERROR " + prefix + "]: " + s
   }
 
-  def warn(s: String) {
+  def warn(s: String): String =  {
     "[" + "WARN " + prefix + "]: " + s
   }
 }
@@ -71,6 +76,16 @@ class ConsoleLogger(prefix: String) extends Logger {
 
   override def warn(s: String) {
     println(formatter.warn(s))
+  }
+
+  override def error(t: Throwable): Unit = {
+    error(t.toString)
+    t.printStackTrace()
+  }
+
+  override def warn(t: Throwable): Unit = {
+    warn(t.toString)
+  //  t.printStackTrace()
   }
 }
 
