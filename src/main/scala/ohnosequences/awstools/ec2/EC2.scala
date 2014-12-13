@@ -25,6 +25,7 @@ object InstanceSpecs {
       .withInstanceType(specs.instanceType)
       .withImageId(specs.amiId)
       .withKeyName(specs.keyName)
+      .withMonitoringEnabled(specs.instanceMonitoring)
       .withBlockDeviceMappings(specs.deviceMapping.map{ case (key, value) =>
         new BlockDeviceMapping()
           .withDeviceName(key)
@@ -55,6 +56,7 @@ case class InstanceSpecs(instanceType: awstools.InstanceType,
                          userData: String = "",
                          instanceProfile: Option[String] = None,
                          securityGroups: List[String] = List(),
+                         instanceMonitoring: Boolean = false,
                          deviceMapping: Map[String, String] = Map[String, String]())
 
 
