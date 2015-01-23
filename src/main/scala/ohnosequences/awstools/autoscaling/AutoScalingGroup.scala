@@ -53,7 +53,8 @@ object LaunchConfiguration {
         securityGroups = launchConfiguration.getSecurityGroups.toList,
         deviceMapping = launchConfiguration.getBlockDeviceMappings.map(m => (m.getDeviceName, m.getVirtualName)).toMap,
         userData = launchConfiguration.getUserData,
-        instanceProfile =  Utils.stringToOption(launchConfiguration.getIamInstanceProfile)
+        instanceProfile =  Utils.stringToOption(launchConfiguration.getIamInstanceProfile),
+        instanceMonitoring = launchConfiguration.getInstanceMonitoring.isEnabled
       )
     )
   }

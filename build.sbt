@@ -8,6 +8,10 @@ organization := "ohnosequences"
 
 bucketSuffix := "era7.com"
 
+scalaVersion := "2.10.4"
+
+crossScalaVersions := Seq("2.11.4")
+
 libraryDependencies ++= Seq(
 //  "com.amazonaws" % "aws-java-sns" % "1.9.8",
 //  "com.amazonaws" % "aws-java-sqs" % "1.9.8",
