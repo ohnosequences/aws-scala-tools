@@ -18,6 +18,7 @@ object InstanceType {
   @deprecated("Use conversion from an arbitrary String carefully", since = "v0.6.0")
   def fromName(name: String): InstanceType = new InstanceType(name)
 
+  // This is taken from http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html
 
   // Current Generation Instances //
 
@@ -74,13 +75,3 @@ object InstanceType {
   case object t1_micro extends InstanceType("t1.micro")
 
 }
-
-
-
-
-
-
-
-
-
-

@@ -11,34 +11,59 @@ class InstanceTypeTests {
 
   @Test
   def toJavaTypeTest() {
-    assertEquals(toJavaInstanceType(t1_micro),    JavaInstanceType.T1Micro)
-    assertEquals(toJavaInstanceType(m1_small),    JavaInstanceType.M1Small)
-    assertEquals(toJavaInstanceType(m1_medium),   JavaInstanceType.M1Medium)
-    assertEquals(toJavaInstanceType(m1_large),    JavaInstanceType.M1Large)
-    assertEquals(toJavaInstanceType(m1_xlarge),   JavaInstanceType.M1Xlarge)
-    assertEquals(toJavaInstanceType(m3_xlarge),   JavaInstanceType.M3Xlarge)
-    assertEquals(toJavaInstanceType(m3_2xlarge),  JavaInstanceType.M32xlarge)
-    assertEquals(toJavaInstanceType(m2_xlarge),   JavaInstanceType.M2Xlarge)
-    assertEquals(toJavaInstanceType(m2_2xlarge),  JavaInstanceType.M22xlarge)
-    assertEquals(toJavaInstanceType(m2_4xlarge),  JavaInstanceType.M24xlarge)
-    assertEquals(toJavaInstanceType(cr1_8xlarge), JavaInstanceType.Cr18xlarge)
-    assertEquals(toJavaInstanceType(i2_xlarge),   JavaInstanceType.I2Xlarge)
-    assertEquals(toJavaInstanceType(i2_2xlarge),  JavaInstanceType.I22xlarge)
-    assertEquals(toJavaInstanceType(i2_4xlarge),  JavaInstanceType.I24xlarge)
-    assertEquals(toJavaInstanceType(i2_8xlarge),  JavaInstanceType.I28xlarge)
-    assertEquals(toJavaInstanceType(hi1_4xlarge), JavaInstanceType.Hi14xlarge)
-    assertEquals(toJavaInstanceType(hs1_8xlarge), JavaInstanceType.Hs18xlarge)
-    assertEquals(toJavaInstanceType(c1_medium),   JavaInstanceType.C1Medium)
-    assertEquals(toJavaInstanceType(c1_xlarge),   JavaInstanceType.C1Xlarge)
-    assertEquals(toJavaInstanceType(c3_large),    JavaInstanceType.C3Large)
-    assertEquals(toJavaInstanceType(c3_xlarge),   JavaInstanceType.C3Xlarge)
-    assertEquals(toJavaInstanceType(c3_2xlarge),  JavaInstanceType.C32xlarge)
-    assertEquals(toJavaInstanceType(c3_4xlarge),  JavaInstanceType.C34xlarge)
-    assertEquals(toJavaInstanceType(c3_8xlarge),  JavaInstanceType.C38xlarge)
-    assertEquals(toJavaInstanceType(cc1_4xlarge), JavaInstanceType.Cc14xlarge)
-    assertEquals(toJavaInstanceType(cc2_8xlarge), JavaInstanceType.Cc28xlarge)
-    assertEquals(toJavaInstanceType(g2_2xlarge),  JavaInstanceType.G22xlarge)
-    assertEquals(toJavaInstanceType(cg1_4xlarge), JavaInstanceType.Cg14xlarge)
+
+    // General purpose
+    assert{ t2_micro.toAWS   == JavaInstanceType.fromValue("t2.micro") }
+    assert{ t2_small.toAWS   == JavaInstanceType.fromValue("t2.small") }
+    assert{ t2_medium.toAWS  == JavaInstanceType.fromValue("t2.medium") }
+    assert{ m3_medium.toAWS  == JavaInstanceType.fromValue("m3.medium") }
+    assert{ m3_large.toAWS   == JavaInstanceType.fromValue("m3.large") }
+    assert{ m3_xlarge.toAWS  == JavaInstanceType.fromValue("m3.xlarge") }
+    assert{ m3_2xlarge.toAWS == JavaInstanceType.fromValue("m3.2xlarge") }
+    // Compute optimized
+    assert{ c3_large.toAWS   == JavaInstanceType.fromValue("c3.large") }
+    assert{ c3_xlarge.toAWS  == JavaInstanceType.fromValue("c3.xlarge") }
+    assert{ c3_2xlarge.toAWS == JavaInstanceType.fromValue("c3.2xlarge") }
+    assert{ c3_4xlarge.toAWS == JavaInstanceType.fromValue("c3.4xlarge") }
+    assert{ c3_8xlarge.toAWS == JavaInstanceType.fromValue("c3.8xlarge") }
+    // Memory optimized
+    assert{ r3_large.toAWS   == JavaInstanceType.fromValue("r3.large") }
+    assert{ r3_xlarge.toAWS  == JavaInstanceType.fromValue("r3.xlarge") }
+    assert{ r3_2xlarge.toAWS == JavaInstanceType.fromValue("r3.2xlarge") }
+    assert{ r3_4xlarge.toAWS == JavaInstanceType.fromValue("r3.4xlarge") }
+    assert{ r3_8xlarge.toAWS == JavaInstanceType.fromValue("r3.8xlarge") }
+    // Storage optimized
+    assert{ i2_xlarge.toAWS   == JavaInstanceType.fromValue("i2.xlarge") }
+    assert{ i2_2xlarge.toAWS  == JavaInstanceType.fromValue("i2.2xlarge") }
+    assert{ i2_4xlarge.toAWS  == JavaInstanceType.fromValue("i2.4xlarge") }
+    assert{ i2_8xlarge.toAWS  == JavaInstanceType.fromValue("i2.8xlarge") }
+    assert{ hs1_8xlarge.toAWS == JavaInstanceType.fromValue("hs1.8xlarge") }
+    // GPU instances
+    assert{ g2_2xlarge.toAWS == JavaInstanceType.fromValue("g2.2xlarge") }
+
+    // Previous Generation Instances //
+
+    // General purpose
+    assert{ m1_small.toAWS  == JavaInstanceType.fromValue("m1.small") }
+    assert{ m1_medium.toAWS == JavaInstanceType.fromValue("m1.medium") }
+    assert{ m1_large.toAWS  == JavaInstanceType.fromValue("m1.large") }
+    assert{ m1_xlarge.toAWS == JavaInstanceType.fromValue("m1.xlarge") }
+    // Compute optimized
+    assert{ c1_medium.toAWS   == JavaInstanceType.fromValue("c1.medium") }
+    assert{ c1_xlarge.toAWS   == JavaInstanceType.fromValue("c1.xlarge") }
+    assert{ cc2_8xlarge.toAWS == JavaInstanceType.fromValue("cc2.8xlarge") }
+    // Memory optimized
+    assert{ m2_xlarge.toAWS   == JavaInstanceType.fromValue("m2.xlarge") }
+    assert{ m2_2xlarge.toAWS  == JavaInstanceType.fromValue("m2.2xlarge") }
+    assert{ m2_4xlarge.toAWS  == JavaInstanceType.fromValue("m2.4xlarge") }
+    assert{ cr1_8xlarge.toAWS == JavaInstanceType.fromValue("cr1.8xlarge") }
+    // Storage optimized
+    assert{ hi1_4xlarge.toAWS == JavaInstanceType.fromValue("hi1.4xlarge") }
+    // GPU instances
+    assert{ cg1_4xlarge.toAWS == JavaInstanceType.fromValue("cg1.4xlarge") }
+    // Micro instances
+    assert{ t1_micro.toAWS == JavaInstanceType.fromValue("t1.micro") }
+
   }
 
 }

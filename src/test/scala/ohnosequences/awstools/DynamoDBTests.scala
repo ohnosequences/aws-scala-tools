@@ -14,11 +14,11 @@ import scala.collection.JavaConversions._
 
 class DynamoDBTests {
 
-  @Test
+  // @Test
   def utilsTest: Unit = {
 
 
-    val provider = new com.amazonaws.auth.PropertiesFileCredentialsProvider(new java.io.File(System.getProperty("user.home"), "ohno.prop").getAbsolutePath)
+    val provider = new com.amazonaws.auth.PropertiesFileCredentialsProvider(new java.io.File(System.getProperty("user.home"), ".aws/era7.credentials.prop").getAbsolutePath)
     val ddb = new AmazonDynamoDBClient(provider)
     ddb.setRegion(Region.Ireland)
     val logger = new ConsoleLogger("test")
