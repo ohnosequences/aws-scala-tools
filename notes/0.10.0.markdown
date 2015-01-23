@@ -1,2 +1,4 @@
-Added instance monitoring parameter to InstanceSpecs (with default false) (See [#20](https://github.com/ohnosequences/aws-scala-tools/pull/20)).
+- Added instance monitoring parameter to InstanceSpecs (with default false) (See [#20](https://github.com/ohnosequences/aws-scala-tools/pull/20)).
+- Actualized instance types list
+
 Who knows what else has changed since the previous release...
