@@ -71,7 +71,7 @@ class LogFormatter(prefix: String) {
 }
 
 
-class ConsoleLogger(prefix: String, debug: Boolean) extends Logger {
+class ConsoleLogger(prefix: String, debug: Boolean = false) extends Logger {
 
   val formatter = new LogFormatter(prefix)
 

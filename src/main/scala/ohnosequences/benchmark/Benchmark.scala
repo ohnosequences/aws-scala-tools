@@ -1,5 +1,7 @@
 package ohnosequences.benchmark
 
+import ohnosequences.logging.Logger
+
 import scala.collection.mutable
 
 trait AnyBench {
@@ -10,6 +12,8 @@ trait AnyBench {
   def averageSpeed(label: String): Double
 
   def totalTime(label: String): Long
+
+
 }
 
 class Bench extends AnyBench {
@@ -52,5 +56,12 @@ class Bench extends AnyBench {
 
   override def totalTime(label: String): Long = {
     times.getOrElse(label, 0L)
+  }
+
+  def printStats(logger: Logger): Unit = {
+    times.keySet.foreach { key =>
+      logger.info(key + ": " + averageTime(key) + " ms")
+    }
+
   }
 }
