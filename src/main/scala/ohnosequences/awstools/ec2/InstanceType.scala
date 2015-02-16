@@ -5,8 +5,8 @@ import com.amazonaws.services.ec2.model.{InstanceType => JavaInstanceType}
 sealed class InstanceType private(val name: String) {
   override def toString = name
 
-  @deprecated("There is an implicit conversion for that in ohnosequences.awstools.ec2.InstanceType, just import it",
-              since = "v0.6.0")
+  //@deprecated("There is an implicit conversion for that in ohnosequences.awstools.ec2.InstanceType, just import it",
+  //            since = "v0.6.0")
   def toAWS = JavaInstanceType.fromValue(name)
 }
 

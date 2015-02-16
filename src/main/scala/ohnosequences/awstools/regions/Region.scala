@@ -3,7 +3,11 @@ package ohnosequences.awstools.regions
 import com.amazonaws.regions.{Regions => JavaRegions}
 import com.amazonaws.regions.{Region => JavaRegion}
 
-sealed abstract class Region(val name: String) { override def toString = name }
+sealed abstract class Region(val name: String) {
+  override def toString = name
+
+  def toAWSRegion = Region.toJavaRegions(this)
+}
 
 object Region {
 

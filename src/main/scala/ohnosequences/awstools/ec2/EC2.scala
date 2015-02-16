@@ -403,7 +403,7 @@ object EC2 {
 
   def create(credentials: AWSCredentialsProvider, region: ohnosequences.awstools.regions.Region = Ireland): EC2 = {
     val ec2Client = new AmazonEC2Client(credentials)
-    ec2Client.setRegion(region)
+    ec2Client.setRegion(region.toAWSRegion)
     new EC2(ec2Client)
   }
 
