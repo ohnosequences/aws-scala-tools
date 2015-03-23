@@ -5,6 +5,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 import ohnosequences.awstools.s3.{ObjectAddress, S3}
+import ohnosequences.benchmark.Bench
 
 
 trait Logger {
@@ -19,12 +20,14 @@ trait Logger {
 
   def info(s: String): Unit
 
-  def benchExecute[T](description: String)(statement: =>T): T = {
+  def debug(s: String): Unit
+
+  def benchExecute[T](description: String, bench: Option[Bench] = None)(statement: =>T): T = {
     val t1 = System.currentTimeMillis()
     val res = statement
-
     val t2 = System.currentTimeMillis()
-    info(description + " finished in " + (t2 - t1) + " ms")
+    debug(description + " finished in " + (t2 - t1) + " ms")
+    bench.foreach(_.register(description, t2 - t1))
     res
   }
 }
@@ -35,6 +38,8 @@ object unitLogger extends Logger {
   override def error(s: String) {}
 
   override def info(s: String) {}
+
+  override def debug(s: String) {}
 }
 
 
@@ -44,25 +49,29 @@ class LogFormatter(prefix: String) {
   val format = new SimpleDateFormat("HH:mm:ss.SSS")
 
   def pref(): String = {
-    format.format(new Date()) + " " + prefix + ": "
+    format.format(new Date()) + " " + prefix
   }
 
 
   def info(s: String): String = {
-    "[" + "INFO " + prefix + "]: " + s
+    "[" + "INFO " + pref + "]: " + s
   }
 
   def error(s: String): String = {
-    "[" + "ERROR " + prefix + "]: " + s
+    "[" + "ERROR " + pref + "]: " + s
   }
 
   def warn(s: String): String =  {
-    "[" + "WARN " + prefix + "]: " + s
+    "[" + "WARN " + pref + "]: " + s
+  }
+
+  def debug(s: String): String =  {
+    "[" + "DEBUG " + pref + "]: " + s
   }
 }
 
 
-class ConsoleLogger(prefix: String) extends Logger {
+class ConsoleLogger(prefix: String, debug: Boolean = false) extends Logger {
 
   val formatter = new LogFormatter(prefix)
 
@@ -83,13 +92,16 @@ class ConsoleLogger(prefix: String) extends Logger {
     t.printStackTrace()
   }
 
-  override def warn(t: Throwable): Unit = {
-    warn(t.toString)
-  //  t.printStackTrace()
+  override def debug(s: String): Unit = {
+    if (debug) {
+      println(formatter.debug(s))
+    }
   }
+
+
 }
 
-class FileLogger(prefix: String, workingDir: File = new File("."), printToConsole: Boolean = true) extends Logger {
+class FileLogger(prefix: String, debug: Boolean, workingDir: File = new File("."), printToConsole: Boolean = true) extends Logger {
 
   val formatter = new LogFormatter(prefix)
 
@@ -97,7 +109,7 @@ class FileLogger(prefix: String, workingDir: File = new File("."), printToConsol
   val log = new PrintWriter(logFile)
 
   val consoleLogger = if (printToConsole) {
-    Some(new ConsoleLogger(prefix))
+    Some(new ConsoleLogger(prefix, debug))
   } else {
     None
   }
@@ -117,9 +129,17 @@ class FileLogger(prefix: String, workingDir: File = new File("."), printToConsol
     log.println(formatter.info(s))
   }
 
+  override def debug(s: String): Unit = {
+    if (debug) {
+      consoleLogger.foreach {
+        _.debug(s)
+      }
+      log.println(formatter.debug(s))
+    }
+  }
 }
 
-class S3Logger(s3: S3, prefix: String, workingDir: File, printToConsole: Boolean = true) extends FileLogger(prefix, workingDir, printToConsole) {
+class S3Logger(s3: S3, prefix: String, debug: Boolean, workingDir: File, printToConsole: Boolean = true) extends FileLogger(prefix, debug, workingDir, printToConsole) {
   def uploadLog( destination: ObjectAddress): Unit = {
     log.close()
     s3.putObject(destination, logFile)

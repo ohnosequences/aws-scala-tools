@@ -37,7 +37,7 @@ object SNS {
 
   def create(credentials: AWSCredentialsProvider, region: ohnosequences.awstools.regions.Region = Ireland): SNS = {
     val snsClient = new AmazonSNSClient(credentials)
-    snsClient.setRegion(region)
+    snsClient.setRegion(region.toAWSRegion)
     new SNS(snsClient)
   }
 }

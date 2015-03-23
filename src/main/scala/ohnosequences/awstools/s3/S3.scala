@@ -10,7 +10,6 @@ import com.amazonaws.services.s3.model._
 import ohnosequences.logging.Logger
 
 import scala.collection.JavaConversions._
-import com.amazonaws.services.importexport.model.NoSuchBucketException
 import com.amazonaws.services.s3.transfer.{Transfer, TransferManager}
 
 import com.amazonaws.{AmazonClientException, AmazonServiceException}
@@ -111,9 +110,9 @@ case class LoadingManager(transferManager: TransferManager) {
     transferWaiter(download)
   }
 
-  //def shutdown() {
-    //transferManager.shutdownNow()
-  //}
+  def shutdown() {
+    transferManager.shutdownNow(false)
+  }
 }
 
 class S3(val s3: AmazonS3) {
@@ -207,31 +206,10 @@ class S3(val s3: AmazonS3) {
       if (empty) {
         emptyBucket(name)
       }
-      try {
       s3.deleteBucket(name)
-      } catch {
-        case e: NoSuchBucketException => ()
-      }
     }
   }
 
-
-  // def listObjects(bucket: String, prefix: String = ""): List[ObjectAddress] = {
-  //   val result = ListBuffer[ObjectAddress]()
-  //   var stopped = false
-  //   while(!stopped) {
-  //     val listing = s3.listObjects(bucket, prefix)
-
-  //     result ++= listing.getObjectSummaries.map{ summary =>
-  //       ObjectAddress(bucket, summary.getKey)
-  //     }
-
-  //     if(!listing.isTruncated) {
-  //       stopped = true
-  //     }
-  //   }
-  //   result.toList
-  // }
 
   def listObjects(bucket: String, prefix: String = ""): List[ObjectAddress] = {
    // println("lsitObject")
@@ -316,7 +294,7 @@ object S3 {
 
   def create(credentials: AWSCredentialsProvider, region: ohnosequences.awstools.regions.Region = Ireland): S3 = {
     val s3Client = new AmazonS3Client(credentials)
-    s3Client.setRegion(region)
+    s3Client.setRegion(region.toAWSRegion)
     new S3(s3Client)
   }
 }
