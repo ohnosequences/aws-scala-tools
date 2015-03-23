@@ -1,56 +1,36 @@
 
 ```scala
-//package ohnosequences.logging
-//
-//import ohnosequences.awstools.s3.ObjectAddress
-//import ohnosequences.nisperon.{NisperonConfiguration, AWS}
-//import java.io.File
-//import java.text.SimpleDateFormat
-//import java.util.Date
-//
-////todo add verbose level
-////todo add upload manager here
-//class S3Logger(prefix: String, aws: AWS, destination: ObjectAddress, workingDir: String) extends Logger {
-//  val buffer = new StringBuilder
-////  def uploadFile(file: File, zeroDir: File = new File(workingDir)) {
-////    val path = file.getAbsolutePath.replace(zeroDir.getAbsolutePath, "")
-////    aws.s3.putObject(destination / path, file)
-////  }
-////
-////  def uploadLog(destination: ObjectAddress) {
-////    val r = buffer.toString()
-////    if(!r.isEmpty) {
-////      aws.s3.putWholeObject(destination, buffer.toString())
-////    }
-////  }
-//
-//  def pref(): String = {
-//    format.format(new Date()) + " " + prefix + ": "
-//  }
-//
-//  val format = new SimpleDateFormat("HH:mm:ss.SSS")
-//
-//  def warn(s: String) {
-//    val ss = pref() + " WARN: " + s + System.lineSeparator()
-//    println(ss)
-//    buffer.append(ss)
-//  }
-//
-//  def error(s: String) {
-//    val ss = pref() + " ERROR: " + s + System.lineSeparator()
-//    println(ss)
-//    buffer.append(ss)
-//  }
-//
-//  def info(s: String) {
-//    val ss = pref() + " INFO: " + s + System.lineSeparator()
-//    println(ss)
-//    buffer.append(ss)
-//  }
-//
-//
-//
-//}
+package ohnosequences.awstools
+
+import com.amazonaws.auth.{AWSCredentialsProvider}
+import ohnosequences.awstools.ec2.EC2
+import ohnosequences.awstools.autoscaling.AutoScaling
+import ohnosequences.awstools.sqs.SQS
+import ohnosequences.awstools.sns.SNS
+import ohnosequences.awstools.s3.S3
+import ohnosequences.awstools.regions.Region.Ireland
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient
+
+trait AWSClients {
+  val ec2: EC2
+  val as: AutoScaling
+  val sqs: SQS
+  val sns: SNS
+  val s3: S3
+  val ddb: AmazonDynamoDBClient
+}
+
+object AWSClients {
+  def create(credentialsProvider: AWSCredentialsProvider, region: ohnosequences.awstools.regions.Region = Ireland) = new AWSClients {
+    val ec2 = EC2.create(credentialsProvider, region)
+    val as = AutoScaling.create(credentialsProvider, ec2, region)
+    val sqs = SQS.create(credentialsProvider, region)
+    val sns = SNS.create(credentialsProvider, region)
+    val s3 = S3.create(credentialsProvider, region)
+    val ddb = new AmazonDynamoDBClient(credentialsProvider)
+    ddb.setRegion(region.toAWSRegion)
+  }
+}
 
 
 ```
@@ -106,26 +86,26 @@
           + [SQSTests.scala][test\scala\ohnosequences\awstools\SQSTests.scala]
           + [TestCredentials.scala][test\scala\ohnosequences\awstools\TestCredentials.scala]
 
-[main\scala\ohnosequences\awstools\autoscaling\AutoScaling.scala]: ..\awstools\autoscaling\AutoScaling.scala.md
-[main\scala\ohnosequences\awstools\autoscaling\AutoScalingGroup.scala]: ..\awstools\autoscaling\AutoScalingGroup.scala.md
-[main\scala\ohnosequences\awstools\AWSClients.scala]: ..\awstools\AWSClients.scala.md
-[main\scala\ohnosequences\awstools\dynamodb\DynamoDBUtils.scala]: ..\awstools\dynamodb\DynamoDBUtils.scala.md
-[main\scala\ohnosequences\awstools\ec2\EC2.scala]: ..\awstools\ec2\EC2.scala.md
-[main\scala\ohnosequences\awstools\ec2\Filters.scala]: ..\awstools\ec2\Filters.scala.md
-[main\scala\ohnosequences\awstools\ec2\InstanceType.scala]: ..\awstools\ec2\InstanceType.scala.md
-[main\scala\ohnosequences\awstools\ec2\Utils.scala]: ..\awstools\ec2\Utils.scala.md
-[main\scala\ohnosequences\awstools\regions\Region.scala]: ..\awstools\regions\Region.scala.md
-[main\scala\ohnosequences\awstools\s3\Bucket.scala]: ..\awstools\s3\Bucket.scala.md
-[main\scala\ohnosequences\awstools\s3\S3.scala]: ..\awstools\s3\S3.scala.md
-[main\scala\ohnosequences\awstools\sns\SNS.scala]: ..\awstools\sns\SNS.scala.md
-[main\scala\ohnosequences\awstools\sns\Topic.scala]: ..\awstools\sns\Topic.scala.md
-[main\scala\ohnosequences\awstools\sqs\Queue.scala]: ..\awstools\sqs\Queue.scala.md
-[main\scala\ohnosequences\awstools\sqs\SQS.scala]: ..\awstools\sqs\SQS.scala.md
-[main\scala\ohnosequences\awstools\utils\DynamoDBUtils.scala]: ..\awstools\utils\DynamoDBUtils.scala.md
-[main\scala\ohnosequences\awstools\utils\SQSUtils.scala]: ..\awstools\utils\SQSUtils.scala.md
+[main\scala\ohnosequences\awstools\autoscaling\AutoScaling.scala]: autoscaling\AutoScaling.scala.md
+[main\scala\ohnosequences\awstools\autoscaling\AutoScalingGroup.scala]: autoscaling\AutoScalingGroup.scala.md
+[main\scala\ohnosequences\awstools\AWSClients.scala]: AWSClients.scala.md
+[main\scala\ohnosequences\awstools\dynamodb\DynamoDBUtils.scala]: dynamodb\DynamoDBUtils.scala.md
+[main\scala\ohnosequences\awstools\ec2\EC2.scala]: ec2\EC2.scala.md
+[main\scala\ohnosequences\awstools\ec2\Filters.scala]: ec2\Filters.scala.md
+[main\scala\ohnosequences\awstools\ec2\InstanceType.scala]: ec2\InstanceType.scala.md
+[main\scala\ohnosequences\awstools\ec2\Utils.scala]: ec2\Utils.scala.md
+[main\scala\ohnosequences\awstools\regions\Region.scala]: regions\Region.scala.md
+[main\scala\ohnosequences\awstools\s3\Bucket.scala]: s3\Bucket.scala.md
+[main\scala\ohnosequences\awstools\s3\S3.scala]: s3\S3.scala.md
+[main\scala\ohnosequences\awstools\sns\SNS.scala]: sns\SNS.scala.md
+[main\scala\ohnosequences\awstools\sns\Topic.scala]: sns\Topic.scala.md
+[main\scala\ohnosequences\awstools\sqs\Queue.scala]: sqs\Queue.scala.md
+[main\scala\ohnosequences\awstools\sqs\SQS.scala]: sqs\SQS.scala.md
+[main\scala\ohnosequences\awstools\utils\DynamoDBUtils.scala]: utils\DynamoDBUtils.scala.md
+[main\scala\ohnosequences\awstools\utils\SQSUtils.scala]: utils\SQSUtils.scala.md
 [main\scala\ohnosequences\benchmark\Benchmark.scala]: ..\benchmark\Benchmark.scala.md
-[main\scala\ohnosequences\logging\Logger.scala]: Logger.scala.md
-[main\scala\ohnosequences\logging\S3Logger.scala]: S3Logger.scala.md
+[main\scala\ohnosequences\logging\Logger.scala]: ..\logging\Logger.scala.md
+[main\scala\ohnosequences\logging\S3Logger.scala]: ..\logging\S3Logger.scala.md
 [test\scala\ohnosequences\awstools\EC2Tests.scala]: ..\..\..\..\test\scala\ohnosequences\awstools\EC2Tests.scala.md
 [test\scala\ohnosequences\awstools\InstanceTypeTests.scala]: ..\..\..\..\test\scala\ohnosequences\awstools\InstanceTypeTests.scala.md
 [test\scala\ohnosequences\awstools\RegionTests.scala]: ..\..\..\..\test\scala\ohnosequences\awstools\RegionTests.scala.md

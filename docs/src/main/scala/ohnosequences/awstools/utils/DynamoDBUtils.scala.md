@@ -1,42 +1,79 @@
 
 ```scala
-package ohnosequences.awstools.s3
+package ohnosequences.awstools.utils
 
-import com.amazonaws.services.s3.AmazonS3
-import java.io.File
-import com.amazonaws.services.s3.model.{CannedAccessControlList, PutObjectRequest}
+import com.amazonaws.AmazonClientException
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB
+import com.amazonaws.services.dynamodbv2.model.{DeleteItemRequest, ProvisionedThroughputExceededException, AttributeValue, GetItemRequest}
+import ohnosequences.logging.Logger
 
-case class Bucket(s3: AmazonS3, name: String) {
+import scala.annotation.tailrec
+import scala.util.{Failure, Success, Try}
+import scala.collection.JavaConversions._
 
-  def putObject(file: File, public: Boolean = false) {
-    if (public) {
-      s3.putObject(new PutObjectRequest(name, file.getName, file).withCannedAcl(CannedAccessControlList.PublicRead))
-    } else {
-      s3.putObject(new PutObjectRequest(name, file.getName, file))
+object DynamoDBUtils {
+
+
+  //with repeats
+  def getItem(ddb: AmazonDynamoDB,
+              tableName: String,
+              key: Map[String, AttributeValue],
+              attributesToGet: Seq[String],
+              logger: Logger): Try[Map[String, AttributeValue]] = {
+
+    @tailrec
+    def getItemRec(): Try[Map[String, AttributeValue]] = {
+      try {
+        val rawItem = ddb.getItem(new GetItemRequest()
+          .withTableName(tableName)
+          .withKey(key)
+          .withAttributesToGet(attributesToGet)
+        ).getItem
+        if (rawItem != null) {
+          Success(rawItem.toMap)
+        } else {
+          Failure(new NullPointerException)
+        }
+      } catch {
+        case p: ProvisionedThroughputExceededException => {
+          getItemRec()
+        }
+        case a: AmazonClientException => {
+          Failure(a)
+        }
+      }
     }
+
+    getItemRec()
   }
 
-//  def putObject(inputStream: InsputStream, public: Boolean = false) {
-//    if (public) {
-//      s3.putObject(new PutObjectRequest(name, file.getName, file).withCannedAcl(CannedAccessControlList.PublicRead))
-//    } else {
-//      s3.putObject(new PutObjectRequest(name, file.getName, file))
-//    }
-//  }
+  //with repeats
+  def deleteItem(ddb: AmazonDynamoDB,
+                 tableName: String,
+                 key: Map[String, AttributeValue],
+                 logger: Logger): Try[Unit] = {
 
-//  def putObject(key: String, s: String, public: Boolean = false) {
-//    var putRequest = new PutObjectRequest(name, key, IOUtils.toInputStream(s))
-//  }
+    @tailrec
+    def deleteItemRep(): Try[Unit] = {
+      try {
+        val rawItem = ddb.deleteItem(new DeleteItemRequest()
+          .withTableName(tableName)
+          .withKey(key)
+        )
+        Success(())
+      } catch {
+        case p: ProvisionedThroughputExceededException => {
+          deleteItemRep()
+        }
+        case a: AmazonClientException => {
+          Failure(a)
+        }
+      }
+    }
 
-  def delete() {
-    s3.deleteBucket(name)
+    deleteItemRep()
   }
 
-
-
-//  def getUrl = {
-//    s3.getBucketLocation(name)
-//  }
 }
 
 ```
@@ -101,14 +138,14 @@ case class Bucket(s3: AmazonS3, name: String) {
 [main\scala\ohnosequences\awstools\ec2\InstanceType.scala]: ..\ec2\InstanceType.scala.md
 [main\scala\ohnosequences\awstools\ec2\Utils.scala]: ..\ec2\Utils.scala.md
 [main\scala\ohnosequences\awstools\regions\Region.scala]: ..\regions\Region.scala.md
-[main\scala\ohnosequences\awstools\s3\Bucket.scala]: Bucket.scala.md
-[main\scala\ohnosequences\awstools\s3\S3.scala]: S3.scala.md
+[main\scala\ohnosequences\awstools\s3\Bucket.scala]: ..\s3\Bucket.scala.md
+[main\scala\ohnosequences\awstools\s3\S3.scala]: ..\s3\S3.scala.md
 [main\scala\ohnosequences\awstools\sns\SNS.scala]: ..\sns\SNS.scala.md
 [main\scala\ohnosequences\awstools\sns\Topic.scala]: ..\sns\Topic.scala.md
 [main\scala\ohnosequences\awstools\sqs\Queue.scala]: ..\sqs\Queue.scala.md
 [main\scala\ohnosequences\awstools\sqs\SQS.scala]: ..\sqs\SQS.scala.md
-[main\scala\ohnosequences\awstools\utils\DynamoDBUtils.scala]: ..\utils\DynamoDBUtils.scala.md
-[main\scala\ohnosequences\awstools\utils\SQSUtils.scala]: ..\utils\SQSUtils.scala.md
+[main\scala\ohnosequences\awstools\utils\DynamoDBUtils.scala]: DynamoDBUtils.scala.md
+[main\scala\ohnosequences\awstools\utils\SQSUtils.scala]: SQSUtils.scala.md
 [main\scala\ohnosequences\benchmark\Benchmark.scala]: ..\..\benchmark\Benchmark.scala.md
 [main\scala\ohnosequences\logging\Logger.scala]: ..\..\logging\Logger.scala.md
 [main\scala\ohnosequences\logging\S3Logger.scala]: ..\..\logging\S3Logger.scala.md
