@@ -17,5 +17,6 @@ libraryDependencies ++= Seq(
   "com.amazonaws" % "aws-java-sdk-s3" % "1.9.25",
   "com.amazonaws" % "aws-java-sdk-ec2" % "1.9.25",
   "com.amazonaws" % "aws-java-sdk-iam" % "1.9.25",
+
   "com.novocode"  % "junit-interface" % "0.11" % Test
 )

@@ -14,7 +14,12 @@ trait Logger {
 
   def warn(t: Throwable): Unit =  { warn(t.toString) }
 
-  def error(t: Throwable): Unit =  { error(t.toString) }
+  def error(t: Throwable): Unit =  {
+    error(t.toString)
+    t.getStackTrace.foreach { s =>
+      error("at " + s.toString)
+    }
+  }
 
   def error(s: String): Unit
 
@@ -30,6 +35,7 @@ trait Logger {
     bench.foreach(_.register(description, t2 - t1))
     res
   }
+
 }
 
 object unitLogger extends Logger {
@@ -54,7 +60,7 @@ class LogFormatter(prefix: String) {
 
 
   def info(s: String): String = {
-    "[" + "INFO " + pref + "]: " + s
+    "[" + "INFO  " + pref + "]: " + s
   }
 
   def error(s: String): String = {
@@ -62,7 +68,7 @@ class LogFormatter(prefix: String) {
   }
 
   def warn(s: String): String =  {
-    "[" + "WARN " + pref + "]: " + s
+    "[" + "WARN  " + pref + "]: " + s
   }
 
   def debug(s: String): String =  {
@@ -101,11 +107,11 @@ class ConsoleLogger(prefix: String, debug: Boolean = false) extends Logger {
 
 }
 
-class FileLogger(prefix: String, debug: Boolean, workingDir: File = new File("."), printToConsole: Boolean = true) extends Logger {
+class FileLogger(prefix: String, logFile: File, debug: Boolean, printToConsole: Boolean = true) extends Logger {
 
   val formatter = new LogFormatter(prefix)
 
-  val logFile = new File(workingDir, "log.txt")
+ // val logFile = new File(workingDir, "log.txt")
   val log = new PrintWriter(logFile)
 
   val consoleLogger = if (printToConsole) {
@@ -117,30 +123,32 @@ class FileLogger(prefix: String, debug: Boolean, workingDir: File = new File("."
   override def warn(s: String) {
     consoleLogger.foreach{_.warn(s)}
     log.println(formatter.warn(s))
+    log.flush()
   }
 
   override def error(s: String): Unit = {
     consoleLogger.foreach{_.error(s)}
     log.println(formatter.error(s))
+    log.flush()
   }
 
   override def info(s: String): Unit = {
     consoleLogger.foreach{_.info(s)}
     log.println(formatter.info(s))
+    log.flush()
   }
 
   override def debug(s: String): Unit = {
     if (debug) {
-      consoleLogger.foreach {
-        _.debug(s)
-      }
+      consoleLogger.foreach {_.debug(s)}
       log.println(formatter.debug(s))
+      log.flush()
     }
   }
 }
 
-class S3Logger(s3: S3, prefix: String, debug: Boolean, workingDir: File, printToConsole: Boolean = true) extends FileLogger(prefix, debug, workingDir, printToConsole) {
-  def uploadLog( destination: ObjectAddress): Unit = {
+class S3Logger(s3: S3, prefix: String, debug: Boolean, workingDir: File, logFile: File, printToConsole: Boolean = true) extends FileLogger(prefix, logFile, debug, printToConsole) {
+  def uploadLog(destination: ObjectAddress): Unit = {
     log.close()
     s3.putObject(destination, logFile)
   }
