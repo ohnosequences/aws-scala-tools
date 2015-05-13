@@ -29,7 +29,8 @@ object AWSToolsBuild extends Build {
   lazy val root = Project(id = "aws",
     base = file("."),
     settings = Project.defaultSettings ++ Seq(
-      sourceGenerators in Compile += task[Seq[File]] {
+      sourceGenerators in Test += task[Seq[File]] {
+        println("generation credentials for tests")
         val text = """
                      |package generated.test
                      |

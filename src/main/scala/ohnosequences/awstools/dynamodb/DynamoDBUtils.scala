@@ -6,8 +6,19 @@ import com.amazonaws.services.dynamodbv2.model._
 import ohnosequences.logging.Logger
 import scala.annotation.tailrec
 import scala.collection.JavaConversions._
+import scala.collection.mutable.ListBuffer
+import scala.concurrent.duration._
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
+case class RepeatConfiguration(attemptThreshold: Int = 100,
+                               initialTimeout: Duration = Duration(500, MILLISECONDS),
+                               timeoutThreshold: Duration = Duration(1, MINUTES),
+                               coefficient: Double = 1.5) {
+  def nextTimeout(timeout: Long): Long = {
+    math.max(timeoutThreshold.toMillis, (coefficient * timeout).toLong)
+  }
+}
 
 object DynamoDBUtils {
 
@@ -123,6 +134,71 @@ object DynamoDBUtils {
     writeWriteRequestsBatchBuffRec(List[WriteRequest](), requests)
   }
 
+  def repeatDynamoDBAction[T](actionName: String,
+                              logger: Option[Logger],
+                              repeatConfiguration: RepeatConfiguration
+                             )
+                             (action: => Try[T]): Try[T] = {
+    @tailrec
+    def repeatDynamoDBActionRec(attempt: Int, timeout: Long): Try[T] = {
+      if (attempt > repeatConfiguration.attemptThreshold) {
+        Failure(new Error("attempt threshold is reached for " + actionName))
+      } else {
+
+        val rawRes:Either[Throwable, Try[T]] = try {
+          logger.foreach { _.debug(actionName) }
+          val res: Try[T] = action
+          Right(action)
+        } catch {
+          case NonFatal(t) => {
+            //Failure(new Error(actionName + " failed", t))
+            Left(t)
+          }
+        }
+
+        rawRes match {
+          case Left(t) => {
+            Failure(new Error(actionName + " failed", t))
+          }
+          case Right(Failure(p : ProvisionedThroughputExceededException)) => {
+            logger.foreach {
+              _.warn("got ProvisionedThroughputExceededException during execution of " + actionName)
+            }
+            Thread.sleep(timeout)
+            repeatDynamoDBActionRec(attempt + 1, repeatConfiguration.nextTimeout(timeout))
+          }
+          case Right(Failure(NonFatal(t))) => {
+            Failure(new Error(actionName + " failed", t))
+          }
+          case Right(rest) => rest
+        }
+
+      }
+    }
+    repeatDynamoDBActionRec(1, repeatConfiguration.initialTimeout.toMillis)
+  }
+
+
+
+  def isEmpty(ddb: AmazonDynamoDB,
+              table: String,
+              logger: Option[Logger] = None,
+              repeatConfiguration: RepeatConfiguration = RepeatConfiguration()): Try[Boolean] = {
+    repeatDynamoDBAction("checking table " + table,
+      logger,
+      repeatConfiguration
+    ) {
+      Try {
+        val count: Int = ddb.scan(new ScanRequest()
+          .withTableName(table)
+          .withSelect(Select.COUNT)
+          .withLimit(1)
+        ).getCount
+        count == 0
+      }
+    }
+  }
+
   @tailrec
   def writeWriteRequestsNonBatch(ddb: AmazonDynamoDB, table: String, requests: List[WriteRequest], logger: Logger): Try[Unit] = {
     requests match {
@@ -154,11 +230,9 @@ object DynamoDBUtils {
 
 
 
-  def deleteTable(ddb: AmazonDynamoDB, table: String) {
-    try {
+  def deleteTable(ddb: AmazonDynamoDB, table: String): Try[Unit] = {
+    Try {
       ddb.deleteTable(new DeleteTableRequest().withTableName(table))
-    } catch {
-      case t: Throwable => println("can't delete table " + table); t.printStackTrace()
     }
   }
 
@@ -182,23 +256,23 @@ object DynamoDBUtils {
         }
       }
     }
-
     waitForResourceRec(1)
-
   }
 
   def changeThroughput(ddb: AmazonDynamoDB,
                        table: String,
                        readThroughput: Long = 1,
                        writeThroughput: Long = 1
-                        ) {
-    ddb.updateTable(new UpdateTableRequest()
-      .withTableName(table)
-      .withProvisionedThroughput(new ProvisionedThroughput()
+                        ): Try[Unit] = {
+    Try {
+      ddb.updateTable(new UpdateTableRequest()
+        .withTableName(table)
+        .withProvisionedThroughput(new ProvisionedThroughput()
         .withReadCapacityUnits(readThroughput)
         .withWriteCapacityUnits(writeThroughput)
+        )
       )
-    )
+    }
   }
 
 
@@ -253,7 +327,7 @@ object DynamoDBUtils {
         ddb.createTable(request)
 
         if (waitForCreation) {
-          waitForResource {
+          !waitForResource {
             logger.info("waiting for table " + tableName)
             getTableState(ddb, tableName).flatMap{
               case "ACTIVE" => Some("ACTIVE")
@@ -279,66 +353,123 @@ object DynamoDBUtils {
   }
 
 
-  //with repeats
+
   def getItem(ddb: AmazonDynamoDB,
+              logger: Option[Logger],
               tableName: String,
               key: Map[String, AttributeValue],
               attributesToGet: Seq[String],
-              logger: Logger): Try[Map[String, AttributeValue]] = {
+              repeatConfiguration: RepeatConfiguration = RepeatConfiguration()
+               ): Try[Map[String, AttributeValue]] = {
 
-    @tailrec
-    def getItemRec(): Try[Map[String, AttributeValue]] = {
-      try {
-        val rawItem = ddb.getItem(new GetItemRequest()
-          .withTableName(tableName)
-          .withKey(key)
-          .withAttributesToGet(attributesToGet)
-        ).getItem
-        if (rawItem != null) {
-          Success(rawItem.toMap)
-        } else {
-          Failure(new NullPointerException)
-        }
-      } catch {
-        case p: ProvisionedThroughputExceededException => {
-          getItemRec()
-        }
-        case a: AmazonClientException => {
-          Failure(a)
-        }
+    repeatDynamoDBAction("getting item with key " + key + " from table " + tableName,
+      logger,
+      repeatConfiguration
+    ) {
+      val rawItem = ddb.getItem(new GetItemRequest()
+        .withTableName(tableName)
+        .withKey(key)
+        .withAttributesToGet(attributesToGet)
+      ).getItem
+      if (Option(rawItem).isDefined) {
+        Success(rawItem.toMap)
+      } else {
+        Failure(new Error("key " + key + " doesn't exist"))
       }
     }
-
-    getItemRec()
   }
 
-  //with repeats
+  def putItem(ddb: AmazonDynamoDB,
+              logger: Option[Logger],
+              tableName: String,
+              item: Map[String, AttributeValue],
+              repeatConfiguration: RepeatConfiguration = RepeatConfiguration()): Try[Unit] = {
+
+    repeatDynamoDBAction("putting item to the table " + tableName,
+      logger,
+      repeatConfiguration
+    ){
+      ddb.putItem(tableName, item)
+      Success(())
+    }
+  }
+
+
+  def countKeysPerHash(ddb: AmazonDynamoDB,
+                       logger: Option[Logger],
+                       tableName: String,
+                       hashKeyName: String,
+                       hashValue: AttributeValue,
+                       repeatConfiguration: RepeatConfiguration = RepeatConfiguration()): Try[Int] = {
+
+    val conditions = new java.util.HashMap[String, Condition]()
+    conditions.put(hashKeyName, new Condition()
+      .withAttributeValueList(hashValue)
+      .withComparisonOperator(ComparisonOperator.EQ)
+    )
+
+    repeatDynamoDBAction("count items with hash " + hashKeyName + " in the table " + tableName,
+      logger,
+      repeatConfiguration
+    ){
+      val r = ddb.query(new QueryRequest()
+        .withTableName(tableName)
+        .withKeyConditions(conditions)
+        .withSelect(Select.COUNT)
+      ).getCount
+      Success(r)
+    }
+  }
+
+  def list(ddb: AmazonDynamoDB,
+           logger: Option[Logger],
+           tableName: String,
+           lastKey: Option[Map[String, AttributeValue]],
+           attributesToGet: Seq[String],
+           limit: Option[Int],
+           repeatConfiguration: RepeatConfiguration = RepeatConfiguration()): Try[(Option[Map[String, AttributeValue]], List[Map[String, AttributeValue]])] = {
+
+    repeatDynamoDBAction("list items in the table " + tableName,
+      logger,
+      repeatConfiguration
+    ) {
+      val request = new ScanRequest()
+        .withTableName(tableName)
+        .withAttributesToGet(attributesToGet)
+      limit.foreach { l => request.setLimit(l)}
+      lastKey match {
+        case Some(key) => request.withExclusiveStartKey(key)
+        case None => ()
+      }
+
+      val scanRes = ddb.scan(request)
+      val resultItems: List[Map[String, AttributeValue]] = scanRes.getItems.map(_.toMap).toList
+      val newLastKey: Option[Map[String, AttributeValue]] = Option(scanRes.getLastEvaluatedKey) match {
+        case Some(key) if !key.isEmpty => {
+          Some(key.toMap)
+        }
+        case _ => None
+      }
+      Success((newLastKey, resultItems))
+    }
+  }
+
   def deleteItem(ddb: AmazonDynamoDB,
+                 logger: Option[Logger],
                  tableName: String,
                  key: Map[String, AttributeValue],
-                 logger: Logger): Try[Unit] = {
+                 repeatConfiguration: RepeatConfiguration = RepeatConfiguration()): Try[Unit] = {
 
-    @tailrec
-    def deleteItemRep(): Try[Unit] = {
-      try {
-        val rawItem = ddb.deleteItem(new DeleteItemRequest()
-          .withTableName(tableName)
-          .withKey(key)
-        )
-        Success(())
-      } catch {
-        case p: ProvisionedThroughputExceededException => {
-          deleteItemRep()
-        }
-        case a: AmazonClientException => {
-          Failure(a)
-        }
-      }
+    repeatDynamoDBAction("deleting item with key " + key + " from the table " + tableName,
+      logger,
+      repeatConfiguration
+    ) {
+      val rawItem = ddb.deleteItem(new DeleteItemRequest()
+        .withTableName(tableName)
+        .withKey(key)
+      )
+      Success(())
     }
-
-    deleteItemRep()
   }
-
-
 
 }

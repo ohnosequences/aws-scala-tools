@@ -66,6 +66,12 @@ object SQSUtils {
       }
     }
   }
+
+  def deleteQueue(sqs: AmazonSQS, sqsUrl: String): Try[Unit] = {
+    Try {
+      sqs.deleteQueue(sqsUrl)
+    }
+  }
 }
 
 //  .withEntries(left.zipWithIndex.map { case (item, i) =>

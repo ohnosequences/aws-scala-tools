@@ -7,18 +7,19 @@ import java.util.Date
 import ohnosequences.awstools.s3.{ObjectAddress, S3}
 import ohnosequences.benchmark.Bench
 
+import scala.annotation.tailrec
+
 
 trait Logger {
 
   def warn(s: String): Unit
 
-  def warn(t: Throwable): Unit =  { warn(t.toString) }
+  def warn(t: Throwable): Unit =  {
+    printThrowable(t, warn)
+  }
 
   def error(t: Throwable): Unit =  {
-    error(t.toString)
-    t.getStackTrace.foreach { s =>
-      error("at " + s.toString)
-    }
+    printThrowable(t, error)
   }
 
   def error(s: String): Unit
@@ -26,6 +27,33 @@ trait Logger {
   def info(s: String): Unit
 
   def debug(s: String): Unit
+  
+  def printThrowable(t: Throwable, print: String => Unit, maxDepth: Int = 5): Unit = {
+    
+    @tailrec
+    def printThrowableRec(t: Throwable, depth: Int): Unit = {
+      if (depth > maxDepth) {
+        ()
+      } else {
+        print(t.toString)
+        t.getStackTrace.foreach { s =>
+          print("    at " + s.toString)
+        }
+        Option(t.getCause) match {
+          case None => ()
+          case Some(cause) => {
+            print("Caused by:")
+            printThrowableRec(cause, depth+1)}
+        } 
+      }
+    }
+    printThrowableRec(t, 1)
+  }
+
+  def debug(t: Throwable): Unit =  {
+    printThrowable(t, debug)
+  }
+
 
   def benchExecute[T](description: String, bench: Option[Bench] = None)(statement: =>T): T = {
     val t1 = System.currentTimeMillis()

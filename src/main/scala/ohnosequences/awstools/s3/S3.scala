@@ -18,6 +18,7 @@ import com.amazonaws.internal.StaticCredentialsProvider
 import com.amazonaws.event._
 import com.amazonaws.event.{ProgressListener => PListener, ProgressEvent => PEvent}
 
+import scala.util.{Failure, Success, Try}
 
 
 case class ObjectAddress(bucket: String, key: String) {
@@ -30,6 +31,16 @@ case class ObjectAddress(bucket: String, key: String) {
   def url = "s3://" + bucket + "/" + key
 
   override def toString = url
+}
+
+object ObjectAddress {
+  def apply(url: String): Try[ObjectAddress] = {
+    val s3url = """s3://(.+)/(.+)""".r
+    url match {
+      case s3url(bucket, key) => Success(ObjectAddress(bucket, key))
+      case _ => Failure(new Error("couldn't parse S3 URL: " + url))
+    }
+  }
 }
 
 case class TransferListener(transfer: Transfer) extends PListener {
