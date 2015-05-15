@@ -395,6 +395,7 @@ object DynamoDBUtils {
   }
 
 
+  //todo next token
   def countKeysPerHash(ddb: AmazonDynamoDB,
                        logger: Option[Logger],
                        tableName: String,
@@ -417,6 +418,34 @@ object DynamoDBUtils {
         .withKeyConditions(conditions)
         .withSelect(Select.COUNT)
       ).getCount
+      Success(r)
+    }
+  }
+
+  //todo next token
+  def queryPerHash(ddb: AmazonDynamoDB,
+                  logger: Option[Logger],
+                  tableName: String,
+                  hashKeyName: String,
+                  hashValue: AttributeValue,
+                  attributesToGet: Seq[String],
+                  repeatConfiguration: RepeatConfiguration = RepeatConfiguration()): Try[List[Map[String, AttributeValue]]] = {
+
+    val conditions = new java.util.HashMap[String, Condition]()
+    conditions.put(hashKeyName, new Condition()
+      .withAttributeValueList(hashValue)
+      .withComparisonOperator(ComparisonOperator.EQ)
+    )
+
+    repeatDynamoDBAction("quering items with hash " + hashKeyName + " in the table " + tableName,
+      logger,
+      repeatConfiguration
+    ){
+      val r = ddb.query(new QueryRequest()
+        .withTableName(tableName)
+        .withKeyConditions(conditions)
+        .withAttributesToGet(attributesToGet)
+      ).getItems.toList.map(_.toMap)
       Success(r)
     }
   }

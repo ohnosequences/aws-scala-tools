@@ -135,7 +135,7 @@ class ConsoleLogger(prefix: String, debug: Boolean = false) extends Logger {
 
 }
 
-class FileLogger(prefix: String, logFile: File, debug: Boolean, printToConsole: Boolean = true) extends Logger {
+class FileLogger(prefix: String, val logFile: File, debug: Boolean, printToConsole: Boolean = true) extends Logger {
 
   val formatter = new LogFormatter(prefix)
 
