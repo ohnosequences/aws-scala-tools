@@ -14,6 +14,10 @@ trait Logger {
 
   def warn(s: String): Unit
 
+//  def copy(prefix: String): Logger
+
+  def subLogger(prefix: String): Logger
+
   def warn(t: Throwable): Unit =  {
     printThrowable(t, warn)
   }
@@ -27,7 +31,7 @@ trait Logger {
   def info(s: String): Unit
 
   def debug(s: String): Unit
-  
+
   def printThrowable(t: Throwable, print: String => Unit, maxDepth: Int = 5): Unit = {
     
     @tailrec
@@ -74,6 +78,10 @@ object unitLogger extends Logger {
   override def info(s: String) {}
 
   override def debug(s: String) {}
+
+ // override def copy(prefix: String): Logger = unitLogger
+
+  override def subLogger(prefix: String): Logger = unitLogger
 }
 
 
@@ -132,14 +140,24 @@ class ConsoleLogger(prefix: String, debug: Boolean = false) extends Logger {
     }
   }
 
+ // override def copy(prefix: String): ConsoleLogger = new ConsoleLogger(prefix, debug)
+
+  override def subLogger(suffix: String): ConsoleLogger = new ConsoleLogger(prefix + "/" + suffix, debug)
 
 }
 
-class FileLogger(prefix: String, val logFile: File, debug: Boolean, printToConsole: Boolean = true) extends Logger {
+class FileLogger(prefix: String,
+                 val loggingDirectory: File,
+                 logFileName: String,
+                 debug: Boolean,
+                 printToConsole: Boolean = true) extends Logger {
 
   val formatter = new LogFormatter(prefix)
 
- // val logFile = new File(workingDir, "log.txt")
+  loggingDirectory.mkdir()
+
+  val logFile = new File(loggingDirectory, logFileName)
+
   val log = new PrintWriter(logFile)
 
   val consoleLogger = if (printToConsole) {
@@ -149,41 +167,75 @@ class FileLogger(prefix: String, val logFile: File, debug: Boolean, printToConso
   }
 
   override def warn(s: String) {
-    consoleLogger.foreach{_.warn(s)}
+    consoleLogger.foreach {
+      _.warn(s)
+    }
     log.println(formatter.warn(s))
     log.flush()
   }
 
   override def error(s: String): Unit = {
-    consoleLogger.foreach{_.error(s)}
+    consoleLogger.foreach {
+      _.error(s)
+    }
     log.println(formatter.error(s))
     log.flush()
   }
 
   override def info(s: String): Unit = {
-    consoleLogger.foreach{_.info(s)}
+    consoleLogger.foreach {
+      _.info(s)
+    }
     log.println(formatter.info(s))
     log.flush()
   }
 
   override def debug(s: String): Unit = {
     if (debug) {
-      consoleLogger.foreach {_.debug(s)}
+      consoleLogger.foreach {
+        _.debug(s)
+      }
       log.println(formatter.debug(s))
       log.flush()
     }
   }
+
+  // override def copy(prefix: String): FileLogger = new FileLogger(prefix, logFile, debug, printToConsole)
+
+  override def subLogger(suffix: String): FileLogger = {
+    new FileLogger(
+      prefix + "/" + suffix,
+      new File(loggingDirectory, suffix),
+      logFileName,
+      debug,
+      printToConsole
+    )
+  }
 }
 
-class S3Logger(s3: S3, prefix: String, debug: Boolean, workingDir: File, logFile: File, printToConsole: Boolean = true) extends FileLogger(prefix, logFile, debug, printToConsole) {
-  def uploadLog(destination: ObjectAddress): Unit = {
-    log.close()
-    s3.putObject(destination, logFile)
+
+class S3Logger(s3: S3,
+               prefix: String,
+               workingDirectory: File,
+               logFileName: String,
+               bucketName: String,
+               debug: Boolean,
+               printToConsole: Boolean = true) extends FileLogger(prefix, workingDirectory, logFileName, debug, printToConsole) {
+
+  def uploadLog(): Unit = {
+    log.flush()
+    s3.putObject(ObjectAddress(bucketName, prefix.hashCode.toString) / prefix / logFileName, logFile)
   }
 
-  def uploadFile(destination: ObjectAddress, file: File, zeroDir: File = workingDir) {
+  def uploadFile(file: File, zeroDir: File = workingDirectory) {
     val path = file.getAbsolutePath.replace(zeroDir.getAbsolutePath, "")
-    s3.putObject(destination / path, file)
+    s3.putObject(ObjectAddress(bucketName, prefix.hashCode.toString) / prefix / path, file)
+  }
+
+
+  override def subLogger(suffix: String): S3Logger = {
+    new S3Logger(s3, prefix + "/" + suffix, new File(workingDirectory, suffix),
+      logFileName, bucketName,  debug, printToConsole)
   }
 
 }

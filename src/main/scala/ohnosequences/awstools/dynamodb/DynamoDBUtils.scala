@@ -360,21 +360,19 @@ object DynamoDBUtils {
               key: Map[String, AttributeValue],
               attributesToGet: Seq[String],
               repeatConfiguration: RepeatConfiguration = RepeatConfiguration()
-               ): Try[Map[String, AttributeValue]] = {
+               ): Try[Option[Map[String, AttributeValue]]] = {
 
     repeatDynamoDBAction("getting item with key " + key + " from table " + tableName,
       logger,
       repeatConfiguration
     ) {
-      val rawItem = ddb.getItem(new GetItemRequest()
-        .withTableName(tableName)
-        .withKey(key)
-        .withAttributesToGet(attributesToGet)
-      ).getItem
-      if (Option(rawItem).isDefined) {
-        Success(rawItem.toMap)
-      } else {
-        Failure(new Error("key " + key + " doesn't exist"))
+      Try {
+        val rawItem = ddb.getItem(new GetItemRequest()
+          .withTableName(tableName)
+          .withKey(key)
+          .withAttributesToGet(attributesToGet)
+        ).getItem
+        Option(rawItem).map(_.toMap)
       }
     }
   }
