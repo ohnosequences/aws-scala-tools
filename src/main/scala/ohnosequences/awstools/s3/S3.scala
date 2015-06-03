@@ -161,20 +161,37 @@ class S3(val s3: AmazonS3) {
 
   def copy(src: ObjectAddress, dst: ObjectAddress): Boolean = {
     try {
-
       s3.copyObject(src.bucket, src.key, dst.bucket, dst.key)
       true
     } catch {
       case t: Throwable => t.printStackTrace(); false
     }
-
   }
 
+  def getObjectString(objectAddress: ObjectAddress): Try[String] = {
+    Try {
+      s3.getObject(objectAddress.bucket, objectAddress.key)
+    }.flatMap { s3obj =>
+      Try {
+        val s = scala.io.Source.fromInputStream(s3obj.getObjectContent).mkString
+        s3obj.close()
+        s
+      }.recoverWith { case t =>
+        s3obj.close()
+        Failure(t)
+      }
+    }.recoverWith { case t =>
+      Failure(new Error("failed to retrive content of " + objectAddress, t))
+    }
+  }
+
+  @scala.deprecated
   def readWholeObject(objectAddress: ObjectAddress) = {
     val objectStream = s3.getObject(objectAddress.bucket, objectAddress.key).getObjectContent
     scala.io.Source.fromInputStream(objectStream).mkString
   }
 
+  @scala.deprecated
   def readObject(objectAddress: ObjectAddress): Option[String] = {
     try {
       val objectStream = s3.getObject(objectAddress.bucket, objectAddress.key).getObjectContent
@@ -199,7 +216,6 @@ class S3(val s3: AmazonS3) {
 
   def putObject(objectAddress: ObjectAddress, file: File, public: Boolean = false) {
     createBucket(objectAddress.bucket)
-
     if (public) {
       s3.putObject(new PutObjectRequest(objectAddress.bucket, objectAddress.key, file).withCannedAcl(CannedAccessControlList.PublicRead))
     } else {
@@ -267,14 +283,25 @@ class S3(val s3: AmazonS3) {
     }
   }
 
-  def objectExists(address: ObjectAddress, logger: Option[Logger] = None): Boolean = {
+  def objectExists(address: ObjectAddress): Try[Boolean] = {
+    Try {
+      val metadata = s3.getObjectMetadata(address.bucket, address.key)
+      metadata != null
+    }.recoverWith { case t =>
+      Failure(new Error("unable to access " + address))
+    }
+  }
+
+  @scala.deprecated
+  def objectExists(address: ObjectAddress, logger: Option[Logger]): Boolean = {
 
     try {
       val metadata = s3.getObjectMetadata(address.bucket, address.key)
       metadata != null
     } catch {
-      case e: AmazonServiceException => logger.foreach { _.warn("object " + address + " is not accessible + " + e.getMessage() + " " + e.getErrorMessage())}; false
-      case eClient: AmazonClientException => logger.foreach { _.warn("object " + address + " is not accessible + " + eClient.getMessage())}; false
+      case eClient: AmazonClientException => logger.foreach {
+        _.warn("object " + address + " is not accessible + " + eClient.getMessage())
+      }; false
       case eio: IOException => logger.foreach { _.warn("object " + address + " is not accessible + " + eio.getMessage())}; false
     }
   }
