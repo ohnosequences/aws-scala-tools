@@ -1,7 +1,7 @@
 package ohnosequences.logging
 
 import java.io.{PrintWriter, File}
-import java.nio.file.Files
+import java.nio.file.{StandardCopyOption, Files}
 import java.text.SimpleDateFormat
 import java.util.Date
 
@@ -11,10 +11,12 @@ import ohnosequences.benchmark.Bench
 
 import scala.annotation.tailrec
 import scala.sys.process.ProcessLogger
-import scala.util.{Failure, Try}
+import scala.util.{Success, Failure, Try}
 
 
-trait Logger {
+trait Logger { logger =>
+
+  val prefix: String
 
   def processLogger: ProcessLogger = new ProcessLogger {
 
@@ -32,12 +34,11 @@ trait Logger {
     printThrowable(t, {s => warnP(s, prefix)})
   }
 
-  def warn(s: String): Unit = warnP(s, None)
+  def warn(s: String): Unit = warnP(s, Some(logger.prefix))
 
-  def warn(t: Throwable): Unit =  warnP(t, None)
+  def warn(t: Throwable): Unit =  warnP(t, Some(logger.prefix))
 
-  def subLogger(prefix: String, reportToOriginal: Boolean): Logger
-
+  def subLogger(prefix: String): Logger
 
   def errorP(t: Throwable, prefix: Option[String]): Unit =  {
     printThrowable(t, {s => errorP(s, prefix)})
@@ -45,11 +46,11 @@ trait Logger {
 
   def errorP(s: String, prefix: Option[String]): Unit
 
-  def error(t: Throwable): Unit = errorP(t, None)
+  def error(t: Throwable): Unit = errorP(t, Some(logger.prefix))
 
-  def error(s: String): Unit = errorP(s, None)
+  def error(s: String): Unit = errorP(s, Some(logger.prefix))
 
-  def info(s: String, prefix: Option[String] = None): Unit
+  def info(s: String, prefix: Option[String] = Some(logger.prefix)): Unit
 
   def debugP(s: String, prefix: Option[String]): Unit
 
@@ -57,12 +58,12 @@ trait Logger {
     printThrowable(t, {s => debugP(s, prefix)})
   }
 
-  def debug(s: String): Unit = debugP(s, None)
+  def debug(s: String): Unit = debugP(s, Some(logger.prefix))
 
-  def debug(t: Throwable): Unit =  debugP(t, None)
+  def debug(t: Throwable): Unit =  debugP(t, Some(logger.prefix))
 
 
-  def uploadFile(file: File, workingDirectory: File): Unit
+  def uploadFile(file: File, workingDirectory: File): Try[Unit]
 
   def printThrowable(t: Throwable, print: String => Unit, maxDepth: Int = 5): Unit = {
     
@@ -101,6 +102,9 @@ trait Logger {
 }
 
 object unitLogger extends Logger {
+
+  override val prefix: String = "unit"
+
   override def warnP(s: String, prefix: Option[String]) {}
 
   override def errorP(s: String, prefix: Option[String]) {}
@@ -109,9 +113,9 @@ object unitLogger extends Logger {
 
   override def debugP(s: String, prefix: Option[String]) {}
 
-  override def uploadFile(file: File, workingDirectory: File): Unit = {}
+  override def uploadFile(file: File, workingDirectory: File): Try[Unit] = {Success(())}
 
-  override def subLogger(prefix: String,  reportToOriginal: Boolean): Logger = unitLogger
+  override def subLogger(prefix: String): Logger = unitLogger
 }
 
 
@@ -146,51 +150,44 @@ class LogFormatter(prefix: String) {
 }
 
 
-class ConsoleLogger(prefix: String, debug: Boolean = false, originalLogger: Option[ConsoleLogger] = None) extends Logger {
+class ConsoleLogger(val prefix: String, debug: Boolean = false) extends Logger {
 
   rootLogger =>
 
   val formatter = new LogFormatter(prefix)
 
-  override def info(s: String, prefix: Option[String] = None) {
+  override def toString: String = "ConsoleLogger[" + prefix + "]"
 
-    originalLogger.foreach{ l =>
-      l.info(s, Some(rootLogger.prefix))
-    }
 
+  override def info(s: String, prefix: Option[String] = Some(rootLogger.prefix)) {
     println(formatter.info(s, prefix))
   }
 
   override def errorP(s: String, prefix: Option[String]) {
-    originalLogger.foreach(_.errorP(s, Some(rootLogger.prefix)))
-
     println(formatter.error(s, prefix))
   }
 
   override def warnP(s: String, prefix: Option[String]) {
-    originalLogger.foreach(_.warnP(s, Some(rootLogger.prefix)))
     println(formatter.warn(s, prefix))
   }
 
 
   override def debugP(s: String, prefix: Option[String]): Unit = {
     if (debug) {
-      originalLogger.foreach(_.debugP(s, Some(rootLogger.prefix)))
       println(formatter.debug(s, prefix))
     }
   }
 
  // override def copy(prefix: String): ConsoleLogger = new ConsoleLogger(prefix, debug)
 
-  override def uploadFile(file: File, workingDirectory: File): Unit = {
+  override def uploadFile(file: File, workingDirectory: File): Try[Unit] = {
     info("uploading " + file.getAbsolutePath)
     warn("uploading is not implemented in ConsoleLogger")
+    Success(())
   }
 
-  override def subLogger(suffix: String, reportToOriginal: Boolean): ConsoleLogger =
-    new ConsoleLogger(prefix + "/" + suffix, debug,
-      if (reportToOriginal) Some(ConsoleLogger.this) else None
-    )
+  override def subLogger(suffix: String): ConsoleLogger =
+    new ConsoleLogger(prefix + "/" + suffix, debug)
 
 }
 
@@ -202,35 +199,32 @@ object FileLogger {
             printToConsole: Boolean = true): Try[FileLogger] = {
     Try {
       loggingDirectory.mkdir()
-      val logFile = new File(loggingDirectory, logFileName)
-      new FileLogger(prefix, loggingDirectory, logFileName, debug, printToConsole, None)
+      new FileLogger(prefix, loggingDirectory, logFileName, debug, printToConsole)
     }.recoverWith { case t =>
       Failure(new Error("failed to create logging file: " + t, t))
     }
   }
 }
 
-class FileLogger(prefix: String,
+class FileLogger(val prefix: String,
                  val loggingDirectory: File,
                  logFileName: String,
                  debug: Boolean,
-                 printToConsole: Boolean = true,
-                 original: Option[FileLogger]) extends Logger { rootLogger =>
+                 printToConsole: Boolean = true) extends Logger { rootLogger =>
 
   val formatter = new LogFormatter(prefix)
   val logFile = new File(loggingDirectory, logFileName)
   val log = new PrintWriter(logFile)
 
-  val consoleLogger = if (printToConsole && original.isEmpty) {
-    Some(new ConsoleLogger(prefix, debug, None))
+
+  val consoleLogger = if (printToConsole) {
+    Some(new ConsoleLogger(prefix, debug))
   } else {
     None
   }
 
   override def warnP(s: String, prefix: Option[String]) {
-    original.foreach {
-      _.warnP(s, Some(rootLogger.prefix))
-    }
+
     consoleLogger.foreach {
       _.warnP(s, prefix)
     }
@@ -239,9 +233,6 @@ class FileLogger(prefix: String,
   }
 
   override def errorP(s: String, prefix: Option[String]): Unit = {
-    original.foreach {
-      _.errorP(s, Some(rootLogger.prefix))
-    }
     consoleLogger.foreach {
       _.errorP(s, prefix)
     }
@@ -249,11 +240,10 @@ class FileLogger(prefix: String,
     log.flush()
   }
 
-  override def info(s: String, prefix: Option[String] = None): Unit = {
-    original.foreach {
-      //println("reporting to original: " + s)
-      _.info(s, Some(rootLogger.prefix))
-    }
+
+  override def toString: String = "FileLogger[" + prefix + "]"
+
+  override def info(s: String, prefix: Option[String] = Some(rootLogger.prefix)): Unit = {
     consoleLogger.foreach {
       _.info(s, prefix)
     }
@@ -264,9 +254,6 @@ class FileLogger(prefix: String,
   override def debugP(s: String, prefix: Option[String]): Unit = {
 
     if (debug) {
-      original.foreach {
-        _.debugP(s, Some(rootLogger.prefix))
-      }
       consoleLogger.foreach {
         _.debugP(s, prefix)
       }
@@ -277,7 +264,7 @@ class FileLogger(prefix: String,
 
   // override def copy(prefix: String): FileLogger = new FileLogger(prefix, logFile, debug, printToConsole)
 
-  override def subLogger(suffix: String, reportToOriginal: Boolean): FileLogger = {
+  override def subLogger(suffix: String): FileLogger = {
     val newDirectory = new File(loggingDirectory, suffix)
     newDirectory.mkdir()
 
@@ -286,14 +273,15 @@ class FileLogger(prefix: String,
       newDirectory,
       logFileName,
       debug,
-      printToConsole,
-      if(reportToOriginal) Some(FileLogger.this) else None
+      printToConsole
     )
   }
 
-  override def uploadFile(file: File, workingDirectory: File): Unit = {
-    val path = file.getAbsolutePath.replace(workingDirectory.getAbsolutePath, "")
-    Files.copy(file.toPath, new File(loggingDirectory, path).toPath)
+  override def uploadFile(file: File, workingDirectory: File): Try[Unit] = {
+    Try {
+      val path = file.getAbsolutePath.replace(workingDirectory.getAbsolutePath, "")
+      Files.copy(file.toPath, new File(loggingDirectory, path).toPath, StandardCopyOption.REPLACE_EXISTING)
+    }
   }
 }
 
@@ -303,13 +291,13 @@ object S3Logger {
             prefix: String,
             loggingDirectory: File,
             logFileName: String,
-            bucketName: String,
+            loggingDestination: Option[ObjectAddress],
             debug: Boolean,
             printToConsole: Boolean = true): Try[S3Logger] = {
     Try {
       loggingDirectory.mkdir()
       val logFile = new File(loggingDirectory, logFileName)
-      new S3Logger(s3, prefix, loggingDirectory, logFileName, bucketName, debug, printToConsole, None)
+      new S3Logger(s3, prefix, loggingDirectory, logFileName, loggingDestination, debug, printToConsole)
     }.recoverWith { case t =>
       Failure(new Error("failed to create logging file: " + t, t))
     }
@@ -320,27 +308,42 @@ class S3Logger(s3: S3,
                prefix: String,
                loggingDirectory: File,
                logFileName: String,
-               bucketName: String,
+               val loggingDestination: Option[ObjectAddress],
                debug: Boolean,
-               printToConsole: Boolean = true,
-               original: Option[S3Logger] ) extends FileLogger(prefix, loggingDirectory, logFileName, debug, printToConsole, original) {
+               printToConsole: Boolean = true) extends FileLogger(prefix, loggingDirectory, logFileName, debug, printToConsole) {
   rootLogger =>
-  def uploadLog(): Unit = {
-    log.flush()
-    s3.putObject(ObjectAddress(bucketName, prefix.hashCode.toString) / prefix / logFileName, logFile)
+
+  override def toString: String = "S3Logger[" + prefix + "]"
+
+  def uploadLog(): Try[Unit] = {
+    Try {
+      loggingDestination.foreach { dst =>
+       // log.flush()
+        s3.createBucket(dst.bucket)
+        s3.putObject(dst / logFileName, logFile)
+      }
+    }
   }
 
-  override def uploadFile(file: File, zeroDir: File) {
-    val path = file.getAbsolutePath.replace(zeroDir.getAbsolutePath, "")
-    s3.putObject(ObjectAddress(bucketName, prefix.hashCode.toString) / prefix / path, file)
+  override def uploadFile(file: File, zeroDir: File): Try[Unit] =  {
+    Try {
+      loggingDestination.foreach { dst =>
+        val path = file.getAbsolutePath.replace(zeroDir.getAbsolutePath, "")
+        s3.createBucket(dst.bucket)
+        s3.putObject(dst / path, file)
+      }
+    }
   }
 
 
-  override def subLogger(suffix: String, reportOriginal: Boolean): S3Logger = {
+  override def subLogger(suffix: String): S3Logger = {
     new S3Logger(s3, prefix + "/" + suffix,  new File(loggingDirectory, suffix),
-      logFileName, bucketName,  debug, printToConsole,
-      if (reportOriginal) Some(S3Logger.this) else None
-    )
+      logFileName, loggingDestination,  debug, printToConsole)
+  }
+
+  def subLogger(suffix: String, loggingDestination: Option[ObjectAddress]): S3Logger = {
+    new S3Logger(s3, prefix + "/" + suffix,  new File(loggingDirectory, suffix),
+      logFileName, loggingDestination,  debug, printToConsole)
   }
 
 }

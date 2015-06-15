@@ -19,6 +19,7 @@ import com.amazonaws.services.autoscaling.model.Tag
 import java.util.Date
 import com.amazonaws.internal.StaticCredentialsProvider
 import scala.Some
+import scala.util.Try
 
 
 class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2) { autoscaling =>
@@ -175,6 +176,13 @@ class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2
     ).getAutoScalingGroups.headOption.map(_.getCreatedTime)
   }
 
+  def getCreatedTimeTry(name: String): Try[Date] = {
+    Try {
+      as.describeAutoScalingGroups(new DescribeAutoScalingGroupsRequest()
+        .withAutoScalingGroupNames(name)
+      ).getAutoScalingGroups.head.getCreatedTime
+    }
+  }
 
 
 //  * <b>NOTE:</b> To remove all instances before calling

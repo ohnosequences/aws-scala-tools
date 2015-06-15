@@ -61,7 +61,7 @@ case class TransferListener(transfer: Transfer) extends PListener {
   }
 }
 
-case class LoadingManager(transferManager: TransferManager) {
+case class LoadingManager(transferManager: TransferManager, logger: Option[Logger] = None) {
 
   val transferWaiter: (Transfer => Unit) = { transfer =>
     while(!transfer.isDone) {
