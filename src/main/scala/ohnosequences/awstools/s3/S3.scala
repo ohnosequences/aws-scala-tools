@@ -1,6 +1,7 @@
 package ohnosequences.awstools.s3
 
 import java.io.{IOException, InputStream, ByteArrayInputStream, File}
+import java.net.URL
 
 import ohnosequences.awstools.regions.Region._
 
@@ -18,6 +19,7 @@ import com.amazonaws.internal.StaticCredentialsProvider
 import com.amazonaws.event._
 import com.amazonaws.event.{ProgressListener => PListener, ProgressEvent => PEvent}
 
+import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 
 
@@ -205,7 +207,10 @@ class S3(val s3: AmazonS3) {
     s3.getObject(objectAddress.bucket, objectAddress.key).getObjectContent
   }
 
-  def putWholeObject(objectAddress: ObjectAddress, content: String) {
+
+
+  @deprecated("use uploadString()")
+  def putWholeObject(objectAddress: ObjectAddress, content: String): Unit = {
     val array = content.getBytes
 
     val stream = new ByteArrayInputStream(array)
@@ -214,12 +219,35 @@ class S3(val s3: AmazonS3) {
     s3.putObject(objectAddress.bucket, objectAddress.key, stream, metadata)
   }
 
+  @deprecated("use uploadFile()")
   def putObject(objectAddress: ObjectAddress, file: File, public: Boolean = false) {
     createBucket(objectAddress.bucket)
     if (public) {
       s3.putObject(new PutObjectRequest(objectAddress.bucket, objectAddress.key, file).withCannedAcl(CannedAccessControlList.PublicRead))
     } else {
       s3.putObject(new PutObjectRequest(objectAddress.bucket, objectAddress.key, file))
+    }
+  }
+
+  def uploadFile(destination: ObjectAddress, file: File, public: Boolean = false): Try[Unit] = {
+    Try {
+      createBucket(destination.bucket)
+      if (public) {
+        s3.putObject(new PutObjectRequest(destination.bucket, destination.key, file).withCannedAcl(CannedAccessControlList.PublicRead))
+      } else {
+        s3.putObject(new PutObjectRequest(destination.bucket, destination.key, file))
+      }
+    }
+  }
+
+  def uploadString(destination: ObjectAddress, s: String): Try[Unit] = {
+    Try {
+      createBucket(destination.bucket)
+      val array = s.getBytes
+      val stream = new ByteArrayInputStream(array)
+      val metadata = new ObjectMetadata()
+      metadata.setContentLength(array.length)
+      s3.putObject(destination.bucket, destination.key, stream, metadata)
     }
   }
 
@@ -306,12 +334,23 @@ class S3(val s3: AmazonS3) {
     }
   }
 
+  @deprecated("use generateTemporaryURLLink")
   def generateTemporaryURL(address: ObjectAddress, time: Int): String = {
     val exp = new java.util.Date()
     var expMs = exp.getTime()
     expMs += 1000 * time
     exp.setTime(expMs)
     s3.generatePresignedUrl(address.bucket, address.key, exp).toString
+  }
+
+  def generateTemporaryLink(address: ObjectAddress, linkLifeTime: Duration): Try[URL] = {
+    Try {
+      val exp = new java.util.Date()
+      var expMs = exp.getTime()
+      expMs += linkLifeTime.toMillis
+      exp.setTime(expMs)
+      s3.generatePresignedUrl(address.bucket, address.key, exp)
+    }
   }
 
 }
