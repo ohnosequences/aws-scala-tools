@@ -52,7 +52,7 @@ object InstanceSpecs {
 
 case class InstanceSpecs(instanceType: awstools.InstanceType,
                          amiId: String,
-                         keyName: String = "",
+                         keyName: String,
                          userData: String = "",
                          instanceProfile: Option[String] = None,
                          securityGroups: List[String] = List(),

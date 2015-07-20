@@ -14,10 +14,15 @@ import scala.util.{Failure, Success, Try}
 case class RepeatConfiguration(attemptThreshold: Int = 100,
                                initialTimeout: Duration = Duration(500, MILLISECONDS),
                                timeoutThreshold: Duration = Duration(1, MINUTES),
-                               coefficient: Double = 1.5) {
+                               coefficient: Double = 1.2) {
   def nextTimeout(timeout: Long): Long = {
     math.max(timeoutThreshold.toMillis, (coefficient * timeout).toLong)
   }
+
+  def timeout(attempt: Int): Long = {
+    math.max(timeoutThreshold.toMillis, initialTimeout.toMillis * math.pow(coefficient, attempt)).toLong
+  }
+
 }
 
 object DynamoDBUtils {
