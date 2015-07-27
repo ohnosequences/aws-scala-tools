@@ -16,11 +16,11 @@ case class RepeatConfiguration(attemptThreshold: Int = 100,
                                timeoutThreshold: Duration = Duration(1, MINUTES),
                                coefficient: Double = 1.2) {
   def nextTimeout(timeout: Long): Long = {
-    math.max(timeoutThreshold.toMillis, (coefficient * timeout).toLong)
+    math.min(timeoutThreshold.toMillis, (coefficient * timeout).toLong)
   }
 
   def timeout(attempt: Int): Long = {
-    math.max(timeoutThreshold.toMillis, initialTimeout.toMillis * math.pow(coefficient, attempt)).toLong
+    math.min(timeoutThreshold.toMillis, initialTimeout.toMillis * math.pow(coefficient, attempt)).toLong
   }
 
 }

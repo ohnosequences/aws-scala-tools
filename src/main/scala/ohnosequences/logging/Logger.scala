@@ -40,13 +40,13 @@ trait Logger { logger =>
 
   def subLogger(prefix: String): Logger
 
-  def errorP(t: Throwable, prefix: Option[String]): Unit =  {
-    printThrowable(t, {s => errorP(s, prefix)})
+  def errorP(t: Throwable, prefix: Option[String], maxDepth: Int = 5, stackThreshold: Int = 10): Unit =  {
+    printThrowable(t, {s => errorP(s, prefix)}, maxDepth, stackThreshold)
   }
 
   def errorP(s: String, prefix: Option[String]): Unit
 
-  def error(t: Throwable): Unit = errorP(t, Some(logger.prefix))
+  def error(t: Throwable, maxDepth: Int = 5, stackThreshold: Int = 10): Unit = errorP(t, Some(logger.prefix), maxDepth, stackThreshold)
 
   def error(s: String): Unit = errorP(s, Some(logger.prefix))
 
@@ -54,17 +54,17 @@ trait Logger { logger =>
 
   def debugP(s: String, prefix: Option[String]): Unit
 
-  def debugP(t: Throwable, prefix: Option[String]): Unit =  {
-    printThrowable(t, {s => debugP(s, prefix)})
+  def debugP(t: Throwable, prefix: Option[String], maxDepth: Int = 5, stackThreshold: Int = 10): Unit =  {
+    printThrowable(t, {s => debugP(s, prefix)}, maxDepth, stackThreshold)
   }
 
   def debug(s: String): Unit = debugP(s, Some(logger.prefix))
 
-  def debug(t: Throwable): Unit =  debugP(t, Some(logger.prefix))
+  def debug(t: Throwable, maxDepth: Int = 5, stackThreshold: Int = 10): Unit =  debugP(t, Some(logger.prefix), maxDepth, stackThreshold)
 
   def uploadFile(file: File, workingDirectory: File): Try[Unit]
 
-  def printThrowable(t: Throwable, print: String => Unit, maxDepth: Int = 5): Unit = {
+  def printThrowable(t: Throwable, print: String => Unit, maxDepth: Int = 5, stackThreshold: Int = 10): Unit = {
     
     @tailrec
     def printThrowableRec(t: Throwable, depth: Int): Unit = {
@@ -72,7 +72,7 @@ trait Logger { logger =>
         ()
       } else {
         print(t.toString)
-        t.getStackTrace.foreach { s =>
+        t.getStackTrace.take(stackThreshold).foreach { s =>
           print("    at " + s.toString)
         }
         Option(t.getCause) match {
