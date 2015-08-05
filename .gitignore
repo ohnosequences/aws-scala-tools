@@ -43,3 +43,7 @@ gridServer/target/
 #fasta
 fasta.sbt
 
+.ensime*
+.tags*
+tags
+.atom*

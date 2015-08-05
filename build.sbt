@@ -9,14 +9,15 @@ scalaVersion := "2.11.7"
 crossScalaVersions := Seq("2.10.5", scalaVersion.value)
 
 
+val sdkVersion = "1.10.9"
+
 libraryDependencies ++= Seq(
-//  "com.amazonaws" % "aws-java-sdk" % "1.10.9",
-  "com.amazonaws" % "aws-java-sdk-sns" % "1.10.9",
-  "com.amazonaws" % "aws-java-sdk-sqs" % "1.10.9",
-  "com.amazonaws" % "aws-java-sdk-autoscaling" % "1.10.9",
-  "com.amazonaws" % "aws-java-sdk-dynamodb" % "1.10.9",
-  "com.amazonaws" % "aws-java-sdk-s3" % "1.10.9",
-  "com.amazonaws" % "aws-java-sdk-ec2" % "1.10.9",
-  "com.amazonaws" % "aws-java-sdk-iam" % "1.10.9",
-  "com.novocode"  % "junit-interface" % "0.11" % Test
+  "com.amazonaws" % "aws-java-sdk-sns"         % sdkVersion,
+  "com.amazonaws" % "aws-java-sdk-sqs"         % sdkVersion,
+  "com.amazonaws" % "aws-java-sdk-autoscaling" % sdkVersion,
+  "com.amazonaws" % "aws-java-sdk-dynamodb"    % sdkVersion,
+  "com.amazonaws" % "aws-java-sdk-s3"          % sdkVersion,
+  "com.amazonaws" % "aws-java-sdk-ec2"         % sdkVersion,
+  "com.amazonaws" % "aws-java-sdk-iam"         % sdkVersion,
+  "com.novocode"  % "junit-interface"          % "0.11"    % Test
 )
