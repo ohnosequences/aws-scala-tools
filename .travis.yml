@@ -1,12 +1,31 @@
+# http://www.scala-sbt.org/0.13/docs/Travis-CI-with-sbt.html
 language: scala
 scala:
+  - 2.11.7
   - 2.10.5
-  - 2.11.6
-env:
-  global:
-    - secure: "NkBORJGyKKoGv7sOEifM1v8reMoumsN8HaU5lWv/Gg00uxjpGyoNupl0CIEIlxC+f6f4Twv9oIiKtJriaMuKtyJOVX3fBX7JrXmxmXqZr3NVR/LNmh3Qzu5cyc6kd5goaXZjS6EBMqGuz5dObd1qPKLgvXXA8A4IlARwVKqXqMo="
-    - secure: "bVHdBlIN1M6bZpsd8UK/h0yfHvHNbR7E6nM22O22UYRtfyh23UlHSKpV42MRR6bdUZjweEhXO/wTEilfOXo/3qbDc+bpo6JBwHNF8eYEC6dxqKqVCKohL9+j9VUpezNznwMcNSEvYvSyYAsjRAMIl9t8Y2nPaS3dWfpAkFFT5zU="
-script:
-  - "sbt package"
 jdk:
-  - oraclejdk7
+  - oraclejdk8
+script:
+  - sbt ++$TRAVIS_SCALA_VERSION compile test
+  # Tricks to avoid unnecessary cache updates
+  - find $HOME/.sbt -name "*.lock" | xargs rm
+  - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
+matrix:
+  fast_finish: true
+  allow_failures:
+    - scala: 2.10.5
+notifications:
+  email: false
+  webhooks:
+    urls:
+      - https://webhooks.gitter.im/e/2ea1cb632092a05398fb
+    on_success: change  # options: [always|never|change] default: always
+    on_failure: always  # options: [always|never|change] default: always
+    on_start: false
+# Use container-based infrastructure
+sudo: false
+# These directories are cached to S3 at the end of the build
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt/boot/
