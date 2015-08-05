@@ -54,11 +54,8 @@ object SQS {
 
   def create(provider: AWSCredentialsProvider, region: ohnosequences.awstools.regions.Region = Ireland): SQS = {
     val sqsClient = new AmazonSQSClient(provider)
-    sqsClient.setRegion(region.toAWSRegion)
+    sqsClient.setRegion(region)
     new SQS(sqsClient)
   }
 
 }
-
-
-

@@ -65,7 +65,7 @@ trait Logger { logger =>
   def uploadFile(file: File, workingDirectory: File): Try[Unit]
 
   def printThrowable(t: Throwable, print: String => Unit, maxDepth: Int = 5, stackThreshold: Int = 10): Unit = {
-    
+
     @tailrec
     def printThrowableRec(t: Throwable, depth: Int): Unit = {
       if (depth > maxDepth) {
@@ -80,7 +80,7 @@ trait Logger { logger =>
           case Some(cause) => {
             print("Caused by:")
             printThrowableRec(cause, depth+1)}
-        } 
+        }
       }
     }
     printThrowableRec(t, 1)
@@ -339,7 +339,7 @@ class S3Logger(s3: S3,
       loggingDestination.foreach { dst =>
        // log.flush()
         s3.createBucket(dst.bucket)
-        s3.putObject(dst / logFileName, logFile)
+        s3.uploadFile(dst / logFileName, logFile)
       }
     }
   }
@@ -349,7 +349,7 @@ class S3Logger(s3: S3,
       loggingDestination.foreach { dst =>
         val path = file.getAbsolutePath.replace(zeroDir.getAbsolutePath, "")
         s3.createBucket(dst.bucket)
-        s3.putObject(dst / path, file)
+        s3.uploadFile(dst / path, file)
       }
     }
   }
@@ -372,5 +372,3 @@ class S3Logger(s3: S3,
   }
 
 }
-
-
