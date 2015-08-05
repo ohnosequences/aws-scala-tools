@@ -223,7 +223,7 @@ object AutoScaling {
 
   def create(credentials: AWSCredentialsProvider, ec2: ohnosequences.awstools.ec2.EC2, region: ohnosequences.awstools.regions.Region = Ireland): AutoScaling = {
     val asClient = new AmazonAutoScalingClient(credentials)
-    asClient.setRegion(region.toAWSRegion)
+    asClient.setRegion(region)
     new AutoScaling(asClient, ec2)
   }
 }

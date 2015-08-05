@@ -46,7 +46,7 @@ object ObjectAddress {
 }
 
 case class TransferListener(transfer: Transfer) extends PListener {
-  def progressChanged(progressEvent: PEvent) { 
+  def progressChanged(progressEvent: PEvent) {
     import PEvent._
     progressEvent.getEventCode() match {
       case STARTED_EVENT_CODE  => println("Started")
@@ -79,8 +79,8 @@ case class LoadingManager(transferManager: TransferManager, logger: Option[Logge
   }
 
   def upload(
-    objectAddress: ObjectAddress, 
-    file: File, 
+    objectAddress: ObjectAddress,
+    file: File,
     transferWaiter: (Transfer => Unit) = transferWaiter
   ) {
     println("Uploading to: " + objectAddress.toString)
@@ -90,9 +90,9 @@ case class LoadingManager(transferManager: TransferManager, logger: Option[Logge
   }
 
   def uploadDirectory(
-    objectAddress: ObjectAddress, 
-    directory: File, 
-    recursively: Boolean = true, 
+    objectAddress: ObjectAddress,
+    directory: File,
+    recursively: Boolean = true,
     transferWaiter: (Transfer => Unit) = transferWaiter
   ) {
     println("Uploading to: " + objectAddress.toString)
@@ -102,8 +102,8 @@ case class LoadingManager(transferManager: TransferManager, logger: Option[Logge
   }
 
   def download(
-    objectAddress: ObjectAddress, 
-    file: File, 
+    objectAddress: ObjectAddress,
+    file: File,
     transferWaiter: (Transfer => Unit) = transferWaiter
   ) {
     println("Dowloading from: " + objectAddress.toString)
@@ -113,8 +113,8 @@ case class LoadingManager(transferManager: TransferManager, logger: Option[Logge
   }
 
   def downloadDirectory(
-    objectAddress: ObjectAddress, 
-    destinationDir: File, 
+    objectAddress: ObjectAddress,
+    destinationDir: File,
     transferWaiter: (Transfer => Unit) = transferWaiter
   ) {
     println("Dowloading from: " + objectAddress.toString)
@@ -279,11 +279,11 @@ class S3(val s3: AmazonS3) {
      while (listing.isTruncated) {
       //listing = Some(s3.listObjects(bucket, prefix))
      // println(".")
-      
+
       listing = s3.listNextBatchOfObjects(listing)
       result ++= listing.getObjectSummaries.map{ summary =>
         ObjectAddress(bucket, summary.getKey)
-      }   
+      }
 
     }
     result.toList
@@ -371,9 +371,7 @@ object S3 {
 
   def create(credentials: AWSCredentialsProvider, region: ohnosequences.awstools.regions.Region = Ireland): S3 = {
     val s3Client = new AmazonS3Client(credentials)
-    s3Client.setRegion(region.toAWSRegion)
+    s3Client.setRegion(region)
     new S3(s3Client)
   }
 }
-
-
