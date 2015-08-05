@@ -26,7 +26,6 @@ object AWSClients {
     val sns = SNS.create(credentialsProvider, region)
     val s3 = S3.create(credentialsProvider, region)
     val ddb = new AmazonDynamoDBClient(credentialsProvider)
-    ddb.setRegion(region.toAWSRegion)
+    ddb.setRegion(region)
   }
 }
-

@@ -52,7 +52,7 @@ object InstanceSpecs {
 
 case class InstanceSpecs(instanceType: awstools.InstanceType,
                          amiId: String,
-                         keyName: String = "",
+                         keyName: String,
                          userData: String = "",
                          instanceProfile: Option[String] = None,
                          securityGroups: List[String] = List(),
@@ -403,7 +403,7 @@ object EC2 {
 
   def create(credentials: AWSCredentialsProvider, region: ohnosequences.awstools.regions.Region = Ireland): EC2 = {
     val ec2Client = new AmazonEC2Client(credentials)
-    ec2Client.setRegion(region.toAWSRegion)
+    ec2Client.setRegion(region)
     new EC2(ec2Client)
   }
 

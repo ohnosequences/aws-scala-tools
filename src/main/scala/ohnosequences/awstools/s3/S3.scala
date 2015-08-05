@@ -1,6 +1,7 @@
 package ohnosequences.awstools.s3
 
 import java.io.{IOException, InputStream, ByteArrayInputStream, File}
+import java.net.URL
 
 import ohnosequences.awstools.regions.Region._
 
@@ -18,6 +19,7 @@ import com.amazonaws.internal.StaticCredentialsProvider
 import com.amazonaws.event._
 import com.amazonaws.event.{ProgressListener => PListener, ProgressEvent => PEvent}
 
+import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 
 
@@ -44,18 +46,18 @@ object ObjectAddress {
 }
 
 case class TransferListener(transfer: Transfer) extends PListener {
-  def progressChanged(progressEvent: PEvent) { 
-    import PEvent._
-    progressEvent.getEventCode() match {
-      case STARTED_EVENT_CODE  => println("Started")
-      case CANCELED_EVENT_CODE  => println("Canceled!")
-      case COMPLETED_EVENT_CODE  => println("Completed!")
-      case FAILED_EVENT_CODE  => println("Failed!")
-      case PART_COMPLETED_EVENT_CODE  => println("Completed part: "+ transfer.getProgress.getBytesTransferred)
-      // case PART_FAILED_EVENT_CODE  => println("")
-      // case PART_STARTED_EVENT_CODE  => println("")
-      // case PREPARING_EVENT_CODE  => println("")
-      // case RESET_EVENT_CODE  => println("")
+  def progressChanged(progressEvent: PEvent) {
+    import ProgressEventType._
+    progressEvent.getEventType match {
+      case TRANSFER_STARTED_EVENT  => println("Started")
+      case TRANSFER_CANCELED_EVENT  => println("Canceled!")
+      case TRANSFER_COMPLETED_EVENT  => println("Completed!")
+      case TRANSFER_FAILED_EVENT  => println("Failed!")
+      case TRANSFER_PART_COMPLETED_EVENT  => println("Completed part: "+ transfer.getProgress.getBytesTransferred)
+      case TRANSFER_PART_FAILED_EVENT  => println("Failed part transfer")
+      case TRANSFER_PART_STARTED_EVENT  => println("Started part transfer")
+      case TRANSFER_PREPARING_EVENT  => println("Preparing for the transfer")
+      // case HTTP_REQUEST_CONTENT_RESET_EVENT  => ()
       case _ => ()
     }
   }
@@ -77,8 +79,8 @@ case class LoadingManager(transferManager: TransferManager, logger: Option[Logge
   }
 
   def upload(
-    objectAddress: ObjectAddress, 
-    file: File, 
+    objectAddress: ObjectAddress,
+    file: File,
     transferWaiter: (Transfer => Unit) = transferWaiter
   ) {
     println("Uploading to: " + objectAddress.toString)
@@ -88,9 +90,9 @@ case class LoadingManager(transferManager: TransferManager, logger: Option[Logge
   }
 
   def uploadDirectory(
-    objectAddress: ObjectAddress, 
-    directory: File, 
-    recursively: Boolean = true, 
+    objectAddress: ObjectAddress,
+    directory: File,
+    recursively: Boolean = true,
     transferWaiter: (Transfer => Unit) = transferWaiter
   ) {
     println("Uploading to: " + objectAddress.toString)
@@ -100,8 +102,8 @@ case class LoadingManager(transferManager: TransferManager, logger: Option[Logge
   }
 
   def download(
-    objectAddress: ObjectAddress, 
-    file: File, 
+    objectAddress: ObjectAddress,
+    file: File,
     transferWaiter: (Transfer => Unit) = transferWaiter
   ) {
     println("Dowloading from: " + objectAddress.toString)
@@ -111,8 +113,8 @@ case class LoadingManager(transferManager: TransferManager, logger: Option[Logge
   }
 
   def downloadDirectory(
-    objectAddress: ObjectAddress, 
-    destinationDir: File, 
+    objectAddress: ObjectAddress,
+    destinationDir: File,
     transferWaiter: (Transfer => Unit) = transferWaiter
   ) {
     println("Dowloading from: " + objectAddress.toString)
@@ -185,13 +187,13 @@ class S3(val s3: AmazonS3) {
     }
   }
 
-  @scala.deprecated
+  @deprecated("", since = "v0.13.1")
   def readWholeObject(objectAddress: ObjectAddress) = {
     val objectStream = s3.getObject(objectAddress.bucket, objectAddress.key).getObjectContent
     scala.io.Source.fromInputStream(objectStream).mkString
   }
 
-  @scala.deprecated
+  @deprecated("", since = "v0.13.1")
   def readObject(objectAddress: ObjectAddress): Option[String] = {
     try {
       val objectStream = s3.getObject(objectAddress.bucket, objectAddress.key).getObjectContent
@@ -205,7 +207,10 @@ class S3(val s3: AmazonS3) {
     s3.getObject(objectAddress.bucket, objectAddress.key).getObjectContent
   }
 
-  def putWholeObject(objectAddress: ObjectAddress, content: String) {
+
+
+  @deprecated("use uploadString()", since = "v0.13.1")
+  def putWholeObject(objectAddress: ObjectAddress, content: String): Unit = {
     val array = content.getBytes
 
     val stream = new ByteArrayInputStream(array)
@@ -214,12 +219,35 @@ class S3(val s3: AmazonS3) {
     s3.putObject(objectAddress.bucket, objectAddress.key, stream, metadata)
   }
 
+  @deprecated("use uploadFile()", since = "v0.13.1")
   def putObject(objectAddress: ObjectAddress, file: File, public: Boolean = false) {
     createBucket(objectAddress.bucket)
     if (public) {
       s3.putObject(new PutObjectRequest(objectAddress.bucket, objectAddress.key, file).withCannedAcl(CannedAccessControlList.PublicRead))
     } else {
       s3.putObject(new PutObjectRequest(objectAddress.bucket, objectAddress.key, file))
+    }
+  }
+
+  def uploadFile(destination: ObjectAddress, file: File, public: Boolean = false): Try[Unit] = {
+    Try {
+      createBucket(destination.bucket)
+      if (public) {
+        s3.putObject(new PutObjectRequest(destination.bucket, destination.key, file).withCannedAcl(CannedAccessControlList.PublicRead))
+      } else {
+        s3.putObject(new PutObjectRequest(destination.bucket, destination.key, file))
+      }
+    }
+  }
+
+  def uploadString(destination: ObjectAddress, s: String): Try[Unit] = {
+    Try {
+      createBucket(destination.bucket)
+      val array = s.getBytes
+      val stream = new ByteArrayInputStream(array)
+      val metadata = new ObjectMetadata()
+      metadata.setContentLength(array.length)
+      s3.putObject(destination.bucket, destination.key, stream, metadata)
     }
   }
 
@@ -251,11 +279,11 @@ class S3(val s3: AmazonS3) {
      while (listing.isTruncated) {
       //listing = Some(s3.listObjects(bucket, prefix))
      // println(".")
-      
+
       listing = s3.listNextBatchOfObjects(listing)
       result ++= listing.getObjectSummaries.map{ summary =>
         ObjectAddress(bucket, summary.getKey)
-      }   
+      }
 
     }
     result.toList
@@ -292,7 +320,7 @@ class S3(val s3: AmazonS3) {
     }
   }
 
-  @scala.deprecated
+  @deprecated("", since = "v0.13.1")
   def objectExists(address: ObjectAddress, logger: Option[Logger]): Boolean = {
 
     try {
@@ -306,12 +334,23 @@ class S3(val s3: AmazonS3) {
     }
   }
 
+  @deprecated("use generateTemporaryURLLink", since = "v0.13.1")
   def generateTemporaryURL(address: ObjectAddress, time: Int): String = {
     val exp = new java.util.Date()
     var expMs = exp.getTime()
     expMs += 1000 * time
     exp.setTime(expMs)
     s3.generatePresignedUrl(address.bucket, address.key, exp).toString
+  }
+
+  def generateTemporaryLink(address: ObjectAddress, linkLifeTime: Duration): Try[URL] = {
+    Try {
+      val exp = new java.util.Date()
+      var expMs = exp.getTime()
+      expMs += linkLifeTime.toMillis
+      exp.setTime(expMs)
+      s3.generatePresignedUrl(address.bucket, address.key, exp)
+    }
   }
 
 }
@@ -332,9 +371,7 @@ object S3 {
 
   def create(credentials: AWSCredentialsProvider, region: ohnosequences.awstools.regions.Region = Ireland): S3 = {
     val s3Client = new AmazonS3Client(credentials)
-    s3Client.setRegion(region.toAWSRegion)
+    s3Client.setRegion(region)
     new S3(s3Client)
   }
 }
-
-

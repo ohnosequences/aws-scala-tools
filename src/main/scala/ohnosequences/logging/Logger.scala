@@ -1,6 +1,6 @@
 package ohnosequences.logging
 
-import java.io.{PrintWriter, File}
+import java.io.{FileWriter, PrintWriter, File}
 import java.nio.file.{StandardCopyOption, Files}
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -40,13 +40,13 @@ trait Logger { logger =>
 
   def subLogger(prefix: String): Logger
 
-  def errorP(t: Throwable, prefix: Option[String]): Unit =  {
-    printThrowable(t, {s => errorP(s, prefix)})
+  def errorP(t: Throwable, prefix: Option[String], maxDepth: Int = 5, stackThreshold: Int = 10): Unit =  {
+    printThrowable(t, {s => errorP(s, prefix)}, maxDepth, stackThreshold)
   }
 
   def errorP(s: String, prefix: Option[String]): Unit
 
-  def error(t: Throwable): Unit = errorP(t, Some(logger.prefix))
+  def error(t: Throwable, maxDepth: Int = 5, stackThreshold: Int = 10): Unit = errorP(t, Some(logger.prefix), maxDepth, stackThreshold)
 
   def error(s: String): Unit = errorP(s, Some(logger.prefix))
 
@@ -54,26 +54,25 @@ trait Logger { logger =>
 
   def debugP(s: String, prefix: Option[String]): Unit
 
-  def debugP(t: Throwable, prefix: Option[String]): Unit =  {
-    printThrowable(t, {s => debugP(s, prefix)})
+  def debugP(t: Throwable, prefix: Option[String], maxDepth: Int = 5, stackThreshold: Int = 10): Unit =  {
+    printThrowable(t, {s => debugP(s, prefix)}, maxDepth, stackThreshold)
   }
 
   def debug(s: String): Unit = debugP(s, Some(logger.prefix))
 
-  def debug(t: Throwable): Unit =  debugP(t, Some(logger.prefix))
-
+  def debug(t: Throwable, maxDepth: Int = 5, stackThreshold: Int = 10): Unit =  debugP(t, Some(logger.prefix), maxDepth, stackThreshold)
 
   def uploadFile(file: File, workingDirectory: File): Try[Unit]
 
-  def printThrowable(t: Throwable, print: String => Unit, maxDepth: Int = 5): Unit = {
-    
+  def printThrowable(t: Throwable, print: String => Unit, maxDepth: Int = 5, stackThreshold: Int = 10): Unit = {
+
     @tailrec
     def printThrowableRec(t: Throwable, depth: Int): Unit = {
       if (depth > maxDepth) {
         ()
       } else {
         print(t.toString)
-        t.getStackTrace.foreach { s =>
+        t.getStackTrace.take(stackThreshold).foreach { s =>
           print("    at " + s.toString)
         }
         Option(t.getCause) match {
@@ -81,7 +80,7 @@ trait Logger { logger =>
           case Some(cause) => {
             print("Caused by:")
             printThrowableRec(cause, depth+1)}
-        } 
+        }
       }
     }
     printThrowableRec(t, 1)
@@ -199,7 +198,7 @@ object FileLogger {
             printToConsole: Boolean = true): Try[FileLogger] = {
     Try {
       loggingDirectory.mkdir()
-      new FileLogger(prefix, loggingDirectory, logFileName, debug, printToConsole)
+      new FileLogger(prefix, loggingDirectory, logFileName, debug, printToConsole, None)
     }.recoverWith { case t =>
       Failure(new Error("failed to create logging file: " + t, t))
     }
@@ -210,11 +209,12 @@ class FileLogger(val prefix: String,
                  val loggingDirectory: File,
                  logFileName: String,
                  debug: Boolean,
-                 printToConsole: Boolean = true) extends Logger { rootLogger =>
+                 printToConsole: Boolean = true,
+                 original: Option[FileLogger]) extends Logger { fileLogger =>
 
   val formatter = new LogFormatter(prefix)
   val logFile = new File(loggingDirectory, logFileName)
-  val log = new PrintWriter(logFile)
+  val log = new PrintWriter(new FileWriter(logFile), true)
 
 
   val consoleLogger = if (printToConsole) {
@@ -224,41 +224,58 @@ class FileLogger(val prefix: String,
   }
 
   override def warnP(s: String, prefix: Option[String]) {
+    original.foreach {
+      _.warnP(s, prefix)
+    }
 
     consoleLogger.foreach {
       _.warnP(s, prefix)
     }
+
     log.println(formatter.warn(s, prefix))
-    log.flush()
+   // log.flush()
   }
 
   override def errorP(s: String, prefix: Option[String]): Unit = {
+
+    original.foreach {
+      _.errorP(s, prefix)
+    }
+
     consoleLogger.foreach {
       _.errorP(s, prefix)
     }
     log.println(formatter.error(s, prefix))
-    log.flush()
+    //log.flush()
   }
 
 
   override def toString: String = "FileLogger[" + prefix + "]"
 
-  override def info(s: String, prefix: Option[String] = Some(rootLogger.prefix)): Unit = {
+  override def info(s: String, prefix: Option[String] = Some(fileLogger.prefix)): Unit = {
+
+    original.foreach {
+      _.info(s, prefix)
+    }
+
     consoleLogger.foreach {
       _.info(s, prefix)
     }
     log.println(formatter.info(s, prefix))
-    log.flush()
+   // log.flush()
   }
 
   override def debugP(s: String, prefix: Option[String]): Unit = {
 
     if (debug) {
+      original.foreach {
+        _.debugP(s, prefix)
+      }
       consoleLogger.foreach {
         _.debugP(s, prefix)
       }
       log.println(formatter.debug(s, prefix))
-      log.flush()
+    //  log.flush()
     }
   }
 
@@ -273,7 +290,8 @@ class FileLogger(val prefix: String,
       newDirectory,
       logFileName,
       debug,
-      printToConsole
+      printToConsole = false,
+      Some(fileLogger)
     )
   }
 
@@ -297,7 +315,7 @@ object S3Logger {
     Try {
       loggingDirectory.mkdir()
       val logFile = new File(loggingDirectory, logFileName)
-      new S3Logger(s3, prefix, loggingDirectory, logFileName, loggingDestination, debug, printToConsole)
+      new S3Logger(s3, prefix, loggingDirectory, logFileName, loggingDestination, debug, printToConsole, None)
     }.recoverWith { case t =>
       Failure(new Error("failed to create logging file: " + t, t))
     }
@@ -310,8 +328,9 @@ class S3Logger(s3: S3,
                logFileName: String,
                val loggingDestination: Option[ObjectAddress],
                debug: Boolean,
-               printToConsole: Boolean = true) extends FileLogger(prefix, loggingDirectory, logFileName, debug, printToConsole) {
-  rootLogger =>
+               printToConsole: Boolean = true,
+               original: Option[S3Logger]) extends FileLogger(prefix, loggingDirectory, logFileName, debug, printToConsole, original) {
+  s3Logger =>
 
   override def toString: String = "S3Logger[" + prefix + "]"
 
@@ -320,7 +339,7 @@ class S3Logger(s3: S3,
       loggingDestination.foreach { dst =>
        // log.flush()
         s3.createBucket(dst.bucket)
-        s3.putObject(dst / logFileName, logFile)
+        s3.uploadFile(dst / logFileName, logFile)
       }
     }
   }
@@ -330,22 +349,26 @@ class S3Logger(s3: S3,
       loggingDestination.foreach { dst =>
         val path = file.getAbsolutePath.replace(zeroDir.getAbsolutePath, "")
         s3.createBucket(dst.bucket)
-        s3.putObject(dst / path, file)
+        s3.uploadFile(dst / path, file)
       }
     }
   }
 
 
   override def subLogger(suffix: String): S3Logger = {
+    val newDirectory = new File(loggingDirectory, suffix)
+    newDirectory.mkdir()
+
     new S3Logger(s3, prefix + "/" + suffix,  new File(loggingDirectory, suffix),
-      logFileName, loggingDestination,  debug, printToConsole)
+      logFileName, loggingDestination,  debug, printToConsole = false, Some(s3Logger))
   }
 
   def subLogger(suffix: String, loggingDestination: Option[ObjectAddress]): S3Logger = {
+    val newDirectory = new File(loggingDirectory, suffix)
+    newDirectory.mkdir()
+
     new S3Logger(s3, prefix + "/" + suffix,  new File(loggingDirectory, suffix),
-      logFileName, loggingDestination,  debug, printToConsole)
+      logFileName, loggingDestination,  debug, printToConsole = false, Some(s3Logger))
   }
 
 }
-
-
