@@ -5,7 +5,7 @@ import java.nio.file.{StandardCopyOption, Files}
 import java.text.SimpleDateFormat
 import java.util.Date
 
-import ohnosequences.awstools.s3.{ObjectAddress, S3}
+import ohnosequences.awstools.s3._
 import ohnosequences.benchmark.Bench
 
 
@@ -309,7 +309,7 @@ object S3Logger {
             prefix: String,
             loggingDirectory: File,
             logFileName: String,
-            loggingDestination: Option[ObjectAddress],
+            loggingDestination: Option[S3Folder],
             debug: Boolean,
             printToConsole: Boolean = true): Try[S3Logger] = {
     Try {
@@ -326,7 +326,7 @@ class S3Logger(s3: S3,
                prefix: String,
                loggingDirectory: File,
                logFileName: String,
-               val loggingDestination: Option[ObjectAddress],
+               val loggingDestination: Option[S3Folder],
                debug: Boolean,
                printToConsole: Boolean = true,
                original: Option[S3Logger]) extends FileLogger(prefix, loggingDirectory, logFileName, debug, printToConsole, original) {
@@ -363,7 +363,7 @@ class S3Logger(s3: S3,
       logFileName, loggingDestination,  debug, printToConsole = false, Some(s3Logger))
   }
 
-  def subLogger(suffix: String, loggingDestination: Option[ObjectAddress]): S3Logger = {
+  def subLogger(suffix: String, loggingDestination: Option[S3Folder]): S3Logger = {
     val newDirectory = new File(loggingDirectory, suffix)
     newDirectory.mkdir()
 
