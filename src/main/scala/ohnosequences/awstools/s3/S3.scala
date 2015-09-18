@@ -32,7 +32,7 @@ sealed trait AnyS3Address {
 }
 
 
-case class S3Folder(b: String, k: String) {
+case class S3Folder(b: String, k: String) extends AnyS3Address {
   val bucket = b.stripSuffix("/")
   // NOTE: we explicitly add / in the end here (it represents the empty S3 object of the folder)
   val key = k.stripPrefix("/").stripSuffix("/") + "/"
@@ -49,7 +49,7 @@ object S3Folder {
 }
 
 
-case class S3Object(b: String, k: String) {
+case class S3Object(b: String, k: String) extends AnyS3Address {
   val bucket = b.stripSuffix("/")
   val key = k.stripPrefix("/")
 
@@ -58,6 +58,11 @@ case class S3Object(b: String, k: String) {
   def /(path: String): S3Object = this.asFolder / path
 }
 
+// @deprecated("Use S3Object type instead", since = "v0.14.0")
+// type ObjectAddress = S3Object
+//
+// @deprecated("Use S3Object instead", since = "v0.14.0")
+// def ObjectAddress(b: String, k: String): ObjectAddress = S3Object(b, k)
 
 object S3Object {
 
