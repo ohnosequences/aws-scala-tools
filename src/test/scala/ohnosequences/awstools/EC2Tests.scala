@@ -13,17 +13,17 @@ class EC2Tests {
 
   @Test
   def instanceSpecs() {
-    val specs = InstanceSpecs(instanceType = t1_micro, keyName = "keyName", securityGroups = List("sg1"), amiId = "amiId1")
+    val specs = InstanceSpecs(instanceType = t1.micro, keyName = "keyName", securityGroups = List("sg1"), amiId = "amiId1")
     assertEquals("amiId1", specs.amiId)
-    assertEquals(t1_micro, specs.instanceType)
+    assertEquals(t1.micro, specs.instanceType)
     assertEquals(List("sg1"), specs.securityGroups)
 
     val lspecs: LaunchSpecification = specs
     assertEquals("amiId1", lspecs.getImageId)
-    assertEquals(t1_micro.toString, lspecs.getInstanceType)
+    assertEquals(t1.micro.toString, lspecs.getInstanceType)
     assertEquals(Arrays.asList("sg1"), lspecs.getSecurityGroups)
 
-    val specsWitUserData: LaunchSpecification = InstanceSpecs(instanceType = t1_micro, keyName = "keyName", securityGroups = List("sg1"), amiId = "amiId1", userData = "test test")
+    val specsWitUserData: LaunchSpecification = InstanceSpecs(instanceType = t1.micro, keyName = "keyName", securityGroups = List("sg1"), amiId = "amiId1", userData = "test test")
     assertEquals(Utils.base64encode("test test"), specsWitUserData.getUserData)
   }
 
