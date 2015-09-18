@@ -47,3 +47,5 @@ fasta.sbt
 .tags*
 tags
 .atom*
+
+.classpath
