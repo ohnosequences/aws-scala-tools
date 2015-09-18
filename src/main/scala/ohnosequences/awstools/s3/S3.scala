@@ -31,6 +31,7 @@ sealed trait AnyS3Address {
   override def toString = url
 }
 
+
 case class S3Folder(b: String, k: String) {
   val bucket = b.stripSuffix("/")
   // NOTE: we explicitly add / in the end here (it represents the empty S3 object of the folder)
@@ -157,19 +158,22 @@ class S3(val s3: AmazonS3) {
 
   def createLoadingManager(): LoadingManager = new LoadingManager(new TransferManager(s3))
 
-  def tryAction[T](action: () => Option[T], attemptsLeft: Int = 10, timeOut: Int = 500): Option[T] = {
-    if(attemptsLeft == 0) {
-      None
-    } else {
-      action() match {
+  @scala.annotation.tailrec
+  final def tryAction[T](action: => Option[T], attemptsLeft: Int = 10, timeOut: Int = 500): Option[T] = {
+    if(attemptsLeft <= 0) None
+    else {
+      action match {
         case Some(t) => Some(t)
-        case None => Thread.sleep(timeOut); tryAction(action, attemptsLeft - 1)
+        case None => {
+          Thread.sleep(timeOut)
+          tryAction(action, attemptsLeft - 1)
+        }
       }
     }
   }
 
-  def createBucket(name: String) = {
-    val createBucketAction: () => Option[Boolean] = {  () =>
+  def createBucket(name: String): Option[Boolean] = {
+    def createBucketAction: Option[Boolean] = {
       try {
         s3.createBucket(name)
         Some(true)
@@ -179,11 +183,6 @@ class S3(val s3: AmazonS3) {
       }
     }
     tryAction(createBucketAction)
-    Bucket(s3, name)
-  }
-
-  def getBucket(name: String) = {
-    if (s3.doesBucketExist(name)) Some(Bucket(s3, name)) else None
   }
 
   def copy(src: S3Object, dst: S3Object): Boolean = {
