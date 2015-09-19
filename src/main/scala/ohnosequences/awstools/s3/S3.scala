@@ -190,6 +190,8 @@ class S3(val s3: AmazonS3) {
     tryAction(createBucketAction)
   }
 
+  def bucketExists(name: String) = s3.doesBucketExist(name)
+
   def copy(src: S3Object, dst: S3Object): Boolean = {
     try {
       s3.copyObject(src.bucket, src.key, dst.bucket, dst.key)
