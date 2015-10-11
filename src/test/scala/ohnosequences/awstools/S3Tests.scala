@@ -18,7 +18,7 @@ class S3Tests {
 
     s3.createBucket(bucket)
     val file = new File("build.sbt")
-    val objectAddress = ObjectAddress(bucket, file.getName)
+    val objectAddress = S3Object(bucket, file.getName)
 
 
     val loadManager = s3.createLoadingManager()

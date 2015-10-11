@@ -23,23 +23,54 @@ import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 
 
-case class ObjectAddress(bucket: String, key: String) {
+sealed trait AnyS3Address {
+  val bucket: String
+  val key: String
 
-  def /(path: String): ObjectAddress = {
-    val newKey = key.replaceAll("/$", "") + "/" + path.replaceAll("^/", "")
-    ObjectAddress(bucket, newKey)
-  }
-
-  def url = "s3://" + bucket + "/" + key
-
+  final def url = "s3://" + bucket + "/" + key
   override def toString = url
 }
 
-object ObjectAddress {
-  def apply(url: String): Try[ObjectAddress] = {
+
+case class S3Folder(b: String, k: String) extends AnyS3Address {
+  val bucket = b.stripSuffix("/")
+  // NOTE: we explicitly add / in the end here (it represents the empty S3 object of the folder)
+  val key = k.stripPrefix("/").stripSuffix("/") + "/"
+
+  def /(path: String): S3Object = S3Object(bucket,
+    key + path.stripPrefix("/").stripSuffix("/")
+  )
+}
+
+object S3Folder {
+
+  implicit def toS3Object(f: S3Folder): S3Object =
+    S3Object(f.bucket, f.key.stripSuffix("/"))
+}
+
+
+case class S3Object(b: String, k: String) extends AnyS3Address {
+  val bucket = b.stripSuffix("/")
+  val key = k.stripPrefix("/")
+
+  def asFolder: S3Folder = S3Folder(bucket, key)
+
+  def /(path: String): S3Object = this.asFolder / path
+}
+
+// @deprecated("Use S3Object type instead", since = "v0.14.0")
+// type ObjectAddress = S3Object
+//
+// @deprecated("Use S3Object instead", since = "v0.14.0")
+// def ObjectAddress(b: String, k: String): ObjectAddress = S3Object(b, k)
+
+object S3Object {
+
+  @deprecated("Parsing and getting a Try is not the safest thing", since = "v0.14.0")
+  def apply(url: String): Try[S3Object] = {
     val s3url = """s3://(.+)/(.+)""".r
     url match {
-      case s3url(bucket, key) => Success(ObjectAddress(bucket, key))
+      case s3url(bucket, key) => Success(S3Object(bucket, key))
       case _ => Failure(new Error("couldn't parse S3 URL: " + url))
     }
   }
@@ -79,7 +110,7 @@ case class LoadingManager(transferManager: TransferManager, logger: Option[Logge
   }
 
   def upload(
-    objectAddress: ObjectAddress,
+    objectAddress: S3Object,
     file: File,
     transferWaiter: (Transfer => Unit) = transferWaiter
   ) {
@@ -90,7 +121,7 @@ case class LoadingManager(transferManager: TransferManager, logger: Option[Logge
   }
 
   def uploadDirectory(
-    objectAddress: ObjectAddress,
+    objectAddress: S3Object,
     directory: File,
     recursively: Boolean = true,
     transferWaiter: (Transfer => Unit) = transferWaiter
@@ -102,7 +133,7 @@ case class LoadingManager(transferManager: TransferManager, logger: Option[Logge
   }
 
   def download(
-    objectAddress: ObjectAddress,
+    objectAddress: S3Object,
     file: File,
     transferWaiter: (Transfer => Unit) = transferWaiter
   ) {
@@ -113,7 +144,7 @@ case class LoadingManager(transferManager: TransferManager, logger: Option[Logge
   }
 
   def downloadDirectory(
-    objectAddress: ObjectAddress,
+    objectAddress: S3Object,
     destinationDir: File,
     transferWaiter: (Transfer => Unit) = transferWaiter
   ) {
@@ -132,19 +163,22 @@ class S3(val s3: AmazonS3) {
 
   def createLoadingManager(): LoadingManager = new LoadingManager(new TransferManager(s3))
 
-  def tryAction[T](action: () => Option[T], attemptsLeft: Int = 10, timeOut: Int = 500): Option[T] = {
-    if(attemptsLeft == 0) {
-      None
-    } else {
-      action() match {
+  @scala.annotation.tailrec
+  final def tryAction[T](action: => Option[T], attemptsLeft: Int = 10, timeOut: Int = 500): Option[T] = {
+    if(attemptsLeft <= 0) None
+    else {
+      action match {
         case Some(t) => Some(t)
-        case None => Thread.sleep(timeOut); tryAction(action, attemptsLeft - 1)
+        case None => {
+          Thread.sleep(timeOut)
+          tryAction(action, attemptsLeft - 1)
+        }
       }
     }
   }
 
-  def createBucket(name: String) = {
-    val createBucketAction: () => Option[Boolean] = {  () =>
+  def createBucket(name: String): Option[Boolean] = {
+    def createBucketAction: Option[Boolean] = {
       try {
         s3.createBucket(name)
         Some(true)
@@ -154,14 +188,11 @@ class S3(val s3: AmazonS3) {
       }
     }
     tryAction(createBucketAction)
-    Bucket(s3, name)
   }
 
-  def getBucket(name: String) = {
-    if (s3.doesBucketExist(name)) Some(Bucket(s3, name)) else None
-  }
+  def bucketExists(name: String) = s3.doesBucketExist(name)
 
-  def copy(src: ObjectAddress, dst: ObjectAddress): Boolean = {
+  def copy(src: S3Object, dst: S3Object): Boolean = {
     try {
       s3.copyObject(src.bucket, src.key, dst.bucket, dst.key)
       true
@@ -170,7 +201,7 @@ class S3(val s3: AmazonS3) {
     }
   }
 
-  def getObjectString(objectAddress: ObjectAddress): Try[String] = {
+  def getObjectString(objectAddress: S3Object): Try[String] = {
     Try {
       s3.getObject(objectAddress.bucket, objectAddress.key)
     }.flatMap { s3obj =>
@@ -188,13 +219,13 @@ class S3(val s3: AmazonS3) {
   }
 
   @deprecated("", since = "v0.13.1")
-  def readWholeObject(objectAddress: ObjectAddress) = {
+  def readWholeObject(objectAddress: S3Object) = {
     val objectStream = s3.getObject(objectAddress.bucket, objectAddress.key).getObjectContent
     scala.io.Source.fromInputStream(objectStream).mkString
   }
 
   @deprecated("", since = "v0.13.1")
-  def readObject(objectAddress: ObjectAddress): Option[String] = {
+  def readObject(objectAddress: S3Object): Option[String] = {
     try {
       val objectStream = s3.getObject(objectAddress.bucket, objectAddress.key).getObjectContent
       Some(scala.io.Source.fromInputStream(objectStream).mkString)
@@ -203,14 +234,14 @@ class S3(val s3: AmazonS3) {
     }
   }
 
-  def getObjectStream(objectAddress: ObjectAddress): InputStream = {
+  def getObjectStream(objectAddress: S3Object): InputStream = {
     s3.getObject(objectAddress.bucket, objectAddress.key).getObjectContent
   }
 
 
 
   @deprecated("use uploadString()", since = "v0.13.1")
-  def putWholeObject(objectAddress: ObjectAddress, content: String): Unit = {
+  def putWholeObject(objectAddress: S3Object, content: String): Unit = {
     val array = content.getBytes
 
     val stream = new ByteArrayInputStream(array)
@@ -220,7 +251,7 @@ class S3(val s3: AmazonS3) {
   }
 
   @deprecated("use uploadFile()", since = "v0.13.1")
-  def putObject(objectAddress: ObjectAddress, file: File, public: Boolean = false) {
+  def putObject(objectAddress: S3Object, file: File, public: Boolean = false) {
     createBucket(objectAddress.bucket)
     if (public) {
       s3.putObject(new PutObjectRequest(objectAddress.bucket, objectAddress.key, file).withCannedAcl(CannedAccessControlList.PublicRead))
@@ -229,7 +260,7 @@ class S3(val s3: AmazonS3) {
     }
   }
 
-  def uploadFile(destination: ObjectAddress, file: File, public: Boolean = false): Try[Unit] = {
+  def uploadFile(destination: S3Object, file: File, public: Boolean = false): Try[Unit] = {
     Try {
       createBucket(destination.bucket)
       if (public) {
@@ -240,7 +271,7 @@ class S3(val s3: AmazonS3) {
     }
   }
 
-  def uploadString(destination: ObjectAddress, s: String): Try[Unit] = {
+  def uploadString(destination: S3Object, s: String): Try[Unit] = {
     Try {
       createBucket(destination.bucket)
       val array = s.getBytes
@@ -252,7 +283,7 @@ class S3(val s3: AmazonS3) {
   }
 
 
-  def deleteObject(objectAddress: ObjectAddress) {
+  def deleteObject(objectAddress: S3Object) {
     s3.deleteObject(objectAddress.bucket, objectAddress.key)
   }
 
@@ -266,14 +297,14 @@ class S3(val s3: AmazonS3) {
   }
 
 
-  def listObjects(bucket: String, prefix: String = ""): List[ObjectAddress] = {
+  def listObjects(bucket: String, prefix: String = ""): List[S3Object] = {
    // println("lsitObject")
-    val result = ListBuffer[ObjectAddress]()
+    val result = ListBuffer[S3Object]()
     //var stopped = false
     var listing = s3.listObjects(bucket, prefix)
 
     result ++= listing.getObjectSummaries.map{ summary =>
-        ObjectAddress(bucket, summary.getKey)
+        S3Object(bucket, summary.getKey)
     }
 
      while (listing.isTruncated) {
@@ -282,7 +313,7 @@ class S3(val s3: AmazonS3) {
 
       listing = s3.listNextBatchOfObjects(listing)
       result ++= listing.getObjectSummaries.map{ summary =>
-        ObjectAddress(bucket, summary.getKey)
+        S3Object(bucket, summary.getKey)
       }
 
     }
@@ -311,7 +342,7 @@ class S3(val s3: AmazonS3) {
     }
   }
 
-  def objectExists(address: ObjectAddress): Try[Boolean] = {
+  def objectExists(address: S3Object): Try[Boolean] = {
     Try {
       val metadata = s3.getObjectMetadata(address.bucket, address.key)
       metadata != null
@@ -321,7 +352,7 @@ class S3(val s3: AmazonS3) {
   }
 
   @deprecated("", since = "v0.13.1")
-  def objectExists(address: ObjectAddress, logger: Option[Logger]): Boolean = {
+  def objectExists(address: S3Object, logger: Option[Logger]): Boolean = {
 
     try {
       val metadata = s3.getObjectMetadata(address.bucket, address.key)
@@ -335,7 +366,7 @@ class S3(val s3: AmazonS3) {
   }
 
   @deprecated("use generateTemporaryURLLink", since = "v0.13.1")
-  def generateTemporaryURL(address: ObjectAddress, time: Int): String = {
+  def generateTemporaryURL(address: S3Object, time: Int): String = {
     val exp = new java.util.Date()
     var expMs = exp.getTime()
     expMs += 1000 * time
@@ -343,7 +374,7 @@ class S3(val s3: AmazonS3) {
     s3.generatePresignedUrl(address.bucket, address.key, exp).toString
   }
 
-  def generateTemporaryLink(address: ObjectAddress, linkLifeTime: Duration): Try[URL] = {
+  def generateTemporaryLink(address: S3Object, linkLifeTime: Duration): Try[URL] = {
     Try {
       val exp = new java.util.Date()
       var expMs = exp.getTime()
