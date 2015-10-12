@@ -1,3 +1,4 @@
+* Updated aws java sdk from `v1.9.25` to `v1.10.26`
 * Updated instance types list, changed the naming convention (now `m3.medium` and `m4.x10large`)
 * Added Frankfurt and Beijing regions
 * Added `AnyS3Address`/`S3Folder` types; renamed `ObjectAddress` to `S3Object`

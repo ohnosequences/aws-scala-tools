@@ -9,7 +9,7 @@ scalaVersion := "2.11.7"
 crossScalaVersions := Seq("2.10.5", scalaVersion.value)
 
 
-val sdkVersion = "1.10.9"
+val sdkVersion = "1.10.26"
 
 libraryDependencies ++= Seq(
   "com.amazonaws" % "aws-java-sdk-sns"         % sdkVersion,
