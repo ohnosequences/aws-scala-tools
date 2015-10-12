@@ -1,47 +1,34 @@
 
 ```scala
-package ohnosequences.awstools.sns
+package ohnosequences.awstools.utils
 
-import java.io.File
+import com.amazonaws.services.autoscaling.AmazonAutoScaling
+import com.amazonaws.services.autoscaling.model.{Instance, DescribeAutoScalingGroupsRequest}
 
-import ohnosequences.awstools.regions.Region._
+import scala.collection.JavaConversions._
 
-import com.amazonaws.auth._
-import com.amazonaws.services.sns.{AmazonSNSClient, AmazonSNS}
-import com.amazonaws.services.sns.model.{CreateTopicRequest}
-import com.amazonaws.internal.StaticCredentialsProvider
+import scala.util.Try
 
-class SNS(val sns: AmazonSNS) {
 
-  def createTopic(name: String) = {
-    Topic(sns, sns.createTopic(new CreateTopicRequest(name)).getTopicArn, name)
+/**
+ * Created by Evdokim on 18.06.2015.
+ */
+object AutoScalingUtils {
+  def describeInstances(as: AmazonAutoScaling,
+                        groupName: String,
+                        lastToken: Option[String],
+                        limit: Option[Int]): Try[(Option[String], List[Instance])] = {
+    Try {
+      val request = new DescribeAutoScalingGroupsRequest()
+        .withAutoScalingGroupNames(groupName)
+      limit.foreach { l => request.setMaxRecords(l) }
+      lastToken.foreach { t => request.setNextToken(t) }
+      val r = as.describeAutoScalingGroups(request)
+      (Option(r.getNextToken), r.getAutoScalingGroups.flatMap { _.getInstances}.toList)
+    }
+
   }
 
-  def shutdown() {
-    sns.shutdown()
-  }
-
-}
-
-object SNS {
-
-  def create(): SNS = {
-    create(new InstanceProfileCredentialsProvider())
-  }
-
-  def create(credentialsFile: File): SNS = {
-    create(new StaticCredentialsProvider(new PropertiesCredentials(credentialsFile)))
-  }
-
-  def create(accessKey: String, secretKey: String): SNS = {
-    create(new StaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
-  }
-
-  def create(credentials: AWSCredentialsProvider, region: ohnosequences.awstools.regions.Region = Ireland): SNS = {
-    val snsClient = new AmazonSNSClient(credentials)
-    snsClient.setRegion(region)
-    new SNS(snsClient)
-  }
 }
 
 ```
@@ -59,13 +46,13 @@ object SNS {
 [main/scala/ohnosequences/awstools/ec2/Utils.scala]: ../ec2/Utils.scala.md
 [main/scala/ohnosequences/awstools/regions/Region.scala]: ../regions/Region.scala.md
 [main/scala/ohnosequences/awstools/s3/S3.scala]: ../s3/S3.scala.md
-[main/scala/ohnosequences/awstools/sns/SNS.scala]: SNS.scala.md
-[main/scala/ohnosequences/awstools/sns/Topic.scala]: Topic.scala.md
+[main/scala/ohnosequences/awstools/sns/SNS.scala]: ../sns/SNS.scala.md
+[main/scala/ohnosequences/awstools/sns/Topic.scala]: ../sns/Topic.scala.md
 [main/scala/ohnosequences/awstools/sqs/Queue.scala]: ../sqs/Queue.scala.md
 [main/scala/ohnosequences/awstools/sqs/SQS.scala]: ../sqs/SQS.scala.md
-[main/scala/ohnosequences/awstools/utils/AutoScalingUtils.scala]: ../utils/AutoScalingUtils.scala.md
-[main/scala/ohnosequences/awstools/utils/DynamoDBUtils.scala]: ../utils/DynamoDBUtils.scala.md
-[main/scala/ohnosequences/awstools/utils/SQSUtils.scala]: ../utils/SQSUtils.scala.md
+[main/scala/ohnosequences/awstools/utils/AutoScalingUtils.scala]: AutoScalingUtils.scala.md
+[main/scala/ohnosequences/awstools/utils/DynamoDBUtils.scala]: DynamoDBUtils.scala.md
+[main/scala/ohnosequences/awstools/utils/SQSUtils.scala]: SQSUtils.scala.md
 [main/scala/ohnosequences/benchmark/Benchmark.scala]: ../../benchmark/Benchmark.scala.md
 [main/scala/ohnosequences/logging/Logger.scala]: ../../logging/Logger.scala.md
 [main/scala/ohnosequences/logging/S3Logger.scala]: ../../logging/S3Logger.scala.md

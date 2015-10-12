@@ -2,27 +2,94 @@
 ```scala
 package ohnosequences.logging
 
-import java.io.{PrintWriter, File}
+import java.io.{FileWriter, PrintWriter, File}
+import java.nio.file.{StandardCopyOption, Files}
 import java.text.SimpleDateFormat
 import java.util.Date
 
-import ohnosequences.awstools.s3.{ObjectAddress, S3}
+import ohnosequences.awstools.s3._
 import ohnosequences.benchmark.Bench
 
 
-trait Logger {
+import scala.annotation.tailrec
+import scala.sys.process.ProcessLogger
+import scala.util.{Success, Failure, Try}
 
-  def warn(s: String): Unit
 
-  def warn(t: Throwable): Unit =  { warn(t.toString) }
+trait Logger { logger =>
 
-  def error(t: Throwable): Unit =  { error(t.toString) }
+  val prefix: String
 
-  def error(s: String): Unit
+  def processLogger: ProcessLogger = new ProcessLogger {
 
-  def info(s: String): Unit
+    override def buffer[T](f: => T): T = f
 
-  def debug(s: String): Unit
+    override def out(s: => String): Unit = info(s)
+
+    override def err(s: => String): Unit = error(s)
+
+  }
+
+  def warnP(s: String, prefix: Option[String]): Unit
+
+  def warnP(t: Throwable, prefix: Option[String]): Unit =  {
+    printThrowable(t, {s => warnP(s, prefix)})
+  }
+
+  def warn(s: String): Unit = warnP(s, Some(logger.prefix))
+
+  def warn(t: Throwable): Unit =  warnP(t, Some(logger.prefix))
+
+  def subLogger(prefix: String): Logger
+
+  def errorP(t: Throwable, prefix: Option[String], maxDepth: Int = 5, stackThreshold: Int = 10): Unit =  {
+    printThrowable(t, {s => errorP(s, prefix)}, maxDepth, stackThreshold)
+  }
+
+  def errorP(s: String, prefix: Option[String]): Unit
+
+  def error(t: Throwable, maxDepth: Int = 5, stackThreshold: Int = 10): Unit = errorP(t, Some(logger.prefix), maxDepth, stackThreshold)
+
+  def error(s: String): Unit = errorP(s, Some(logger.prefix))
+
+  def info(s: String, prefix: Option[String] = Some(logger.prefix)): Unit
+
+  def debugP(s: String, prefix: Option[String]): Unit
+
+  def debugP(t: Throwable, prefix: Option[String], maxDepth: Int = 5, stackThreshold: Int = 10): Unit =  {
+    printThrowable(t, {s => debugP(s, prefix)}, maxDepth, stackThreshold)
+  }
+
+  def debug(s: String): Unit = debugP(s, Some(logger.prefix))
+
+  def debug(t: Throwable, maxDepth: Int = 5, stackThreshold: Int = 10): Unit =  debugP(t, Some(logger.prefix), maxDepth, stackThreshold)
+
+  def uploadFile(file: File, workingDirectory: File): Try[Unit]
+
+  def printThrowable(t: Throwable, print: String => Unit, maxDepth: Int = 5, stackThreshold: Int = 10): Unit = {
+
+    @tailrec
+    def printThrowableRec(t: Throwable, depth: Int): Unit = {
+      if (depth > maxDepth) {
+        ()
+      } else {
+        print(t.toString)
+        t.getStackTrace.take(stackThreshold).foreach { s =>
+          print("    at " + s.toString)
+        }
+        Option(t.getCause) match {
+          case None => ()
+          case Some(cause) => {
+            print("Caused by:")
+            printThrowableRec(cause, depth+1)}
+        }
+      }
+    }
+    printThrowableRec(t, 1)
+  }
+
+
+
 
   def benchExecute[T](description: String, bench: Option[Bench] = None)(statement: =>T): T = {
     val t1 = System.currentTimeMillis()
@@ -32,16 +99,24 @@ trait Logger {
     bench.foreach(_.register(description, t2 - t1))
     res
   }
+
 }
 
 object unitLogger extends Logger {
-  override def warn(s: String) {}
 
-  override def error(s: String) {}
+  override val prefix: String = "unit"
 
-  override def info(s: String) {}
+  override def warnP(s: String, prefix: Option[String]) {}
 
-  override def debug(s: String) {}
+  override def errorP(s: String, prefix: Option[String]) {}
+
+  override def info(s: String, prefix: Option[String]) {}
+
+  override def debugP(s: String, prefix: Option[String]) {}
+
+  override def uploadFile(file: File, workingDirectory: File): Try[Unit] = {Success(())}
+
+  override def subLogger(prefix: String): Logger = unitLogger
 }
 
 
@@ -50,65 +125,99 @@ class LogFormatter(prefix: String) {
 
   val format = new SimpleDateFormat("HH:mm:ss.SSS")
 
-  def pref(): String = {
-    format.format(new Date()) + " " + prefix
+  def pref(p: Option[String]): String = {
+    format.format(new Date()) + " " + (p match {
+      case None => prefix
+      case Some(s) => s
+    })
   }
 
 
-  def info(s: String): String = {
-    "[" + "INFO " + pref + "]: " + s
+  def info(s: String, prefix: Option[String] = None): String = {
+    "[" + "INFO  " + pref(prefix) + "]: " + s
   }
 
-  def error(s: String): String = {
-    "[" + "ERROR " + pref + "]: " + s
+  def error(s: String, prefix: Option[String] = None): String = {
+    "[" + "ERROR " + pref(prefix) + "]: " + s
   }
 
-  def warn(s: String): String =  {
-    "[" + "WARN " + pref + "]: " + s
+  def warn(s: String, prefix: Option[String] = None): String =  {
+    "[" + "WARN  " + pref(prefix) + "]: " + s
   }
 
-  def debug(s: String): String =  {
-    "[" + "DEBUG " + pref + "]: " + s
+  def debug(s: String, prefix: Option[String] = None): String =  {
+    "[" + "DEBUG " + pref(prefix) + "]: " + s
   }
 }
 
 
-class ConsoleLogger(prefix: String, debug: Boolean = false) extends Logger {
+class ConsoleLogger(val prefix: String, debug: Boolean = false) extends Logger {
+
+  rootLogger =>
 
   val formatter = new LogFormatter(prefix)
 
-  override def info(s: String) {
-    println(formatter.info(s))
+  override def toString: String = "ConsoleLogger[" + prefix + "]"
+
+
+  override def info(s: String, prefix: Option[String] = Some(rootLogger.prefix)) {
+    println(formatter.info(s, prefix))
   }
 
-  override def error(s: String) {
-    println(formatter.error(s))
+  override def errorP(s: String, prefix: Option[String]) {
+    println(formatter.error(s, prefix))
   }
 
-  override def warn(s: String) {
-    println(formatter.warn(s))
+  override def warnP(s: String, prefix: Option[String]) {
+    println(formatter.warn(s, prefix))
   }
 
-  override def error(t: Throwable): Unit = {
-    error(t.toString)
-    t.printStackTrace()
-  }
 
-  override def debug(s: String): Unit = {
+  override def debugP(s: String, prefix: Option[String]): Unit = {
     if (debug) {
-      println(formatter.debug(s))
+      println(formatter.debug(s, prefix))
     }
   }
 
+ // override def copy(prefix: String): ConsoleLogger = new ConsoleLogger(prefix, debug)
+
+  override def uploadFile(file: File, workingDirectory: File): Try[Unit] = {
+    info("uploading " + file.getAbsolutePath)
+    warn("uploading is not implemented in ConsoleLogger")
+    Success(())
+  }
+
+  override def subLogger(suffix: String): ConsoleLogger =
+    new ConsoleLogger(prefix + "/" + suffix, debug)
 
 }
 
-class FileLogger(prefix: String, debug: Boolean, workingDir: File = new File("."), printToConsole: Boolean = true) extends Logger {
+object FileLogger {
+  def apply(prefix: String,
+            loggingDirectory: File,
+            logFileName: String,
+            debug: Boolean,
+            printToConsole: Boolean = true): Try[FileLogger] = {
+    Try {
+      loggingDirectory.mkdir()
+      new FileLogger(prefix, loggingDirectory, logFileName, debug, printToConsole, None)
+    }.recoverWith { case t =>
+      Failure(new Error("failed to create logging file: " + t, t))
+    }
+  }
+}
+
+class FileLogger(val prefix: String,
+                 val loggingDirectory: File,
+                 logFileName: String,
+                 debug: Boolean,
+                 printToConsole: Boolean = true,
+                 original: Option[FileLogger]) extends Logger { fileLogger =>
 
   val formatter = new LogFormatter(prefix)
+  val logFile = new File(loggingDirectory, logFileName)
+  val log = new PrintWriter(new FileWriter(logFile), true)
 
-  val logFile = new File(workingDir, "log.txt")
-  val log = new PrintWriter(logFile)
 
   val consoleLogger = if (printToConsole) {
     Some(new ConsoleLogger(prefix, debug))
@@ -116,122 +225,183 @@ class FileLogger(prefix: String, debug: Boolean, workingDir: File = new File("."
     None
   }
 
-  override def warn(s: String) {
-    consoleLogger.foreach{_.warn(s)}
-    log.println(formatter.warn(s))
+  override def warnP(s: String, prefix: Option[String]) {
+    original.foreach {
+      _.warnP(s, prefix)
+    }
+
+    consoleLogger.foreach {
+      _.warnP(s, prefix)
+    }
+
+    log.println(formatter.warn(s, prefix))
+   // log.flush()
   }
 
-  override def error(s: String): Unit = {
-    consoleLogger.foreach{_.error(s)}
-    log.println(formatter.error(s))
+  override def errorP(s: String, prefix: Option[String]): Unit = {
+
+    original.foreach {
+      _.errorP(s, prefix)
+    }
+
+    consoleLogger.foreach {
+      _.errorP(s, prefix)
+    }
+    log.println(formatter.error(s, prefix))
+    //log.flush()
   }
 
-  override def info(s: String): Unit = {
-    consoleLogger.foreach{_.info(s)}
-    log.println(formatter.info(s))
+
+  override def toString: String = "FileLogger[" + prefix + "]"
+
+  override def info(s: String, prefix: Option[String] = Some(fileLogger.prefix)): Unit = {
+
+    original.foreach {
+      _.info(s, prefix)
+    }
+
+    consoleLogger.foreach {
+      _.info(s, prefix)
+    }
+    log.println(formatter.info(s, prefix))
+   // log.flush()
   }
 
-  override def debug(s: String): Unit = {
+  override def debugP(s: String, prefix: Option[String]): Unit = {
+
     if (debug) {
-      consoleLogger.foreach {
-        _.debug(s)
+      original.foreach {
+        _.debugP(s, prefix)
       }
-      log.println(formatter.debug(s))
+      consoleLogger.foreach {
+        _.debugP(s, prefix)
+      }
+      log.println(formatter.debug(s, prefix))
+    //  log.flush()
+    }
+  }
+
+  // override def copy(prefix: String): FileLogger = new FileLogger(prefix, logFile, debug, printToConsole)
+
+  override def subLogger(suffix: String): FileLogger = {
+    val newDirectory = new File(loggingDirectory, suffix)
+    newDirectory.mkdir()
+
+    new FileLogger(
+      prefix + "/" + suffix,
+      newDirectory,
+      logFileName,
+      debug,
+      printToConsole = false,
+      Some(fileLogger)
+    )
+  }
+
+  override def uploadFile(file: File, workingDirectory: File): Try[Unit] = {
+    Try {
+      val path = file.getAbsolutePath.replace(workingDirectory.getAbsolutePath, "")
+      Files.copy(file.toPath, new File(loggingDirectory, path).toPath, StandardCopyOption.REPLACE_EXISTING)
     }
   }
 }
 
-class S3Logger(s3: S3, prefix: String, debug: Boolean, workingDir: File, printToConsole: Boolean = true) extends FileLogger(prefix, debug, workingDir, printToConsole) {
-  def uploadLog( destination: ObjectAddress): Unit = {
-    log.close()
-    s3.putObject(destination, logFile)
+
+object S3Logger {
+  def apply(s3: S3,
+            prefix: String,
+            loggingDirectory: File,
+            logFileName: String,
+            loggingDestination: Option[S3Folder],
+            debug: Boolean,
+            printToConsole: Boolean = true): Try[S3Logger] = {
+    Try {
+      loggingDirectory.mkdir()
+      val logFile = new File(loggingDirectory, logFileName)
+      new S3Logger(s3, prefix, loggingDirectory, logFileName, loggingDestination, debug, printToConsole, None)
+    }.recoverWith { case t =>
+      Failure(new Error("failed to create logging file: " + t, t))
+    }
+  }
+}
+
+class S3Logger(s3: S3,
+               prefix: String,
+               loggingDirectory: File,
+               logFileName: String,
+               val loggingDestination: Option[S3Folder],
+               debug: Boolean,
+               printToConsole: Boolean = true,
+               original: Option[S3Logger]) extends FileLogger(prefix, loggingDirectory, logFileName, debug, printToConsole, original) {
+  s3Logger =>
+
+  override def toString: String = "S3Logger[" + prefix + "]"
+
+  def uploadLog(): Try[Unit] = {
+    Try {
+      loggingDestination.foreach { dst =>
+       // log.flush()
+        s3.createBucket(dst.bucket)
+        s3.uploadFile(dst / logFileName, logFile)
+      }
+    }
   }
 
-  def uploadFile(destination: ObjectAddress, file: File, zeroDir: File = workingDir) {
-    val path = file.getAbsolutePath.replace(zeroDir.getAbsolutePath, "")
-    s3.putObject(destination / path, file)
+  override def uploadFile(file: File, zeroDir: File): Try[Unit] =  {
+    Try {
+      loggingDestination.foreach { dst =>
+        val path = file.getAbsolutePath.replace(zeroDir.getAbsolutePath, "")
+        s3.createBucket(dst.bucket)
+        s3.uploadFile(dst / path, file)
+      }
+    }
+  }
+
+
+  override def subLogger(suffix: String): S3Logger = {
+    val newDirectory = new File(loggingDirectory, suffix)
+    newDirectory.mkdir()
+
+    new S3Logger(s3, prefix + "/" + suffix,  new File(loggingDirectory, suffix),
+      logFileName, loggingDestination,  debug, printToConsole = false, Some(s3Logger))
+  }
+
+  def subLogger(suffix: String, loggingDestination: Option[S3Folder]): S3Logger = {
+    val newDirectory = new File(loggingDirectory, suffix)
+    newDirectory.mkdir()
+
+    new S3Logger(s3, prefix + "/" + suffix,  new File(loggingDirectory, suffix),
+      logFileName, loggingDestination,  debug, printToConsole = false, Some(s3Logger))
   }
 
 }
 
-
-
 ```
 
 
-------
 
-### Index
 
-+ src
-  + main
-    + scala
-      + ohnosequences
-        + awstools
-          + autoscaling
-            + [AutoScaling.scala][main\scala\ohnosequences\awstools\autoscaling\AutoScaling.scala]
-            + [AutoScalingGroup.scala][main\scala\ohnosequences\awstools\autoscaling\AutoScalingGroup.scala]
-          + [AWSClients.scala][main\scala\ohnosequences\awstools\AWSClients.scala]
-          + dynamodb
-            + [DynamoDBUtils.scala][main\scala\ohnosequences\awstools\dynamodb\DynamoDBUtils.scala]
-          + ec2
-            + [EC2.scala][main\scala\ohnosequences\awstools\ec2\EC2.scala]
-            + [Filters.scala][main\scala\ohnosequences\awstools\ec2\Filters.scala]
-            + [InstanceType.scala][main\scala\ohnosequences\awstools\ec2\InstanceType.scala]
-            + [Utils.scala][main\scala\ohnosequences\awstools\ec2\Utils.scala]
-          + regions
-            + [Region.scala][main\scala\ohnosequences\awstools\regions\Region.scala]
-          + s3
-            + [Bucket.scala][main\scala\ohnosequences\awstools\s3\Bucket.scala]
-            + [S3.scala][main\scala\ohnosequences\awstools\s3\S3.scala]
-          + sns
-            + [SNS.scala][main\scala\ohnosequences\awstools\sns\SNS.scala]
-            + [Topic.scala][main\scala\ohnosequences\awstools\sns\Topic.scala]
-          + sqs
-            + [Queue.scala][main\scala\ohnosequences\awstools\sqs\Queue.scala]
-            + [SQS.scala][main\scala\ohnosequences\awstools\sqs\SQS.scala]
-          + utils
-            + [DynamoDBUtils.scala][main\scala\ohnosequences\awstools\utils\DynamoDBUtils.scala]
-            + [SQSUtils.scala][main\scala\ohnosequences\awstools\utils\SQSUtils.scala]
-        + benchmark
-          + [Benchmark.scala][main\scala\ohnosequences\benchmark\Benchmark.scala]
-        + logging
-          + [Logger.scala][main\scala\ohnosequences\logging\Logger.scala]
-          + [S3Logger.scala][main\scala\ohnosequences\logging\S3Logger.scala]
-  + test
-    + scala
-      + ohnosequences
-        + awstools
-          + [EC2Tests.scala][test\scala\ohnosequences\awstools\EC2Tests.scala]
-          + [InstanceTypeTests.scala][test\scala\ohnosequences\awstools\InstanceTypeTests.scala]
-          + [RegionTests.scala][test\scala\ohnosequences\awstools\RegionTests.scala]
-          + [S3Tests.scala][test\scala\ohnosequences\awstools\S3Tests.scala]
-          + [SQSTests.scala][test\scala\ohnosequences\awstools\SQSTests.scala]
-          + [TestCredentials.scala][test\scala\ohnosequences\awstools\TestCredentials.scala]
-
-[main\scala\ohnosequences\awstools\autoscaling\AutoScaling.scala]: ..\awstools\autoscaling\AutoScaling.scala.md
-[main\scala\ohnosequences\awstools\autoscaling\AutoScalingGroup.scala]: ..\awstools\autoscaling\AutoScalingGroup.scala.md
-[main\scala\ohnosequences\awstools\AWSClients.scala]: ..\awstools\AWSClients.scala.md
-[main\scala\ohnosequences\awstools\dynamodb\DynamoDBUtils.scala]: ..\awstools\dynamodb\DynamoDBUtils.scala.md
-[main\scala\ohnosequences\awstools\ec2\EC2.scala]: ..\awstools\ec2\EC2.scala.md
-[main\scala\ohnosequences\awstools\ec2\Filters.scala]: ..\awstools\ec2\Filters.scala.md
-[main\scala\ohnosequences\awstools\ec2\InstanceType.scala]: ..\awstools\ec2\InstanceType.scala.md
-[main\scala\ohnosequences\awstools\ec2\Utils.scala]: ..\awstools\ec2\Utils.scala.md
-[main\scala\ohnosequences\awstools\regions\Region.scala]: ..\awstools\regions\Region.scala.md
-[main\scala\ohnosequences\awstools\s3\Bucket.scala]: ..\awstools\s3\Bucket.scala.md
-[main\scala\ohnosequences\awstools\s3\S3.scala]: ..\awstools\s3\S3.scala.md
-[main\scala\ohnosequences\awstools\sns\SNS.scala]: ..\awstools\sns\SNS.scala.md
-[main\scala\ohnosequences\awstools\sns\Topic.scala]: ..\awstools\sns\Topic.scala.md
-[main\scala\ohnosequences\awstools\sqs\Queue.scala]: ..\awstools\sqs\Queue.scala.md
-[main\scala\ohnosequences\awstools\sqs\SQS.scala]: ..\awstools\sqs\SQS.scala.md
-[main\scala\ohnosequences\awstools\utils\DynamoDBUtils.scala]: ..\awstools\utils\DynamoDBUtils.scala.md
-[main\scala\ohnosequences\awstools\utils\SQSUtils.scala]: ..\awstools\utils\SQSUtils.scala.md
-[main\scala\ohnosequences\benchmark\Benchmark.scala]: ..\benchmark\Benchmark.scala.md
-[main\scala\ohnosequences\logging\Logger.scala]: Logger.scala.md
-[main\scala\ohnosequences\logging\S3Logger.scala]: S3Logger.scala.md
-[test\scala\ohnosequences\awstools\EC2Tests.scala]: ..\..\..\..\test\scala\ohnosequences\awstools\EC2Tests.scala.md
-[test\scala\ohnosequences\awstools\InstanceTypeTests.scala]: ..\..\..\..\test\scala\ohnosequences\awstools\InstanceTypeTests.scala.md
-[test\scala\ohnosequences\awstools\RegionTests.scala]: ..\..\..\..\test\scala\ohnosequences\awstools\RegionTests.scala.md
-[test\scala\ohnosequences\awstools\S3Tests.scala]: ..\..\..\..\test\scala\ohnosequences\awstools\S3Tests.scala.md
-[test\scala\ohnosequences\awstools\SQSTests.scala]: ..\..\..\..\test\scala\ohnosequences\awstools\SQSTests.scala.md
-[test\scala\ohnosequences\awstools\TestCredentials.scala]: ..\..\..\..\test\scala\ohnosequences\awstools\TestCredentials.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/AutoScaling.scala]: ../awstools/autoscaling/AutoScaling.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/AutoScalingGroup.scala]: ../awstools/autoscaling/AutoScalingGroup.scala.md
+[main/scala/ohnosequences/awstools/AWSClients.scala]: ../awstools/AWSClients.scala.md
+[main/scala/ohnosequences/awstools/dynamodb/DynamoDBUtils.scala]: ../awstools/dynamodb/DynamoDBUtils.scala.md
+[main/scala/ohnosequences/awstools/ec2/EC2.scala]: ../awstools/ec2/EC2.scala.md
+[main/scala/ohnosequences/awstools/ec2/Filters.scala]: ../awstools/ec2/Filters.scala.md
+[main/scala/ohnosequences/awstools/ec2/InstanceType.scala]: ../awstools/ec2/InstanceType.scala.md
+[main/scala/ohnosequences/awstools/ec2/Utils.scala]: ../awstools/ec2/Utils.scala.md
+[main/scala/ohnosequences/awstools/regions/Region.scala]: ../awstools/regions/Region.scala.md
+[main/scala/ohnosequences/awstools/s3/S3.scala]: ../awstools/s3/S3.scala.md
+[main/scala/ohnosequences/awstools/sns/SNS.scala]: ../awstools/sns/SNS.scala.md
+[main/scala/ohnosequences/awstools/sns/Topic.scala]: ../awstools/sns/Topic.scala.md
+[main/scala/ohnosequences/awstools/sqs/Queue.scala]: ../awstools/sqs/Queue.scala.md
+[main/scala/ohnosequences/awstools/sqs/SQS.scala]: ../awstools/sqs/SQS.scala.md
+[main/scala/ohnosequences/awstools/utils/AutoScalingUtils.scala]: ../awstools/utils/AutoScalingUtils.scala.md
+[main/scala/ohnosequences/awstools/utils/DynamoDBUtils.scala]: ../awstools/utils/DynamoDBUtils.scala.md
+[main/scala/ohnosequences/awstools/utils/SQSUtils.scala]: ../awstools/utils/SQSUtils.scala.md
+[main/scala/ohnosequences/benchmark/Benchmark.scala]: ../benchmark/Benchmark.scala.md
+[main/scala/ohnosequences/logging/Logger.scala]: Logger.scala.md
+[main/scala/ohnosequences/logging/S3Logger.scala]: S3Logger.scala.md
+[test/scala/ohnosequences/awstools/AWSClients.scala]: ../../../../test/scala/ohnosequences/awstools/AWSClients.scala.md
+[test/scala/ohnosequences/awstools/EC2Tests.scala]: ../../../../test/scala/ohnosequences/awstools/EC2Tests.scala.md
+[test/scala/ohnosequences/awstools/RegionTests.scala]: ../../../../test/scala/ohnosequences/awstools/RegionTests.scala.md
+[test/scala/ohnosequences/awstools/S3Tests.scala]: ../../../../test/scala/ohnosequences/awstools/S3Tests.scala.md
+[test/scala/ohnosequences/awstools/SQSTests.scala]: ../../../../test/scala/ohnosequences/awstools/SQSTests.scala.md
