@@ -53,9 +53,9 @@ case class S3Object(b: String, k: String) extends AnyS3Address {
   val bucket = b.stripSuffix("/")
   val key = k.stripPrefix("/")
 
-  def asFolder: S3Folder = S3Folder(bucket, key)
+  def /(): S3Folder = S3Folder(bucket, key)
 
-  def /(path: String): S3Object = this.asFolder / path
+  def /(suffix: String): S3Object = this./ / suffix
 }
 
 // @deprecated("Use S3Object type instead", since = "v0.14.0")
