@@ -1,6 +1,6 @@
 package ohnosequences.awstools.ec2
 
-import ohnosequences.awstools.regions.{ Region => AWSRegion, _ }, AWSRegion._
+import ohnosequences.awstools.regions.{ Region => AWSRegion }, AWSRegion._
 
 /* ## [Amazon Machine Images (AMI)](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ComponentsAMIs.html) */
 case object ami {

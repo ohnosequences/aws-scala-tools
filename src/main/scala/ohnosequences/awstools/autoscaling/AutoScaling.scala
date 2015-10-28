@@ -9,7 +9,7 @@ import com.amazonaws.services.autoscaling.model._
 
 
 import scala.collection.JavaConversions._
-import ohnosequences.awstools.ec2.{Utils}
+// import ohnosequences.awstools.ec2.{Utils}
 import ohnosequences.awstools.regions.Region._
 
 import ohnosequences.awstools.{ec2 => awstools}

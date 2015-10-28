@@ -1,6 +1,6 @@
 package ohnosequences.awstools.autoscaling
 
-import ohnosequences.awstools.ec2.{EC2, Utils, InstanceType, InstanceSpecs}
+import ohnosequences.awstools.ec2.{EC2, InstanceType, InstanceSpecs}
 import scala.collection.JavaConversions._
 import java.util.Date
 
@@ -31,7 +31,7 @@ case class Spot(price: Double) extends PurchaseModel
 case class LaunchConfiguration(
   name: String = "",
   purchaseModel: PurchaseModel,
-  instanceSpecs: InstanceSpecs
+  instanceSpecs: AnyInstanceSpecs
 )
 
 

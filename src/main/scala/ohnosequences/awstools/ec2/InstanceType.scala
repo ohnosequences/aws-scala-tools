@@ -1,24 +1,27 @@
 package ohnosequences.awstools.ec2
 
-import com.amazonaws.services.ec2.model.{InstanceType => JavaInstanceType}
+import com.amazonaws.services.ec2.{ model => amzn }
 
-sealed class InstanceType private(val name: String) {
+sealed trait AnyInstanceType {
+  val name: String
   override def toString = name
 
-  def toAWS = JavaInstanceType.fromValue(name)
+  def toAWS = amzn.InstanceType.fromValue(name)
 }
 
-object InstanceType {
+sealed class InstanceType private(val name: String) extends AnyInstanceType
 
-  implicit def toJavaInstanceType(t: InstanceType): JavaInstanceType =
-    JavaInstanceType.fromValue(t.name)
+case object InstanceType {
+
+  implicit def toJavaInstanceType(t: InstanceType): amzn.InstanceType =
+    amzn.InstanceType.fromValue(t.name)
 
   @deprecated("Use conversion from an arbitrary String carefully", since = "v0.6.0")
   def fromName(name: String): InstanceType = new InstanceType(name)
 
   // This is taken from http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html
-
   // TODO: write tests that check that the string name corresponds to the object name
+
   // Current Generation Instances //
 
   // General purpose
