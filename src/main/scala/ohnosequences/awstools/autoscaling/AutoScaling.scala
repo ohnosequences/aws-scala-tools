@@ -29,8 +29,8 @@ class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2
   }
 
   def fixAutoScalingGroupUserData(group: AutoScalingGroup, fixedUserData: String): AutoScalingGroup = {
-    val specs = group.launchingConfiguration.instanceSpecs.copy(userData = fixedUserData)
-    val lc = group.launchingConfiguration.copy(instanceSpecs = specs)
+    val specs = group.launchingConfiguration.launchSpecs.copy(userData = fixedUserData)
+    val lc = group.launchingConfiguration.copy(launchSpecs = specs)
     val fixedGroup = group.copy(launchingConfiguration = lc)
     fixedGroup
   }
@@ -40,14 +40,14 @@ class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2
 
       var lcr = new CreateLaunchConfigurationRequest()
         .withLaunchConfigurationName(launchConfiguration.name)
-        .withImageId(launchConfiguration.instanceSpecs.amiId)
-        .withInstanceType(launchConfiguration.instanceSpecs.instanceType.toString)
-        .withUserData(Utils.base64encode(launchConfiguration.instanceSpecs.userData))
-        .withKeyName(launchConfiguration.instanceSpecs.keyName)
-        .withSecurityGroups(launchConfiguration.instanceSpecs.securityGroups)
-        .withInstanceMonitoring(new InstanceMonitoring().withEnabled(launchConfiguration.instanceSpecs.instanceMonitoring))
+        .withImageId(launchConfiguration.launchSpecs.amiId)
+        .withInstanceType(launchConfiguration.launchSpecs.instanceType.toString)
+        .withUserData(Utils.base64encode(launchConfiguration.launchSpecs.userData))
+        .withKeyName(launchConfiguration.launchSpecs.keyName)
+        .withSecurityGroups(launchConfiguration.launchSpecs.securityGroups)
+        .withInstanceMonitoring(new InstanceMonitoring().withEnabled(launchConfiguration.launchSpecs.instanceMonitoring))
         .withBlockDeviceMappings(
-        launchConfiguration.instanceSpecs.deviceMapping.map{ case (key, value) =>
+        launchConfiguration.launchSpecs.deviceMapping.map{ case (key, value) =>
           new BlockDeviceMapping().withDeviceName(key).withVirtualName(value)
         }.toList)
 
@@ -55,13 +55,13 @@ class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2
       lcr = launchConfiguration.purchaseModel match {
         case Spot(price) => lcr.withSpotPrice(price.toString)
         case SpotAuto => {
-          val price = SpotAuto.getCurrentPrice(ec2, launchConfiguration.instanceSpecs.instanceType)
+          val price = SpotAuto.getCurrentPrice(ec2, launchConfiguration.launchSpecs.instanceType)
           lcr.withSpotPrice(price.toString)
         }
         case OnDemand => lcr
       }
 
-      lcr = launchConfiguration.instanceSpecs.instanceProfile match {
+      lcr = launchConfiguration.launchSpecs.instanceProfile match {
         case Some(name) => lcr.withIamInstanceProfile(name)
         case None => lcr
       }

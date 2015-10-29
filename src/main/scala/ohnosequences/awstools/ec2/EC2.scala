@@ -61,10 +61,11 @@ class EC2(val ec2: amzn.ec2.AmazonEC2) {
       instance.getImageId()
     }
 
-    def getInstanceType(): AnyInstanceType = {
-      val instance = getEC2Instance()
-      InstanceType.fromName(instance.getInstanceType)
-    }
+    // FIXME: kinda deprecated
+    // def getInstanceType(): AnyInstanceType = {
+    //   val instance = getEC2Instance()
+    //   InstanceType.fromName(instance.getInstanceType)
+    // }
 
 
     def getState(): String = {
@@ -219,19 +220,19 @@ class EC2(val ec2: amzn.ec2.AmazonEC2) {
     }
   }
 
-  def requestSpotInstances(amount: Int, price: Double, specs: AnyInstanceSpecs, timeout: Int = 36000): List[SpotInstanceRequest] = {
+  def requestSpotInstances(amount: Int, price: Double, specs: AnyLaunchSpecs, timeout: Int = 36000): List[SpotInstanceRequest] = {
     ec2.requestSpotInstances(new amzn.ec2.model.RequestSpotInstancesRequest()
       .withSpotPrice(price.toString)
       .withInstanceCount(amount)
-      .withLaunchSpecification(InstanceSpecs.getLaunchSpecs(specs))
+      .withLaunchSpecification(specs.toAWS)
     ).getSpotInstanceRequests.map{ request =>
       new SpotInstanceRequest(request.getSpotInstanceRequestId)
     }.toList
   }
 
-  def runInstances(amount: Int, specs: AnyInstanceSpecs): List[Instance] = {
-    val preRequest = new amzn.ec2.model.RunInstancesRequest(specs.ami.id, amount, amount)
-      .withInstanceType(specs.instanceType.toAWS)
+  def runInstances(amount: Int, specs: AnyLaunchSpecs): List[Instance] = {
+    val preRequest = new amzn.ec2.model.RunInstancesRequest(specs.instanceSpecs.ami.id, amount, amount)
+      .withInstanceType(specs.instanceSpecs.instanceType.toAWS)
       .withKeyName(specs.keyName)
       .withUserData(base64encode(specs.userData))
       .withSecurityGroups(specs.securityGroups)
@@ -249,11 +250,11 @@ class EC2(val ec2: amzn.ec2.AmazonEC2) {
     }
   }
 
-  def getCurrentSpotPrice(instanceType: InstanceType, productDescription: String = "Linux/UNIX"): Double = {
+  def getCurrentSpotPrice(instanceType: AnyInstanceType, productDescription: String = "Linux/UNIX"): Double = {
     val price = ec2.describeSpotPriceHistory(
       new amzn.ec2.model.DescribeSpotPriceHistoryRequest()
         .withStartTime(new java.util.Date())
-        .withInstanceTypes(instanceType.toString)
+        .withInstanceTypes(instanceType.name)
         .withProductDescriptions(productDescription)
     ).getSpotPriceHistory.map(_.getSpotPrice.toDouble).fold(0D)(math.max(_, _))
 
@@ -358,7 +359,7 @@ object EC2 {
 
   def create(credentials: AWSCredentialsProvider, region: Region = Region.Ireland): EC2 = {
     val ec2Client = new amzn.ec2.AmazonEC2Client(credentials)
-    ec2Client.setRegion(region)
+    ec2Client.setRegion(region.toAWSRegion)
     new EC2(ec2Client)
   }
 

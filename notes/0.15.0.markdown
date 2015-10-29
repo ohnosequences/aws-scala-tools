@@ -6,3 +6,5 @@
     - renamed `Filter` to (Any)`InstanceFilter`
     - separated `InstanceSpecs` with AMI and InstanceType members
     - introduced `AnyInstanceType` with more detailed type hierarchy
+    - renamed `InstanceSpecs` to `LaunchSpecs`
+    - now `InstanceSpecs` combines an AMI with instance type while checking their compatibility

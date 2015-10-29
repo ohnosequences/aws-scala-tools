@@ -6,10 +6,11 @@ import com.amazonaws.regions.{Region => JavaRegion}
 sealed abstract class Region(val name: String) {
   override def toString = name
 
-  def toAWSRegion = Region.toJavaRegions(this)
+  def toAWSRegions: JavaRegions = JavaRegions.fromName(name)
+  def toAWSRegion: JavaRegion = JavaRegion.getRegion(this.toAWSRegions)
 }
 
-object Region {
+case object Region {
 
   // The same names as in the Java AWS SDK
   case object AP_NORTHEAST_1 extends Region("ap-northeast-1") // Tokyo
@@ -24,11 +25,6 @@ object Region {
   case object CN_NORTH_1     extends Region("cn-north-1")     // Beijing
   case object GovCloud       extends Region("us-gov-west-1")  // Secret cloud for CIA
 
-  implicit def toJavaRegions(r: Region): JavaRegions =
-    JavaRegions.fromName(r.name)
-
-  implicit def toJavaRegion(r: Region): JavaRegion =
-    JavaRegion.getRegion(toJavaRegions(r))
 
   // Nice geographical synonims:
   val Tokyo              = AP_NORTHEAST_1
