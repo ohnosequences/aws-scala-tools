@@ -33,6 +33,13 @@ sealed abstract class InstanceType[
 }
 
 case object InstanceType {
+  implicit class it(private val sc: StringContext) extends AnyVal {
+    def foo(args: Int*): String = {
+      sc.parts.zip(args :+ 0).foldLeft(""){ case (acc, (part, arg)) =>
+        s"${part}${arg+1}${acc}"
+      }
+    }
+  }
 
   // @deprecated("Use conversion from an arbitrary String carefully", since = "v0.6.0")
   // def fromName(name: String): AnyInstanceType = new InstanceType(name)

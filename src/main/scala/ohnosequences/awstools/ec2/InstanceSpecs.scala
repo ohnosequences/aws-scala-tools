@@ -1,7 +1,5 @@
 package ohnosequences.awstools.ec2
 
-// import com.amazonaws.{ services => amzn }
-
 
 trait AnyInstanceSpecs {
 
@@ -11,7 +9,8 @@ trait AnyInstanceSpecs {
   type InstanceType <: AnyInstanceType
   val  instanceType: InstanceType
 
-  val compatible: InstanceType SupportsAMI AMI
+  val supportsStorage: InstanceType SupportsStorageType AMI#Storage
+  val supportsVirt:    InstanceType SupportsVirtualization AMI#Virt
 }
 
 case class InstanceSpecs[
@@ -20,7 +19,8 @@ case class InstanceSpecs[
 ](val ami: A,
   val instanceType: T
 )(implicit
-  val compatible: T SupportsAMI A
+  val supportsStorage: T SupportsStorageType A#Storage,
+  val supportsVirt:    T SupportsVirtualization A#Virt
 ) extends AnyInstanceSpecs {
 
   type AMI = A
@@ -28,6 +28,16 @@ case class InstanceSpecs[
 }
 
 
+// The list can be retrieved from http://www.ec2instances.info/?min_storage=1
+@annotation.implicitNotFound( msg = """
+Instance type
+
+  ${T}
+
+doesn't support storage type of the chosen AMI
+
+  ${S}
+""")
 trait SupportsStorageType[T <: AnyInstanceType, S <: AnyStorageType]
 case object SupportsStorageType {
   import InstanceType._
@@ -91,6 +101,16 @@ case object SupportsStorageType {
   // TODO: what's g2 instances?
 }
 
+
+@annotation.implicitNotFound( msg = """
+Instance type
+
+  ${T}
+
+doesn't support virtualization of the chosen AMI
+
+  ${V}
+""")
 sealed trait SupportsVirtualization[T <: AnyInstanceType, V <: AnyVirtualization]
 case object SupportsVirtualization {
   import InstanceType._
@@ -150,19 +170,4 @@ case object SupportsVirtualization {
   implicit def pv_t1[T <: AnyInstanceType.ofFamily[t1.type]]:
       (T SupportsVirtualization PV.type) =
   new (T SupportsVirtualization PV.type) {}
-}
-
-
-/* An instance type supports an AMI if it supports both its storage type and virtualization */
-sealed trait SupportsAMI[T <: AnyInstanceType, A <: AnyLinuxAMI]
-case object SupportsAMI {
-
-  implicit def supports[
-    T <: AnyInstanceType,
-    A <: AnyLinuxAMI
-  ](implicit
-    stor: T SupportsStorageType A#Storage,
-    virt: T SupportsVirtualization A#Virt
-  ):  (T SupportsAMI A) =
-  new (T SupportsAMI A) {}
 }
