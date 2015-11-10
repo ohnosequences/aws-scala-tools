@@ -1,4 +1,4 @@
-* Updated aws java sdk from `v1.9.26` to `v1.10.28`
+* Updated aws java sdk from `v1.9.26` to `v1.10.32`
 * Most of the changes are related to EC2:
     - introduced a datatype for AMI with region, virtualization, storage type members
     - moved `ohnosequences.awstools.ec2.Utils` to the `ohnosequences.awstools.ec2` package object
