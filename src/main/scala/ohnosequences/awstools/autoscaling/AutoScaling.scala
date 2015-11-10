@@ -6,33 +6,38 @@ import com.amazonaws.auth._
 import com.amazonaws.services.autoscaling.AmazonAutoScaling
 import com.amazonaws.services.autoscaling.AmazonAutoScalingClient
 import com.amazonaws.services.autoscaling.model._
-
-
-import scala.collection.JavaConversions._
-import ohnosequences.awstools.ec2.{Utils}
-import ohnosequences.awstools.regions.Region._
-
-import ohnosequences.awstools.{ec2 => awstools}
-
 import com.amazonaws.AmazonServiceException
 import com.amazonaws.services.autoscaling.model.Tag
-import java.util.Date
 import com.amazonaws.internal.StaticCredentialsProvider
-import scala.Some
+
+import ohnosequences.awstools.regions._
+import ohnosequences.awstools.ec2._
+
+import java.util.Date
 import scala.util.Try
+import scala.collection.JavaConversions._
 
 
-class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2) { autoscaling =>
+class AutoScaling(val as: AmazonAutoScaling, val ec2: EC2) { autoscaling =>
 
-  def shutdown() {
-    as.shutdown()
-  }
+  def shutdown(): Unit = { as.shutdown() }
 
   def fixAutoScalingGroupUserData(group: AutoScalingGroup, fixedUserData: String): AutoScalingGroup = {
-    val specs = group.launchingConfiguration.instanceSpecs.copy(userData = fixedUserData)
-    val lc = group.launchingConfiguration.copy(instanceSpecs = specs)
-    val fixedGroup = group.copy(launchingConfiguration = lc)
-    fixedGroup
+    val lc = group.launchConfiguration
+    val ls = lc.launchSpecs
+
+    group.copy( launchConfiguration =
+      lc.copy( launchSpecs =
+        LaunchSpecs(ls.instanceSpecs)(
+          ls.keyName,
+          userData = fixedUserData,
+          ls.instanceProfile,
+          ls.securityGroups,
+          ls.instanceMonitoring,
+          ls.deviceMapping
+        )
+      )
+    )
   }
 
   def createLaunchingConfiguration(launchConfiguration: ohnosequences.awstools.autoscaling.LaunchConfiguration) {
@@ -40,14 +45,14 @@ class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2
 
       var lcr = new CreateLaunchConfigurationRequest()
         .withLaunchConfigurationName(launchConfiguration.name)
-        .withImageId(launchConfiguration.instanceSpecs.amiId)
-        .withInstanceType(launchConfiguration.instanceSpecs.instanceType.toString)
-        .withUserData(Utils.base64encode(launchConfiguration.instanceSpecs.userData))
-        .withKeyName(launchConfiguration.instanceSpecs.keyName)
-        .withSecurityGroups(launchConfiguration.instanceSpecs.securityGroups)
-        .withInstanceMonitoring(new InstanceMonitoring().withEnabled(launchConfiguration.instanceSpecs.instanceMonitoring))
+        .withImageId(launchConfiguration.launchSpecs.instanceSpecs.ami.id)
+        .withInstanceType(launchConfiguration.launchSpecs.instanceSpecs.instanceType.toString)
+        .withUserData(base64encode(launchConfiguration.launchSpecs.userData))
+        .withKeyName(launchConfiguration.launchSpecs.keyName)
+        .withSecurityGroups(launchConfiguration.launchSpecs.securityGroups)
+        .withInstanceMonitoring(new InstanceMonitoring().withEnabled(launchConfiguration.launchSpecs.instanceMonitoring))
         .withBlockDeviceMappings(
-        launchConfiguration.instanceSpecs.deviceMapping.map{ case (key, value) =>
+        launchConfiguration.launchSpecs.deviceMapping.map{ case (key, value) =>
           new BlockDeviceMapping().withDeviceName(key).withVirtualName(value)
         }.toList)
 
@@ -55,13 +60,13 @@ class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2
       lcr = launchConfiguration.purchaseModel match {
         case Spot(price) => lcr.withSpotPrice(price.toString)
         case SpotAuto => {
-          val price = SpotAuto.getCurrentPrice(ec2, launchConfiguration.instanceSpecs.instanceType)
+          val price = SpotAuto.getCurrentPrice(ec2, launchConfiguration.launchSpecs.instanceSpecs.instanceType)
           lcr.withSpotPrice(price.toString)
         }
         case OnDemand => lcr
       }
 
-      lcr = launchConfiguration.instanceSpecs.instanceProfile match {
+      lcr = launchConfiguration.launchSpecs.instanceProfile match {
         case Some(name) => lcr.withIamInstanceProfile(name)
         case None => lcr
       }
@@ -80,10 +85,10 @@ class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2
         group
       }
       case None => {
-        createLaunchingConfiguration(autoScalingGroup.launchingConfiguration)
+        createLaunchingConfiguration(autoScalingGroup.launchConfiguration)
         as.createAutoScalingGroup(new CreateAutoScalingGroupRequest()
           .withAutoScalingGroupName(autoScalingGroup.name)
-          .withLaunchConfigurationName(autoScalingGroup.launchingConfiguration.name)
+          .withLaunchConfigurationName(autoScalingGroup.launchConfiguration.name)
           .withAvailabilityZones(autoScalingGroup.availabilityZones)
           .withMaxSize(autoScalingGroup.maxSize)
           .withMinSize(autoScalingGroup.minSize)
@@ -94,7 +99,7 @@ class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2
 
   }
 
-  def describeTags(name: String): List[awstools.Tag] = {
+  def describeTags(name: String): List[InstanceTag] = {
     as.describeTags(new DescribeTagsRequest()
       .withFilters(
         new Filter()
@@ -102,7 +107,7 @@ class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2
           .withValues(name)
       )
     ).getTags.toList.map { tagDescription =>
-      awstools.Tag(tagDescription.getKey, tagDescription.getValue)
+      InstanceTag(tagDescription.getKey, tagDescription.getValue)
     }
   }
 
@@ -113,7 +118,7 @@ class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2
 
 
 
-  def createTags(name: String, tags: ohnosequences.awstools.ec2.Tag*) {
+  def createTags(name: String, tags: InstanceTag*) {
     val asTags = tags.map { tag =>
       new Tag().withKey(tag.name).withValue(tag.value).withResourceId(name).withPropagateAtLaunch(true).withResourceType("auto-scaling-group")
     }
@@ -185,10 +190,9 @@ class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2
   }
 
 
-//  * <b>NOTE:</b> To remove all instances before calling
-//    * DeleteAutoScalingGroup, you can call UpdateAutoScalingGroup to set the
-//  * minimum and maximum size of the AutoScalingGroup to zero.
-//  * </p>
+  //  NOTE: To remove all instances before calling
+  //  DeleteAutoScalingGroup, you can call UpdateAutoScalingGroup to set the
+  //  minimum and maximum size of the AutoScalingGroup to zero.
   def deleteAutoScalingGroup(autoScalingGroup: ohnosequences.awstools.autoscaling.AutoScalingGroup) {
     try {
       as.deleteAutoScalingGroup(
@@ -200,7 +204,7 @@ class AutoScaling(val as: AmazonAutoScaling, ec2: ohnosequences.awstools.ec2.EC2
       case e: AmazonServiceException   => ;
     }
     finally {
-      deleteLaunchConfiguration(autoScalingGroup.launchingConfiguration.name)
+      deleteLaunchConfiguration(autoScalingGroup.launchConfiguration.name)
     }
 
   }
@@ -221,9 +225,9 @@ object AutoScaling {
     create(new StaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)), ec2)
   }
 
-  def create(credentials: AWSCredentialsProvider, ec2: ohnosequences.awstools.ec2.EC2, region: ohnosequences.awstools.regions.Region = Ireland): AutoScaling = {
+  def create(credentials: AWSCredentialsProvider, ec2: ohnosequences.awstools.ec2.EC2, region: Region = Region.Ireland): AutoScaling = {
     val asClient = new AmazonAutoScalingClient(credentials)
-    asClient.setRegion(region)
+    asClient.setRegion(region.toAWSRegion)
     new AutoScaling(asClient, ec2)
   }
 }

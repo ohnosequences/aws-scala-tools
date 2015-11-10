@@ -402,7 +402,7 @@ object S3 {
 
   def create(credentials: AWSCredentialsProvider, region: ohnosequences.awstools.regions.Region = Ireland): S3 = {
     val s3Client = new AmazonS3Client(credentials)
-    s3Client.setRegion(region)
+    s3Client.setRegion(region.toAWSRegion)
     new S3(s3Client)
   }
 }
