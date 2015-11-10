@@ -3,14 +3,14 @@ package ohnosequences.awstools.ec2
 
 trait AnyInstanceSpecs {
 
-  type AMI <: AnyLinuxAMI
+  type AMI <: AnyAMI
   val  ami: AMI
 
   type InstanceType <: AnyInstanceType
   val  instanceType: InstanceType
 
-  val supportsStorage: InstanceType SupportsStorageType AMI#Storage
-  val supportsVirt:    InstanceType SupportsVirtualization AMI#Virt
+  // val supportsStorage: InstanceType SupportsStorageType AMI#Storage
+  // val supportsVirt:    InstanceType SupportsVirtualization AMI#Virt
 }
 
 case class InstanceSpecs[

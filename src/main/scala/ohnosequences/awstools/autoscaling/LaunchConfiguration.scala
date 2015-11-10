@@ -4,58 +4,44 @@ import ohnosequences.awstools.ec2._
 import com.amazonaws.{ services => amzn }
 import scala.collection.JavaConversions._
 
-trait AnyLaunchConfiguration {
-  val name: String
+case class LaunchConfiguration(
+  val name: String,
+  val purchaseModel: AnyPurchaseModel,
+  val launchSpecs: AnyLaunchSpecs
+) //extends AnyLaunchConfiguration
 
-  type PurchaseModel <: AnyPurchaseModel
-  val  purchaseModel: PurchaseModel
 
-  type LaunchSpecs <: AnyLaunchSpecs
-  val  launchSpecs: LaunchSpecs
+case object LaunchConfiguration {
 
-  // final def toAWSRequest: amzn.autoscaling.model.CreateLaunchConfigurationRequest = {
-  //   val lcr = new amzn.autoscaling.model.CreateLaunchConfigurationRequest()
-  //     .withLaunchConfigurationName(this.name)
-  //     .withImageId(this.launchSpecs.instanceSpecs.ami.id)
-  //     .withInstanceType(this.launchSpecs.instanceSpecs.instanceType.toString)
-  //     .withUserData(base64encode(this.launchSpecs.userData))
-  //     .withKeyName(this.launchSpecs.keyName)
-  //     .withSecurityGroups(this.launchSpecs.securityGroups)
-  //     .withInstanceMonitoring(new InstanceMonitoring()
-  //       .withEnabled(this.launchSpecs.instanceMonitoring)
-  //     )
-  //     .withBlockDeviceMappings(
-  //       this.launchSpecs.deviceMapping.map{ case (key, value) =>
-  //         new BlockDeviceMapping().withDeviceName(key).withVirtualName(value)
-  //       }.toList
-  //     )
-  //
-  //   this.purchaseModel match {
-  //     case Spot(price) => lcr.withSpotPrice(price.toString)
-  //     case SpotAuto => {
-  //       val price = SpotAuto.getCurrentPrice(ec2, this.launchSpecs.instanceType)
-  //       lcr.withSpotPrice(price.toString)
-  //     }
-  //     case OnDemand => lcr
-  //   }
-  //
-  //   lcr = this.launchSpecs.instanceProfile match {
-  //     case Some(name) => lcr.withIamInstanceProfile(name)
-  //     case None => lcr
-  //   }
-  //
-  //   lcr
-  // }
-}
+  // NOTE: this is an awful conversion
+  // FIXME: remove it
+  @deprecated("Don't convert java sdk types to the scala ones", since = "v0.15.0")
+  def fromAWS(launchConfiguration: amzn.autoscaling.model.LaunchConfiguration): LaunchConfiguration = {
 
-case class LaunchConfiguration[
-  PM <: AnyPurchaseModel,
-  LS <: AnyLaunchSpecs
-](val name: String,
-  val purchaseModel: PM,
-  val launchSpecs: LS
-) extends AnyLaunchConfiguration {
+    LaunchConfiguration(
+      name = launchConfiguration.getLaunchConfigurationName,
+      purchaseModel = stringToOption(launchConfiguration.getSpotPrice) match {
+        case None => OnDemand
+        case Some(price) => Spot(price.toDouble)
+      },
+      launchSpecs = LaunchSpecs(
+        new AnyInstanceSpecs {
+          type InstanceType = AnyInstanceType
+          val instanceType: AnyInstanceType =
+            InstanceType.fromName(launchConfiguration.getInstanceType)
 
-  type PurchaseModel = PM
-  type LaunchSpecs = LS
+          type AMI = AnyAMI
+          val ami = new AnyAMI {
+            val id = launchConfiguration.getImageId
+          }
+        }
+      )(keyName = launchConfiguration.getKeyName,
+        securityGroups = launchConfiguration.getSecurityGroups.toList,
+        deviceMapping = launchConfiguration.getBlockDeviceMappings.map(m => (m.getDeviceName, m.getVirtualName)).toMap,
+        userData = launchConfiguration.getUserData,
+        instanceProfile = stringToOption(launchConfiguration.getIamInstanceProfile),
+        instanceMonitoring = launchConfiguration.getInstanceMonitoring.isEnabled
+      )
+    )
+  }
 }

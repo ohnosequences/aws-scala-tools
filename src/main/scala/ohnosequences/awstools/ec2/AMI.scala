@@ -30,9 +30,13 @@ case object InstanceStore extends AnyStorageType //; type InstanceStore = Instan
 
 
 /* Just some base trait: */
-trait AnyLinuxAMI { ami =>
+trait AnyAMI {
 
   val id: String
+}
+
+trait AnyLinuxAMI extends AnyAMI {
+
   val version: String
 
   type Region <: regions.Region

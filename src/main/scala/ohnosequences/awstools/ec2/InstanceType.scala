@@ -12,11 +12,6 @@ sealed trait AnyInstanceType {
   override def toString = name
 
   def toAWS = amzn.InstanceType.fromValue(name)
-
-  // val memory: Int
-  // val storage: Int
-  // val ecu: Int
-  // val cores: Int
 }
 
 case object AnyInstanceType {
@@ -26,7 +21,7 @@ case object AnyInstanceType {
   type ofFamily[F <: Family] = AnyInstanceType { type Family = F }
 }
 
-sealed abstract class InstanceType[
+sealed class InstanceType[
   F <: InstanceType.Family
 ](val family: F, val size: String) extends AnyInstanceType {
   type Family = F
@@ -41,8 +36,16 @@ case object InstanceType {
     }
   }
 
-  // @deprecated("Use conversion from an arbitrary String carefully", since = "v0.6.0")
-  // def fromName(name: String): AnyInstanceType = new InstanceType(name)
+  @deprecated("Use conversion from an arbitrary String carefully", since = "v0.6.0")
+  private[awstools]
+    def fromName(name: String): AnyInstanceType = {
+       // TODO: improve the pattern
+       val pattern = """(.\d)\.(.*)""".r
+       name match {
+        case pattern(prefix, size) => new InstanceType(new Family(prefix), size)
+        case _ => throw new IllegalArgumentException(s"Couldn't parse instance type from [${name}]")
+      }
+    }
 
   // This is taken from http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html
   // TODO: write tests that check that the string name corresponds to the object name
@@ -51,7 +54,7 @@ case object InstanceType {
   trait CurrentGeneration extends AnyGeneration
   trait PreviousGeneration extends AnyGeneration
 
-  sealed abstract class Family(val prefix: String)
+  sealed class Family(val prefix: String)
 
   // Current Generation Instances //
 
