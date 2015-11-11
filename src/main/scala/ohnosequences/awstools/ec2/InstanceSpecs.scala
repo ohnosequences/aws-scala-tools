@@ -27,6 +27,7 @@ case class InstanceSpecs[
   type InstanceType = T
 }
 
+// TODO: check it with this table: http://aws.amazon.com/amazon-linux-ami/instance-type-matrix/
 
 // The list can be retrieved from http://www.ec2instances.info/?min_storage=1
 @annotation.implicitNotFound( msg = """

@@ -5,7 +5,7 @@ import ohnosequences.awstools.regions
 /* ## [Amazon Machine Images (AMI)](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ComponentsAMIs.html) */
 
 
-sealed abstract class Architecture(wordSize: Int)
+sealed abstract class Architecture(val wordSize: Int)
 case object x86_32 extends Architecture(32)
 case object x86_64 extends Architecture(64)
 
