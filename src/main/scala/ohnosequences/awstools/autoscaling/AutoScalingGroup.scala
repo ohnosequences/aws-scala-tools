@@ -5,12 +5,17 @@ import com.amazonaws.{ services => amzn }
 import scala.collection.JavaConversions._
 import java.util.Date
 
+case class AutoScalingGroupSize(
+  min: Int,
+  desired: Int,
+  max: Int
+)
+
 case class AutoScalingGroup(
   val launchConfiguration: LaunchConfiguration,
-  val name: String = "",
-  val minSize: Int,
-  val desiredCapacity: Int,
-  val maxSize: Int,
+  val name: String,
+  val size: AutoScalingGroupSize,
+  // FIXME: this shouldn't be so explicit:
   val availabilityZones: List[String] = List("eu-west-1a", "eu-west-1b", "eu-west-1c")
 )
 
@@ -22,9 +27,11 @@ case object AutoScalingGroup {
       case Some(launchConfiguration) => Some(AutoScalingGroup(
         launchConfiguration,
         name = autoScalingGroup.getAutoScalingGroupName,
-        minSize = autoScalingGroup.getMinSize,
-        maxSize = autoScalingGroup.getMaxSize,
-        desiredCapacity = autoScalingGroup.getDesiredCapacity
+        size = AutoScalingGroupSize(
+          autoScalingGroup.getMinSize,
+          autoScalingGroup.getDesiredCapacity,
+          autoScalingGroup.getMaxSize
+        )
       ))
     }
   }

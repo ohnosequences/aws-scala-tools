@@ -90,9 +90,9 @@ class AutoScaling(val as: AmazonAutoScaling, val ec2: EC2) { autoscaling =>
           .withAutoScalingGroupName(autoScalingGroup.name)
           .withLaunchConfigurationName(autoScalingGroup.launchConfiguration.name)
           .withAvailabilityZones(autoScalingGroup.availabilityZones)
-          .withMaxSize(autoScalingGroup.maxSize)
-          .withMinSize(autoScalingGroup.minSize)
-          .withDesiredCapacity(autoScalingGroup.desiredCapacity)
+          .withMaxSize(autoScalingGroup.size.max)
+          .withMinSize(autoScalingGroup.size.min)
+          .withDesiredCapacity(autoScalingGroup.size.desired)
         )
       }
     }
