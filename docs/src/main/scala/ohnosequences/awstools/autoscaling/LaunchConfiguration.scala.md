@@ -1,65 +1,51 @@
 
 ```scala
-package ohnosequences.awstools.sqs
+package ohnosequences.awstools.autoscaling
 
-import java.io.File
-
+import ohnosequences.awstools.ec2._
+import com.amazonaws.{ services => amzn }
 import scala.collection.JavaConversions._
 
-import ohnosequences.awstools.regions.Region._
-
-import com.amazonaws.services.sqs._
-import com.amazonaws.services.sqs.model._
-import com.amazonaws.auth._
-import com.amazonaws.AmazonServiceException
-import com.amazonaws.internal.StaticCredentialsProvider
+case class LaunchConfiguration(
+  val name: String,
+  val purchaseModel: AnyPurchaseModel,
+  val launchSpecs: AnyLaunchSpecs
+) //extends AnyLaunchConfiguration
 
 
-class SQS(val sqs: AmazonSQS) {
+case object LaunchConfiguration {
 
-  def createQueue(name: String) = Queue(sqs = sqs, url = sqs.createQueue(new CreateQueueRequest(name)).getQueueUrl, name = name)
+  // NOTE: this is an awful conversion
+  // FIXME: remove it
+  @deprecated("Don't convert java sdk types to the scala ones", since = "v0.15.0")
+  def fromAWS(launchConfiguration: amzn.autoscaling.model.LaunchConfiguration): LaunchConfiguration = {
 
-  def getQueueByName(name: String) = {
-    try {
-      val response = sqs.getQueueUrl(new GetQueueUrlRequest(name))
-      Some(Queue(sqs =sqs, response.getQueueUrl, name = name))
-    } catch {
-      case e: AmazonServiceException if e.getStatusCode == 400 => None
-    }
+    LaunchConfiguration(
+      name = launchConfiguration.getLaunchConfigurationName,
+      purchaseModel = stringToOption(launchConfiguration.getSpotPrice) match {
+        case None => OnDemand
+        case Some(price) => Spot(price.toDouble)
+      },
+      launchSpecs = LaunchSpecs(
+        new AnyInstanceSpecs {
+          type InstanceType = AnyInstanceType
+          val instanceType: AnyInstanceType =
+            InstanceType.fromName(launchConfiguration.getInstanceType)
+
+          type AMI = AnyAMI
+          val ami = new AnyAMI {
+            val id = launchConfiguration.getImageId
+          }
+        }
+      )(keyName = launchConfiguration.getKeyName,
+        securityGroups = launchConfiguration.getSecurityGroups.toList,
+        deviceMapping = launchConfiguration.getBlockDeviceMappings.map(m => (m.getDeviceName, m.getVirtualName)).toMap,
+        userData = launchConfiguration.getUserData,
+        instanceProfile = stringToOption(launchConfiguration.getIamInstanceProfile),
+        instanceMonitoring = launchConfiguration.getInstanceMonitoring.isEnabled
+      )
+    )
   }
-
-  def printQueues() {
-    for (queueUrl <- sqs.listQueues().getQueueUrls) {
-      println("queueUrl: " + queueUrl)
-    }
-  }
-
-  def shutdown() {
-    sqs.shutdown()
-  }
-
-}
-
-object SQS {
-
-  def create(): SQS = {
-    create(new InstanceProfileCredentialsProvider())
-  }
-
-  def create(credentialsFile: File): SQS = {
-    create(new StaticCredentialsProvider(new PropertiesCredentials(credentialsFile)))
-  }
-
-  def create(accessKey: String, secretKey: String): SQS = {
-    create(new StaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
-  }
-
-  def create(provider: AWSCredentialsProvider, region: ohnosequences.awstools.regions.Region = Ireland): SQS = {
-    val sqsClient = new AmazonSQSClient(provider)
-    sqsClient.setRegion(region.toAWSRegion)
-    new SQS(sqsClient)
-  }
-
 }
 
 ```
@@ -82,12 +68,12 @@ object SQS {
 [main/scala/ohnosequences/awstools/ec2/InstanceSpecs.scala]: ../ec2/InstanceSpecs.scala.md
 [main/scala/ohnosequences/awstools/ec2/LaunchSpecs.scala]: ../ec2/LaunchSpecs.scala.md
 [main/scala/ohnosequences/awstools/ec2/InstanceType.scala]: ../ec2/InstanceType.scala.md
-[main/scala/ohnosequences/awstools/sqs/SQS.scala]: SQS.scala.md
-[main/scala/ohnosequences/awstools/sqs/Queue.scala]: Queue.scala.md
-[main/scala/ohnosequences/awstools/autoscaling/AutoScalingGroup.scala]: ../autoscaling/AutoScalingGroup.scala.md
-[main/scala/ohnosequences/awstools/autoscaling/PurchaseModel.scala]: ../autoscaling/PurchaseModel.scala.md
-[main/scala/ohnosequences/awstools/autoscaling/AutoScaling.scala]: ../autoscaling/AutoScaling.scala.md
-[main/scala/ohnosequences/awstools/autoscaling/LaunchConfiguration.scala]: ../autoscaling/LaunchConfiguration.scala.md
+[main/scala/ohnosequences/awstools/sqs/SQS.scala]: ../sqs/SQS.scala.md
+[main/scala/ohnosequences/awstools/sqs/Queue.scala]: ../sqs/Queue.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/AutoScalingGroup.scala]: AutoScalingGroup.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/PurchaseModel.scala]: PurchaseModel.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/AutoScaling.scala]: AutoScaling.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/LaunchConfiguration.scala]: LaunchConfiguration.scala.md
 [main/scala/ohnosequences/awstools/s3/S3.scala]: ../s3/S3.scala.md
 [main/scala/ohnosequences/awstools/sns/SNS.scala]: ../sns/SNS.scala.md
 [main/scala/ohnosequences/awstools/sns/Topic.scala]: ../sns/Topic.scala.md

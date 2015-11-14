@@ -1,46 +1,21 @@
 
 ```scala
-package ohnosequences.awstools.sns
+package ohnosequences.awstools.autoscaling
 
-import java.io.File
+import ohnosequences.awstools.ec2._
+import com.amazonaws.{ services => amzn }
 
-import ohnosequences.awstools.regions.Region._
+sealed trait AnyPurchaseModel {}
 
-import com.amazonaws.auth._
-import com.amazonaws.services.sns.{AmazonSNSClient, AmazonSNS}
-import com.amazonaws.services.sns.model.{CreateTopicRequest}
-import com.amazonaws.internal.StaticCredentialsProvider
+case object OnDemand extends AnyPurchaseModel
 
-class SNS(val sns: AmazonSNS) {
+case class Spot(val price: Double) extends AnyPurchaseModel
 
-  def createTopic(name: String) = {
-    Topic(sns, sns.createTopic(new CreateTopicRequest(name)).getTopicArn, name)
-  }
+// TODO: SpotAuto with absolute limit and configurable delta
+case object SpotAuto extends AnyPurchaseModel {
 
-  def shutdown() {
-    sns.shutdown()
-  }
-
-}
-
-object SNS {
-
-  def create(): SNS = {
-    create(new InstanceProfileCredentialsProvider())
-  }
-
-  def create(credentialsFile: File): SNS = {
-    create(new StaticCredentialsProvider(new PropertiesCredentials(credentialsFile)))
-  }
-
-  def create(accessKey: String, secretKey: String): SNS = {
-    create(new StaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
-  }
-
-  def create(credentials: AWSCredentialsProvider, region: ohnosequences.awstools.regions.Region = Ireland): SNS = {
-    val snsClient = new AmazonSNSClient(credentials)
-    snsClient.setRegion(region.toAWSRegion)
-    new SNS(snsClient)
+  def getCurrentPrice(ec2: EC2, instanceType: AnyInstanceType): Double = {
+    ec2.getCurrentSpotPrice(instanceType) + 0.001
   }
 }
 
@@ -66,13 +41,13 @@ object SNS {
 [main/scala/ohnosequences/awstools/ec2/InstanceType.scala]: ../ec2/InstanceType.scala.md
 [main/scala/ohnosequences/awstools/sqs/SQS.scala]: ../sqs/SQS.scala.md
 [main/scala/ohnosequences/awstools/sqs/Queue.scala]: ../sqs/Queue.scala.md
-[main/scala/ohnosequences/awstools/autoscaling/AutoScalingGroup.scala]: ../autoscaling/AutoScalingGroup.scala.md
-[main/scala/ohnosequences/awstools/autoscaling/PurchaseModel.scala]: ../autoscaling/PurchaseModel.scala.md
-[main/scala/ohnosequences/awstools/autoscaling/AutoScaling.scala]: ../autoscaling/AutoScaling.scala.md
-[main/scala/ohnosequences/awstools/autoscaling/LaunchConfiguration.scala]: ../autoscaling/LaunchConfiguration.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/AutoScalingGroup.scala]: AutoScalingGroup.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/PurchaseModel.scala]: PurchaseModel.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/AutoScaling.scala]: AutoScaling.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/LaunchConfiguration.scala]: LaunchConfiguration.scala.md
 [main/scala/ohnosequences/awstools/s3/S3.scala]: ../s3/S3.scala.md
-[main/scala/ohnosequences/awstools/sns/SNS.scala]: SNS.scala.md
-[main/scala/ohnosequences/awstools/sns/Topic.scala]: Topic.scala.md
+[main/scala/ohnosequences/awstools/sns/SNS.scala]: ../sns/SNS.scala.md
+[main/scala/ohnosequences/awstools/sns/Topic.scala]: ../sns/Topic.scala.md
 [main/scala/ohnosequences/awstools/regions/Region.scala]: ../regions/Region.scala.md
 [main/scala/ohnosequences/awstools/utils/DynamoDBUtils.scala]: ../utils/DynamoDBUtils.scala.md
 [main/scala/ohnosequences/awstools/utils/AutoScalingUtils.scala]: ../utils/AutoScalingUtils.scala.md
