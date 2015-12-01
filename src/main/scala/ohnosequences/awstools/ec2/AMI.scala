@@ -52,11 +52,11 @@ trait AnyLinuxAMI extends AnyAMI {
   val  storage: Storage
 }
 
-// Amazon Linux AMI 2015.09
+// Amazon Linux AMI 2015.09.1
 // See http://aws.amazon.com/amazon-linux-ami/
 trait AnyAmazonLinuxAMI extends AnyLinuxAMI {
 
-  final val version: String = "2015.09"
+  final val version: String = "2015.09.1"
 
   type Arch = x86_64.type
   final val arch: Arch = x86_64
@@ -72,112 +72,112 @@ trait AnyAmazonLinuxAMI extends AnyLinuxAMI {
     r match {
       case NorthernVirginia  => v match {
         case HVM => s match {
-          case EBS           => "e3106686"
-          case InstanceStore => "65116700"
+          case EBS           => "60b6c60a"
+          case InstanceStore => "66b6c60c"
         }
         case PV  => s match {
-          case EBS           => "cf1066aa"
-          case InstanceStore => "971066f2"
+          case EBS           => "5fb8c835"
+          case InstanceStore => "30b6c65a"
         }
       }
       case Oregon => v match {
         case HVM => s match {
-          case EBS           => "9ff7e8af"
-          case InstanceStore => "bbf7e88b"
+          case EBS           => "f0091d91"
+          case InstanceStore => "31342050"
         }
         case PV  => s match {
-          case EBS           => "81f7e8b1"
-          case InstanceStore => "bdf7e88d"
+          case EBS           => "d93622b8"
+          case InstanceStore => "960317f7"
         }
       }
       case NorthernCalifornia => v match {
         case HVM => s match {
-          case EBS           => "cd3aff89"
-          case InstanceStore => "d53aff91"
+          case EBS           => "d5ea86b5"
+          case InstanceStore => "ede78b8d"
         }
         case PV  => s match {
-          case EBS           => "d53aff91"
-          case InstanceStore => "c93aff8d"
+          case EBS           => "56ea8636"
+          case InstanceStore => "c6eb87a6"
         }
       }
       case Ireland => v match {
         case HVM => s match {
-          case EBS           => "69b9941e"
-          case InstanceStore => "7db9940a"
+          case EBS           => "bff32ccc"
+          case InstanceStore => "54e03f27"
         }
         case PV  => s match {
-          case EBS           => "a3be93d4"
-          case InstanceStore => "8fbe93f8"
+          case EBS           => "95e33ce6"
+          case InstanceStore => "54e53a27"
         }
       }
       case Frankfurt => v match {
         case HVM => s match {
-          case EBS           => "daaeaec7"
-          case InstanceStore => "a2aeaebf"
+          case EBS           => "bc5b48d0"
+          case InstanceStore => "8d4a59e1"
         }
         case PV  => s match {
-          case EBS           => "a6aeaebb"
-          case InstanceStore => "a0aeaebd"
+          case EBS           => "794a5915"
+          case InstanceStore => "ef445783"
         }
       }
       case Singapore => v match {
         case HVM => s match {
-          case EBS           => "52978200"
-          case InstanceStore => "ac9481fe"
+          case EBS           => "c9b572aa"
+          case InstanceStore => "deb176bd"
         }
         case PV  => s match {
-          case EBS           => "50978202"
-          case InstanceStore => "4c97821e"
+          case EBS           => "34bd7a57"
+          case InstanceStore => "66bf7805"
         }
       }
       case Tokyo => v match {
         case HVM => s match {
-          case EBS           => "9a2fb89a"
-          case InstanceStore => "a22fb8a2"
+          case EBS           => "383c1956"
+          case InstanceStore => "4232172c"
         }
         case PV  => s match {
-          case EBS           => "9c2fb89c"
-          case InstanceStore => "a42fb8a4"
+          case EBS           => "393c1957"
+          case InstanceStore => "4532172b"
         }
       }
       case Sydney => v match {
         case HVM => s match {
-          case EBS           => "c11856fb"
-          case InstanceStore => "871856bd"
+          case EBS           => "48d38c2b"
+          case InstanceStore => "cad986a9"
         }
         case PV  => s match {
-          case EBS           => "c71856fd"
-          case InstanceStore => "851856bf"
+          case EBS           => "ced887ad"
+          case InstanceStore => "cfd887ac"
         }
       }
-        case SaoPaulo => v match {
+      case SaoPaulo => v match {
         case HVM => s match {
-          case EBS           => "3b0c9926"
-          case InstanceStore => "030c991e"
+          case EBS           => "6817af04"
+          case InstanceStore => "7b15ad17"
         }
         case PV  => s match {
-          case EBS           => "370c992a"
-          case InstanceStore => "010c991c"
+          case EBS           => "7d15ad11"
+          case InstanceStore => "4f13ab23"
         }
       }
       case Beijing => v match {
         case HVM => s match {
-          case EBS           => "6cb22e55"
-          case InstanceStore => "76b22e4f"
+          case EBS           => "43a36a2e"
+          case InstanceStore => "52a0693f"
         }
         case PV  => s match {
-          case EBS           => "54b22e6d"
-          case InstanceStore => "68b22e51"
+          case EBS           => "18ac6575"
+          case InstanceStore => "41a46d2c"
         }
       }
       case GovCloud => v match {
         case HVM => s match {
-          case EBS           => "ad34568e"
-          case InstanceStore => "a5345686"
+          case EBS           => "c2b5d7e1"
+          case InstanceStore => "f4b5d7d7"
         }
         case PV  => s match {
-          case EBS           => "b3345690"
-          case InstanceStore => "ab345688"
+          case EBS           => "feb5d7dd"
+          case InstanceStore => "f6b5d7d5"
         }
       }
     }
