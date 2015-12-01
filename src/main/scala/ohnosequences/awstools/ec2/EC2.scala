@@ -251,14 +251,14 @@ class EC2(val ec2: amzn.ec2.AmazonEC2) {
   }
 
   def getCurrentSpotPrice(instanceType: AnyInstanceType, productDescription: String = "Linux/UNIX"): Double = {
-    val price = ec2.describeSpotPriceHistory(
+    ec2.describeSpotPriceHistory(
       new amzn.ec2.model.DescribeSpotPriceHistoryRequest()
         .withStartTime(new java.util.Date())
         .withInstanceTypes(instanceType.name)
         .withProductDescriptions(productDescription)
-    ).getSpotPriceHistory.map(_.getSpotPrice.toDouble).fold(0D)(math.max(_, _))
-
-    math.min(1, price)
+    ).getSpotPriceHistory
+     .map{ _.getSpotPrice.toDouble }
+     .fold(0D){ math.max(_, _) }
   }
 
 
