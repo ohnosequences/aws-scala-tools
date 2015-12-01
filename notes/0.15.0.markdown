@@ -1,6 +1,6 @@
-* Updated aws java sdk from `v1.9.26` to `v1.10.32`
-* Most of the changes are related to EC2:
-    - introduced a datatype for AMI with region, virtualization, storage type members
+* Updated aws java sdk from `v1.9.26` to `v1.10.37`
+* Most of the other changes are related to EC2 and AutoScaling:
+    - introduced a **datatype for AMI** with region, virtualization, storage type members (using `2015.09.1` version in this release)
     - moved `ohnosequences.awstools.ec2.Utils` to the `ohnosequences.awstools.ec2` package object
     - renamed `Tag` to `InstanceTag`
     - renamed `Filter` to (Any)`InstanceFilter`
@@ -8,3 +8,4 @@
     - introduced `AnyInstanceType` with more detailed type hierarchy
     - renamed `InstanceSpecs` to `LaunchSpecs`
     - now `InstanceSpecs` combines an AMI with instance type while checking their compatibility
+    - added `AutoScalingGroupSize` to the `AutoScalingGroup` constructor
