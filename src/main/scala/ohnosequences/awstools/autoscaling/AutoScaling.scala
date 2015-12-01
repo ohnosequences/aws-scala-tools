@@ -58,12 +58,11 @@ class AutoScaling(val as: AmazonAutoScaling, val ec2: EC2) { autoscaling =>
 
 
       lcr = launchConfiguration.purchaseModel match {
-        case Spot(price) => lcr.withSpotPrice(price.toString)
-        case SpotAuto => {
-          val price = SpotAuto.getCurrentPrice(ec2, launchConfiguration.launchSpecs.instanceSpecs.instanceType)
+        case OnDemand => lcr
+        case pm @ Spot(_, _) => {
+          val price = pm.price(ec2, launchConfiguration.launchSpecs.instanceSpecs.instanceType)
           lcr.withSpotPrice(price.toString)
         }
-        case OnDemand => lcr
       }
 
       lcr = launchConfiguration.launchSpecs.instanceProfile match {

@@ -22,7 +22,7 @@ case object LaunchConfiguration {
       name = launchConfiguration.getLaunchConfigurationName,
       purchaseModel = stringToOption(launchConfiguration.getSpotPrice) match {
         case None => OnDemand
-        case Some(price) => Spot(price.toDouble)
+        case Some(price) => Spot(Some(price.toDouble))
       },
       launchSpecs = LaunchSpecs(
         new AnyInstanceSpecs {
