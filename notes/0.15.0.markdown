@@ -1,5 +1,5 @@
 * Updated aws java sdk from `v1.9.26` to `v1.10.37`
-* Most of the other changes are related to EC2 and AutoScaling:
+* Most of the other changes are related to EC2 and AutoScaling (note, some of them are **breaking**):
     - introduced a **datatype for AMI** with region, virtualization, storage type members (using `2015.09.1` version in this release)
     - moved `ohnosequences.awstools.ec2.Utils` to the `ohnosequences.awstools.ec2` package object
     - renamed `Tag` to `InstanceTag`
