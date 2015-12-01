@@ -2,18 +2,13 @@
 language: scala
 scala:
   - 2.11.7
-  - 2.10.5
 jdk:
   - oraclejdk8
 script:
-  - sbt ++$TRAVIS_SCALA_VERSION compile test
+  - sbt ++$TRAVIS_SCALA_VERSION compile
   # Tricks to avoid unnecessary cache updates
   - find $HOME/.sbt -name "*.lock" | xargs rm
   - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
-matrix:
-  fast_finish: true
-  allow_failures:
-    - scala: 2.10.5
 notifications:
   email: false
   webhooks:
