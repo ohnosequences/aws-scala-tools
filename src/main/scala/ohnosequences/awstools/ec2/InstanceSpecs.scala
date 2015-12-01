@@ -9,8 +9,8 @@ trait AnyInstanceSpecs {
   type InstanceType <: AnyInstanceType
   val  instanceType: InstanceType
 
-  // val supportsStorage: InstanceType SupportsStorageType AMI#Storage
-  // val supportsVirt:    InstanceType SupportsVirtualization AMI#Virt
+  // NOTE: we don't require it here, because in some place we create an instance of this type from a java-sdk type >_<
+  // val supportsAMI: T SupportsAMI A
 }
 
 case class InstanceSpecs[
@@ -19,13 +19,39 @@ case class InstanceSpecs[
 ](val ami: A,
   val instanceType: T
 )(implicit
-  val supportsStorage: T SupportsStorageType A#Storage,
-  val supportsVirt:    T SupportsVirtualization A#Virt
+  val supportsAMI: T SupportsAMI A
 ) extends AnyInstanceSpecs {
 
   type AMI = A
   type InstanceType = T
 }
+
+
+/* An instance type supports an AMI if it supports both its storage type and virtualization */
+@annotation.implicitNotFound( msg = """
+Instance type
+
+  ${T}
+
+doesn't support the AMI type
+
+  ${A}
+
+Try to choose different virtualization or storage type.
+""")
+sealed trait SupportsAMI[T <: AnyInstanceType, A <: AnyLinuxAMI]
+case object SupportsAMI {
+
+  implicit def supports[
+    T <: AnyInstanceType,
+    A <: AnyLinuxAMI
+  ](implicit
+    stor: T SupportsStorageType A#Storage,
+    virt: T SupportsVirtualization A#Virt
+  ):  (T SupportsAMI A) =
+  new (T SupportsAMI A) {}
+}
+
 
 // TODO: check it with this table: http://aws.amazon.com/amazon-linux-ami/instance-type-matrix/
 
@@ -39,7 +65,7 @@ doesn't support storage type of the chosen AMI
 
   ${S}
 """)
-trait SupportsStorageType[T <: AnyInstanceType, S <: AnyStorageType]
+sealed trait SupportsStorageType[T <: AnyInstanceType, S <: AnyStorageType]
 case object SupportsStorageType {
   import InstanceType._
 
