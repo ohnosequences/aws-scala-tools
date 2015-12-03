@@ -9,3 +9,4 @@
     - renamed `InstanceSpecs` to `LaunchSpecs`
     - now `InstanceSpecs` combines an AMI with instance type while checking their compatibility
     - added `AutoScalingGroupSize` to the `AutoScalingGroup` constructor
+    - removed `SpotAuto` purchase model and made `Spot` more configurable (maximum price, delta)
