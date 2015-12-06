@@ -17,8 +17,7 @@ case class AutoScalingGroup(
   val launchConfiguration: LaunchConfiguration,
   val name: String,
   val size: AutoScalingGroupSize,
-  // FIXME: this shouldn't be so explicit:
-  val availabilityZones: List[String] = List("eu-west-1a", "eu-west-1b", "eu-west-1c")
+  val availabilityZones: List[String] = List()
 )
 
 case object AutoScalingGroup {
