@@ -1,0 +1,7 @@
+This release introduces a non-breaking improvement/fix:
+
+* Updated aws java sdk from `v1.9.37` to `v1.10.39`
+* When creating an autoscaling group, you have to set a list of availability zones:
+    - the default was set to `List("eu-west-1a", "eu-west-1b", "eu-west-1c"})`, now it's an _empty list_
+    - in the autoscaling client a `getAllAvailableZones(): List[String]` method is added
+    - on creation of a new AS group the list of preferred zones is checked and if it's empty, all available zones are retrieved and used in the request
