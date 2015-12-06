@@ -9,6 +9,7 @@ import com.amazonaws.services.autoscaling.model._
 import com.amazonaws.AmazonServiceException
 import com.amazonaws.services.autoscaling.model.Tag
 import com.amazonaws.internal.StaticCredentialsProvider
+import com.amazonaws.services.ec2.model.{ DescribeAvailabilityZonesRequest, Filter => ec2Filter }
 
 import ohnosequences.awstools.regions._
 import ohnosequences.awstools.ec2._
@@ -77,6 +78,15 @@ class AutoScaling(val as: AmazonAutoScaling, val ec2: EC2) { autoscaling =>
     }
   }
 
+  def getAllAvailableZones(): List[String] = {
+    ec2.ec2.describeAvailabilityZones(
+      new DescribeAvailabilityZonesRequest()
+        .withFilters(new ec2Filter("state", List("available")))
+    )
+    .getAvailabilityZones
+    .toList.map{ _.getZoneName }
+  }
+
   def createAutoScalingGroup(autoScalingGroup: ohnosequences.awstools.autoscaling.AutoScalingGroup) = {
     getAutoScalingGroupByName(autoScalingGroup.name) match {
       case Some(group) => {
@@ -84,11 +94,16 @@ class AutoScaling(val as: AmazonAutoScaling, val ec2: EC2) { autoscaling =>
         group
       }
       case None => {
+        val configZones = autoScalingGroup.availabilityZones
+
         createLaunchingConfiguration(autoScalingGroup.launchConfiguration)
         as.createAutoScalingGroup(new CreateAutoScalingGroupRequest()
           .withAutoScalingGroupName(autoScalingGroup.name)
           .withLaunchConfigurationName(autoScalingGroup.launchConfiguration.name)
-          .withAvailabilityZones(autoScalingGroup.availabilityZones)
+          .withAvailabilityZones(
+            if (configZones.nonEmpty) configZones
+            else getAllAvailableZones
+          )
           .withMaxSize(autoScalingGroup.size.max)
           .withMinSize(autoScalingGroup.size.min)
           .withDesiredCapacity(autoScalingGroup.size.desired)

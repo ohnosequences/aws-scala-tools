@@ -6,10 +6,10 @@ description := "AWS Scala tools"
 
 bucketSuffix := "era7.com"
 scalaVersion := "2.11.7"
-crossScalaVersions := Seq("2.10.5", scalaVersion.value)
+crossScalaVersions := Seq(scalaVersion.value, "2.10.6")
 
 
-val sdkVersion = "1.10.37"
+val sdkVersion = "1.10.39"
 
 libraryDependencies ++= Seq(
   "com.amazonaws" % "aws-java-sdk-sns"         % sdkVersion,
