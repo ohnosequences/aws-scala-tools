@@ -33,7 +33,7 @@ sealed trait AnyS3Address {
   @deprecated("Use toURI method instead, or just toString", since = "v0.17.0")
   final def url = "s3://" + bucket + "/" + key
 
-  def toURI: URI = new URI("s3", bucket, key)
+  def toURI: URI = new URI("s3", bucket, s"/${key}", null)
 
   override def toString = toURI.normalize.toString
 
@@ -53,12 +53,6 @@ object S3Folder {
 
   implicit def toS3Object(f: S3Folder): S3Object =
     S3Object(f.bucket, f.key.stripSuffix("/"))
-}
-
-// Just an alias for the "root" S3 fodler:
-object S3Bucket {
-
-  def apply(b: String): S3Folder = S3Folder(b, "")
 }
 
 
@@ -83,6 +77,20 @@ object S3Object {
     }
   }
 }
+
+
+case class S3AddressFromString(val sc: StringContext) extends AnyVal {
+
+  // This allows to write things like s3"bucket" / "foo" / "bar" /
+  // or s3"org.com/${suffix}/${folder.getName}" / "file.foo"
+  def s3(args: Any*): S3Folder = {
+    val str = sc.s(args: _*)
+    val uri = new URI("s3://" + str)
+    S3Folder(uri.getHost, uri.getPath)
+  }
+}
+
+
 
 case class TransferListener(transfer: Transfer) extends PListener {
   def progressChanged(progressEvent: PEvent) {
