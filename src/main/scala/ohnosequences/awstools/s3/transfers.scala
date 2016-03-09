@@ -19,15 +19,11 @@ case class TransferListener(transfer: Transfer) extends PListener {
   def progressChanged(progressEvent: PEvent): Unit = {
     import ProgressEventType._
     progressEvent.getEventType match {
-      case TRANSFER_STARTED_EVENT  => println("Started")
-      case TRANSFER_CANCELED_EVENT  => println("Canceled!")
-      case TRANSFER_COMPLETED_EVENT  => println("Completed!")
-      case TRANSFER_FAILED_EVENT  => println("Failed!")
-      case TRANSFER_PART_COMPLETED_EVENT  => println("Completed part: "+ transfer.getProgress.getBytesTransferred)
-      case TRANSFER_PART_FAILED_EVENT  => println("Failed part transfer")
-      case TRANSFER_PART_STARTED_EVENT  => println("Started part transfer")
-      case TRANSFER_PREPARING_EVENT  => println("Preparing for the transfer")
-      // case HTTP_REQUEST_CONTENT_RESET_EVENT  => ()
+      // case TRANSFER_STARTED_EVENT  => println("Started")
+      case TRANSFER_CANCELED_EVENT  => println(s"${transfer.getDescription} is canceled")
+      case TRANSFER_COMPLETED_EVENT => println(s"${transfer.getDescription} is completed")
+      case TRANSFER_FAILED_EVENT    => println(s"${transfer.getDescription} is failed")
+      // case TRANSFER_PART_COMPLETED_EVENT  => println("Completed part: "+ transfer.getProgress.getBytesTransferred)
       case _ => ()
     }
   }
@@ -49,18 +45,6 @@ case class TransferManagerOps(asJava: TransferManager) {
   def shutdown(shutDownS3Client: Boolean = false): Unit =
     asJava.shutdownNow(shutDownS3Client)
 
-  val transferWaiter: (Transfer => Unit) = { transfer =>
-    while(!transfer.isDone) {
-      println(" - Progress: " + transfer.getProgress.getBytesTransferred + " bytes")
-      Thread.sleep(500)
-    }
-    println("Finished: " + transfer.getState)
-  }
-
-  // Asinchronous progress listener
-  val transferListener: (Transfer => Unit) = { transfer =>
-    transfer.addProgressListener(TransferListener(transfer))
-  }
 
   def download(
     s3Address: AnyS3Address,
@@ -78,7 +62,7 @@ case class TransferManagerOps(asJava: TransferManager) {
     }
 
     // This should attach a default progress listener
-    transfer.addProgressListener(new ProgressTracker())
+    transfer.addProgressListener(TransferListener(transfer))
 
     Future {
       // NOTE: this is blocking:
@@ -125,7 +109,7 @@ case class TransferManagerOps(asJava: TransferManager) {
     }
 
     // This should attach a default progress listener
-    transfer.addProgressListener(new ProgressTracker())
+    transfer.addProgressListener(TransferListener(transfer))
 
     Future {
       // NOTE: this is blocking:
