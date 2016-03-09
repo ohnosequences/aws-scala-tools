@@ -21,7 +21,8 @@ import java.net.URL
 
 case class ScalaS3Client(val asJava: AmazonS3) extends AnyVal {
 
-  def createLoadingManager(): LoadingManager = new LoadingManager(new TransferManager(asJava))
+  def createTransferManager: TransferManager = new TransferManager(asJava)
+
 
   def uploadString(destination: S3Object, s: String): Try[Unit] = {
     Try {

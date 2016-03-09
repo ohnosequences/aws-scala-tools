@@ -1,20 +1,21 @@
 package ohnosequences.awstools.s3
 
-import ohnosequences.awstools.regions._
-import ohnosequences.logging.Logger
-
-import com.amazonaws.services.s3.model.{ Region => _ , _ }
-import com.amazonaws.services.s3.transfer.{Transfer, TransferManager}
+// import com.amazonaws.services.s3.model.{ Region => _ , _ }
 import com.amazonaws.{AmazonClientException, AmazonServiceException}
-import com.amazonaws.internal.StaticCredentialsProvider
+import com.amazonaws.services.s3.transfer._
+import com.amazonaws.services.s3.model.{ S3Object => _, _ }
 import com.amazonaws.event._
 import com.amazonaws.event.{ProgressListener => PListener, ProgressEvent => PEvent}
 
 import java.io.File
 
+import scala.collection.JavaConversions._
+import scala.util.Try
+
 
 case class TransferListener(transfer: Transfer) extends PListener {
-  def progressChanged(progressEvent: PEvent) {
+
+  def progressChanged(progressEvent: PEvent): Unit = {
     import ProgressEventType._
     progressEvent.getEventType match {
       case TRANSFER_STARTED_EVENT  => println("Started")
@@ -31,7 +32,21 @@ case class TransferListener(transfer: Transfer) extends PListener {
   }
 }
 
-case class LoadingManager(transferManager: TransferManager, logger: Option[Logger] = None) {
+
+// This is used for adding metadata to the S3 objects that we are uploading
+case class s3MetadataProvider(metadataMap: Map[String, String]) extends ObjectMetadataProvider {
+
+  def provideObjectMetadata(file: java.io.File, metadata: ObjectMetadata): Unit = {
+    metadata.setUserMetadata(metadataMap)
+  }
+}
+
+
+case class TransferManagerOps(asJava: TransferManager) {
+
+  // by default shutdownNow shuts down the S3 client as well
+  def shutdown(shutDownS3Client: Boolean = false): Unit =
+    asJava.shutdownNow(shutDownS3Client)
 
   val transferWaiter: (Transfer => Unit) = { transfer =>
     while(!transfer.isDone) {
@@ -46,52 +61,76 @@ case class LoadingManager(transferManager: TransferManager, logger: Option[Logge
     transfer.addProgressListener(TransferListener(transfer))
   }
 
-  def upload(
-    objectAddress: S3Object,
-    file: File,
-    transferWaiter: (Transfer => Unit) = transferWaiter
-  ) {
-    println("Uploading to: " + objectAddress.toString)
-    println("File: " + file.getAbsolutePath)
-    val upload = transferManager.upload(objectAddress.bucket, objectAddress.key, file)
-    transferWaiter(upload)
-  }
-
-  def uploadDirectory(
-    objectAddress: S3Object,
-    directory: File,
-    recursively: Boolean = true,
-    transferWaiter: (Transfer => Unit) = transferWaiter
-  ) {
-    println("Uploading to: " + objectAddress.toString)
-    println("Directory: " + directory.getCanonicalPath + (if (recursively) " (recursively)" else ""))
-    val upload = transferManager.uploadDirectory(objectAddress.bucket, objectAddress.key, directory, recursively)
-    transferWaiter(upload)
-  }
-
   def download(
-    objectAddress: S3Object,
+    s3Address: AnyS3Address,
+    destination: File
+  ): Try[File] = {
+    println(s"""Dowloading object
+      |from: ${s3Address}
+      |to: ${destination.getCanonicalPath}
+      |""".stripMargin
+    )
+
+    val transfer: Transfer = s3Address match {
+      case S3Object(bucket, key) => asJava.download(bucket, key, destination)
+      case S3Folder(bucket, key) => asJava.downloadDirectory(bucket, key, destination)
+    }
+
+    // This should attach a default progress listener
+    transfer.addProgressListener(new ProgressTracker())
+
+    Try {
+      // NOTE: this is blocking:
+      transfer.waitForCompletion
+
+      // if this was a virtual directory, the destination actually differs:
+      s3Address match {
+        case S3Object(_, key) => destination
+        case S3Folder(_, key) => destination // / key
+      }
+    }
+  }
+
+  def upload(
     file: File,
-    transferWaiter: (Transfer => Unit) = transferWaiter
-  ) {
-    println("Dowloading from: " + objectAddress.toString)
-    println("File: " + file.getAbsolutePath)
-    val download = transferManager.download(objectAddress.bucket, objectAddress.key, file)
-    transferWaiter(download)
+    s3Address: AnyS3Address,
+    userMetadata: Map[String, String] = Map()
+  ): Try[AnyS3Address] = {
+    println(s"""Uploading object
+      |from: ${file.getCanonicalPath}
+      |to: ${s3Address}
+      |""".stripMargin
+    )
+
+    val transfer: Transfer = if (file.isDirectory) {
+      asJava.uploadDirectory(
+        s3Address.bucket,
+        s3Address.key,
+        file,
+        true, // includeSubdirectories
+        s3MetadataProvider(userMetadata)
+      )
+    } else {
+      val request = new PutObjectRequest(
+        s3Address.bucket,
+        s3Address.key,
+        file
+      )
+
+      val metadata = new ObjectMetadata()
+      metadata.setUserMetadata(userMetadata)
+
+      asJava.upload( request.withMetadata(metadata) )
+    }
+
+    // This should attach a default progress listener
+    transfer.addProgressListener(new ProgressTracker())
+
+    Try {
+      // NOTE: this is blocking:
+      transfer.waitForCompletion
+      s3Address
+    }
   }
 
-  def downloadDirectory(
-    objectAddress: S3Object,
-    destinationDir: File,
-    transferWaiter: (Transfer => Unit) = transferWaiter
-  ) {
-    println("Dowloading from: " + objectAddress.toString)
-    println("To directory: " + destinationDir.getAbsolutePath)
-    val download = transferManager.downloadDirectory(objectAddress.bucket, objectAddress.key, destinationDir)
-    transferWaiter(download)
-  }
-
-  def shutdown() {
-    transferManager.shutdownNow(false)
-  }
 }

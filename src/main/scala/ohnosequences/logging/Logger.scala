@@ -341,7 +341,7 @@ class S3Logger(s3: AmazonS3,
       loggingDestination.foreach { dst =>
        // log.flush()
         s3.createBucket(dst.bucket)
-        s3.createLoadingManager.upload(dst / logFileName, logFile)
+        s3.createTransferManager.upload(logFile, dst / logFileName)
       }
     }
   }
@@ -351,7 +351,7 @@ class S3Logger(s3: AmazonS3,
       loggingDestination.foreach { dst =>
         val path = file.getAbsolutePath.replace(zeroDir.getAbsolutePath, "")
         s3.createBucket(dst.bucket)
-        s3.createLoadingManager.upload(dst / path, file)
+        s3.createTransferManager.upload(file, dst / path)
       }
     }
   }
