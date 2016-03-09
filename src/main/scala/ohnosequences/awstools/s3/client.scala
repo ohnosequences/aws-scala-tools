@@ -1,16 +1,13 @@
 package ohnosequences.awstools.s3
 
 
-import ohnosequences.awstools.regions._
 import ohnosequences.logging.Logger
 
-import com.amazonaws.auth._
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3Client}
 import com.amazonaws.services.s3.model.{ Region => _ , _ }
 import com.amazonaws.services.s3.transfer.{Transfer, TransferManager}
 import com.amazonaws.{AmazonClientException, AmazonServiceException}
 import com.amazonaws.internal.StaticCredentialsProvider
-import com.amazonaws.event._
 import com.amazonaws.event.{ProgressListener => PListener, ProgressEvent => PEvent}
 
 import scala.collection.JavaConversions._
@@ -22,10 +19,9 @@ import java.io.{IOException, InputStream, ByteArrayInputStream, File}
 import java.net.URL
 
 
-class S3(val s3: AmazonS3) {
+case class ScalaS3Client(val asJava: AmazonS3) extends AnyVal {
 
-  def createLoadingManager(): LoadingManager = new LoadingManager(new TransferManager(s3))
-
+  def createLoadingManager(): LoadingManager = new LoadingManager(new TransferManager(asJava))
 
   def uploadString(destination: S3Object, s: String): Try[Unit] = {
     Try {
@@ -33,7 +29,7 @@ class S3(val s3: AmazonS3) {
       val stream = new ByteArrayInputStream(array)
       val metadata = new ObjectMetadata()
       metadata.setContentLength(array.length)
-      s3.putObject(destination.bucket, destination.key, stream, metadata)
+      asJava.putObject(destination.bucket, destination.key, stream, metadata)
     }
   }
 
@@ -54,7 +50,7 @@ class S3(val s3: AmazonS3) {
       if (listing.isTruncated) {
         keepListing(
           acc ++= listingToObjects(listing),
-          s3.listNextBatchOfObjects(listing)
+          asJava.listNextBatchOfObjects(listing)
         )
       } else {
         (acc ++= listingToObjects(listing)).toList
@@ -63,57 +59,36 @@ class S3(val s3: AmazonS3) {
 
     keepListing(
       scala.collection.mutable.ListBuffer(),
-      s3.listObjects(s3folder.bucket, s3folder.key)
+      asJava.listObjects(s3folder.bucket, s3folder.key)
     )
   }
 
 
-  def emptyBucket(name: String) {
+  def emptyBucket(name: String): Unit = {
     listObjects(S3Bucket(name)).foreach { objectAddress =>
-      s3.deleteObject(objectAddress.bucket, objectAddress.key)
+      asJava.deleteObject(objectAddress.bucket, objectAddress.key)
     }
   }
 
-  def deleteBucket(name: String, empty: Boolean = true) {
-    if (s3.doesBucketExist(name)) {
+  def deleteBucket(name: String, empty: Boolean = true): Unit = {
+    if (asJava.doesBucketExist(name)) {
       if (empty) {
         emptyBucket(name)
       }
-      s3.deleteBucket(name)
+      asJava.deleteBucket(name)
     }
   }
 
   def objectExists(address: S3Object): Boolean = {
     Try(
-      s3.listObjects(address.bucket, address.key).getObjectSummaries
+      asJava.listObjects(address.bucket, address.key).getObjectSummaries
     ).filter{ _.length > 0 }.isSuccess
   }
 
   def generateTemporaryLink(address: S3Object, linkLifeTime: FiniteDuration): URL = {
     val deadline = linkLifeTime.fromNow
     val date = new java.util.Date(deadline.time.toMillis)
-    s3.generatePresignedUrl(address.bucket, address.key, date)
+    asJava.generatePresignedUrl(address.bucket, address.key, date)
   }
 
-}
-
-object S3 {
-
-  def create(): S3 = {
-    create(new InstanceProfileCredentialsProvider())
-  }
-
-  def create(credentialsFile: File): S3 = {
-    create(new StaticCredentialsProvider(new PropertiesCredentials(credentialsFile)))
-  }
-
-  def create(accessKey: String, secretKey: String): S3 = {
-    create(new StaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
-  }
-
-  def create(credentials: AWSCredentialsProvider, region: Region = Region.Ireland): S3 = {
-    val s3Client = new AmazonS3Client(credentials)
-    s3Client.setRegion(region.toAWSRegion)
-    new S3(s3Client)
-  }
 }
