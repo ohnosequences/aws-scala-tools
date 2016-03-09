@@ -1,5 +1,7 @@
 package ohnosequences.logging
 
+import com.amazonaws.services.s3.AmazonS3
+
 import java.io.{FileWriter, PrintWriter, File}
 import java.nio.file.{StandardCopyOption, Files}
 import java.text.SimpleDateFormat
@@ -305,7 +307,7 @@ class FileLogger(val prefix: String,
 
 
 object S3Logger {
-  def apply(s3: S3,
+  def apply(s3: AmazonS3,
             prefix: String,
             loggingDirectory: File,
             logFileName: String,
@@ -322,7 +324,7 @@ object S3Logger {
   }
 }
 
-class S3Logger(s3: S3,
+class S3Logger(s3: AmazonS3,
                prefix: String,
                loggingDirectory: File,
                logFileName: String,
@@ -339,7 +341,7 @@ class S3Logger(s3: S3,
       loggingDestination.foreach { dst =>
        // log.flush()
         s3.createBucket(dst.bucket)
-        s3.uploadFile(dst / logFileName, logFile)
+        s3.createLoadingManager.upload(dst / logFileName, logFile)
       }
     }
   }
@@ -349,7 +351,7 @@ class S3Logger(s3: S3,
       loggingDestination.foreach { dst =>
         val path = file.getAbsolutePath.replace(zeroDir.getAbsolutePath, "")
         s3.createBucket(dst.bucket)
-        s3.uploadFile(dst / path, file)
+        s3.createLoadingManager.upload(dst / path, file)
       }
     }
   }
