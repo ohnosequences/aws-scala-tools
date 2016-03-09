@@ -82,47 +82,11 @@ class S3(val s3: AmazonS3) {
     }
   }
 
-  @deprecated("", since = "v0.13.1")
-  def readWholeObject(objectAddress: S3Object) = {
-    val objectStream = s3.getObject(objectAddress.bucket, objectAddress.key).getObjectContent
-    scala.io.Source.fromInputStream(objectStream).mkString
-  }
-
-  @deprecated("", since = "v0.13.1")
-  def readObject(objectAddress: S3Object): Option[String] = {
-    try {
-      val objectStream = s3.getObject(objectAddress.bucket, objectAddress.key).getObjectContent
-      Some(scala.io.Source.fromInputStream(objectStream).mkString)
-    } catch {
-      case t: Throwable => None
-    }
-  }
-
   def getObjectStream(objectAddress: S3Object): InputStream = {
     s3.getObject(objectAddress.bucket, objectAddress.key).getObjectContent
   }
 
 
-
-  @deprecated("use uploadString()", since = "v0.13.1")
-  def putWholeObject(objectAddress: S3Object, content: String): Unit = {
-    val array = content.getBytes
-
-    val stream = new ByteArrayInputStream(array)
-    val metadata = new ObjectMetadata()
-    metadata.setContentLength(array.length)
-    s3.putObject(objectAddress.bucket, objectAddress.key, stream, metadata)
-  }
-
-  @deprecated("use uploadFile()", since = "v0.13.1")
-  def putObject(objectAddress: S3Object, file: File, public: Boolean = false) {
-    createBucket(objectAddress.bucket)
-    if (public) {
-      s3.putObject(new PutObjectRequest(objectAddress.bucket, objectAddress.key, file).withCannedAcl(CannedAccessControlList.PublicRead))
-    } else {
-      s3.putObject(new PutObjectRequest(objectAddress.bucket, objectAddress.key, file))
-    }
-  }
 
   def uploadFile(destination: S3Object, file: File, public: Boolean = false): Try[Unit] = {
     Try {
@@ -213,29 +177,6 @@ class S3(val s3: AmazonS3) {
     }.recoverWith { case t =>
       Failure(new Error("unable to access " + address))
     }
-  }
-
-  @deprecated("", since = "v0.13.1")
-  def objectExists(address: S3Object, logger: Option[Logger]): Boolean = {
-
-    try {
-      val metadata = s3.getObjectMetadata(address.bucket, address.key)
-      metadata != null
-    } catch {
-      case eClient: AmazonClientException => logger.foreach {
-        _.warn("object " + address + " is not accessible + " + eClient.getMessage())
-      }; false
-      case eio: IOException => logger.foreach { _.warn("object " + address + " is not accessible + " + eio.getMessage())}; false
-    }
-  }
-
-  @deprecated("use generateTemporaryURLLink", since = "v0.13.1")
-  def generateTemporaryURL(address: S3Object, time: Int): String = {
-    val exp = new java.util.Date()
-    var expMs = exp.getTime()
-    expMs += 1000 * time
-    exp.setTime(expMs)
-    s3.generatePresignedUrl(address.bucket, address.key, exp).toString
   }
 
   def generateTemporaryLink(address: S3Object, linkLifeTime: Duration): Try[URL] = {
