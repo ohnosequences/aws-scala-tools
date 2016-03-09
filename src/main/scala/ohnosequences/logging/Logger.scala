@@ -338,8 +338,8 @@ class S3Logger(s3: S3,
     Try {
       loggingDestination.foreach { dst =>
        // log.flush()
-        s3.createBucket(dst.bucket)
-        s3.uploadFile(dst / logFileName, logFile)
+        s3.s3.createBucket(dst.bucket)
+        s3.createLoadingManager.upload(dst / logFileName, logFile)
       }
     }
   }
@@ -348,8 +348,8 @@ class S3Logger(s3: S3,
     Try {
       loggingDestination.foreach { dst =>
         val path = file.getAbsolutePath.replace(zeroDir.getAbsolutePath, "")
-        s3.createBucket(dst.bucket)
-        s3.uploadFile(dst / path, file)
+        s3.s3.createBucket(dst.bucket)
+        s3.createLoadingManager.upload(dst / path, file)
       }
     }
   }

@@ -27,47 +27,6 @@ class S3(val s3: AmazonS3) {
 
   def createLoadingManager(): LoadingManager = new LoadingManager(new TransferManager(s3))
 
-  def copy(src: S3Object, dst: S3Object): Boolean = {
-    try {
-      s3.copyObject(src.bucket, src.key, dst.bucket, dst.key)
-      true
-    } catch {
-      case t: Throwable => t.printStackTrace(); false
-    }
-  }
-
-  def getObjectString(objectAddress: S3Object): Try[String] = {
-    Try {
-      s3.getObject(objectAddress.bucket, objectAddress.key)
-    }.flatMap { s3obj =>
-      Try {
-        val s = scala.io.Source.fromInputStream(s3obj.getObjectContent).mkString
-        s3obj.close()
-        s
-      }.recoverWith { case t =>
-        s3obj.close()
-        Failure(t)
-      }
-    }.recoverWith { case t =>
-      Failure(new Error("failed to retrive content of " + objectAddress, t))
-    }
-  }
-
-  def getObjectStream(objectAddress: S3Object): InputStream = {
-    s3.getObject(objectAddress.bucket, objectAddress.key).getObjectContent
-  }
-
-
-
-  def uploadFile(destination: S3Object, file: File, public: Boolean = false): Try[Unit] = {
-    Try {
-      if (public) {
-        s3.putObject(new PutObjectRequest(destination.bucket, destination.key, file).withCannedAcl(CannedAccessControlList.PublicRead))
-      } else {
-        s3.putObject(new PutObjectRequest(destination.bucket, destination.key, file))
-      }
-    }
-  }
 
   def uploadString(destination: S3Object, s: String): Try[Unit] = {
     Try {
@@ -80,24 +39,8 @@ class S3(val s3: AmazonS3) {
   }
 
 
-  def deleteObject(objectAddress: S3Object) {
-    s3.deleteObject(objectAddress.bucket, objectAddress.key)
-  }
-
-  def deleteBucket(name: String, empty: Boolean = true) {
-    if (s3.doesBucketExist(name)) {
-      if (empty) {
-        emptyBucket(name)
-      }
-      s3.deleteBucket(name)
-    }
-  }
-
-
   def listObjects(bucket: String, prefix: String = ""): List[S3Object] = {
-   // println("lsitObject")
     val result = ListBuffer[S3Object]()
-    //var stopped = false
     var listing = s3.listObjects(bucket, prefix)
 
     result ++= listing.getObjectSummaries.map{ summary =>
@@ -118,18 +61,6 @@ class S3(val s3: AmazonS3) {
   }
 
 
-  def downloadDirectory(bucket: String, prefix: String) {
-    var stopped = false
-    while(!stopped) {
-      val listing = s3.listObjects(bucket, prefix)
-      println(listing.getObjectSummaries.map(_.getKey))
-      if(!listing.isTruncated) {
-        stopped = true
-      }
-    }
-  }
-
-
   def emptyBucket(name: String) {
     listObjects(name).foreach{ objectAddress =>
       s3.deleteObject(name, objectAddress.key)
@@ -139,13 +70,19 @@ class S3(val s3: AmazonS3) {
     }
   }
 
-  def objectExists(address: S3Object): Try[Boolean] = {
-    Try {
-      val metadata = s3.getObjectMetadata(address.bucket, address.key)
-      metadata != null
-    }.recoverWith { case t =>
-      Failure(new Error("unable to access " + address))
+  def deleteBucket(name: String, empty: Boolean = true) {
+    if (s3.doesBucketExist(name)) {
+      if (empty) {
+        emptyBucket(name)
+      }
+      s3.deleteBucket(name)
     }
+  }
+
+  def objectExists(address: S3Object): Boolean = {
+    Try(
+      s3.listObjects(address.bucket, address.key).getObjectSummaries
+    ).filter{ _.length > 0 }.isSuccess
   }
 
   def generateTemporaryLink(address: S3Object, linkLifeTime: Duration): Try[URL] = {
