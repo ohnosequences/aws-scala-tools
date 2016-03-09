@@ -27,35 +27,6 @@ class S3(val s3: AmazonS3) {
 
   def createLoadingManager(): LoadingManager = new LoadingManager(new TransferManager(s3))
 
-  @scala.annotation.tailrec
-  final def tryAction[T](action: => Option[T], attemptsLeft: Int = 10, timeOut: Int = 500): Option[T] = {
-    if(attemptsLeft <= 0) None
-    else {
-      action match {
-        case Some(t) => Some(t)
-        case None => {
-          Thread.sleep(timeOut)
-          tryAction(action, attemptsLeft - 1)
-        }
-      }
-    }
-  }
-
-  def createBucket(name: String): Option[Boolean] = {
-    def createBucketAction: Option[Boolean] = {
-      try {
-        s3.createBucket(name)
-        Some(true)
-      } catch {
-        case e: AmazonServiceException if e.getStatusCode == 409 => Some(true)
-        case e: AmazonServiceException => println("warning: " + e.toString); None
-      }
-    }
-    tryAction(createBucketAction)
-  }
-
-  def bucketExists(name: String) = s3.doesBucketExist(name)
-
   def copy(src: S3Object, dst: S3Object): Boolean = {
     try {
       s3.copyObject(src.bucket, src.key, dst.bucket, dst.key)
@@ -90,7 +61,6 @@ class S3(val s3: AmazonS3) {
 
   def uploadFile(destination: S3Object, file: File, public: Boolean = false): Try[Unit] = {
     Try {
-      createBucket(destination.bucket)
       if (public) {
         s3.putObject(new PutObjectRequest(destination.bucket, destination.key, file).withCannedAcl(CannedAccessControlList.PublicRead))
       } else {
@@ -101,7 +71,6 @@ class S3(val s3: AmazonS3) {
 
   def uploadString(destination: S3Object, s: String): Try[Unit] = {
     Try {
-      createBucket(destination.bucket)
       val array = s.getBytes
       val stream = new ByteArrayInputStream(array)
       val metadata = new ObjectMetadata()
