@@ -10,7 +10,8 @@ import com.amazonaws.event.{ProgressListener => PListener, ProgressEvent => PEve
 import java.io.File
 
 import scala.collection.JavaConversions._
-import scala.util.Try
+import scala.concurrent._, Future._
+import ExecutionContext.Implicits.global
 
 
 case class TransferListener(transfer: Transfer) extends PListener {
@@ -64,7 +65,7 @@ case class TransferManagerOps(asJava: TransferManager) {
   def download(
     s3Address: AnyS3Address,
     destination: File
-  ): Try[File] = {
+  ): Future[File] = {
     println(s"""Dowloading object
       |from: ${s3Address}
       |to: ${destination.getCanonicalPath}
@@ -79,14 +80,14 @@ case class TransferManagerOps(asJava: TransferManager) {
     // This should attach a default progress listener
     transfer.addProgressListener(new ProgressTracker())
 
-    Try {
+    Future {
       // NOTE: this is blocking:
       transfer.waitForCompletion
 
       // if this was a virtual directory, the destination actually differs:
       s3Address match {
         case S3Object(_, key) => destination
-        case S3Folder(_, key) => destination // / key
+        case S3Folder(_, key) => new File(destination, key)
       }
     }
   }
@@ -95,7 +96,7 @@ case class TransferManagerOps(asJava: TransferManager) {
     file: File,
     s3Address: AnyS3Address,
     userMetadata: Map[String, String] = Map()
-  ): Try[AnyS3Address] = {
+  ): Future[AnyS3Address] = {
     println(s"""Uploading object
       |from: ${file.getCanonicalPath}
       |to: ${s3Address}
@@ -126,7 +127,7 @@ case class TransferManagerOps(asJava: TransferManager) {
     // This should attach a default progress listener
     transfer.addProgressListener(new ProgressTracker())
 
-    Try {
+    Future {
       // NOTE: this is blocking:
       transfer.waitForCompletion
       s3Address
