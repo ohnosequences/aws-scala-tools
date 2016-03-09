@@ -39,34 +39,39 @@ class S3(val s3: AmazonS3) {
   }
 
 
-  def listObjects(bucket: String, prefix: String = ""): List[S3Object] = {
-    val result = ListBuffer[S3Object]()
-    var listing = s3.listObjects(bucket, prefix)
+  def listObjects(s3folder: S3Folder): List[S3Object] = {
 
-    result ++= listing.getObjectSummaries.map{ summary =>
-        S3Object(bucket, summary.getKey)
-    }
-
-     while (listing.isTruncated) {
-      //listing = Some(s3.listObjects(bucket, prefix))
-     // println(".")
-
-      listing = s3.listNextBatchOfObjects(listing)
-      result ++= listing.getObjectSummaries.map{ summary =>
-        S3Object(bucket, summary.getKey)
+    def listingToObjects(listing: ObjectListing): List[S3Object] =
+      listing.getObjectSummaries.toList.map { summary =>
+        S3Object(summary.getBucketName, summary.getKey)
       }
 
+    @scala.annotation.tailrec
+    def keepListing(
+      acc: scala.collection.mutable.ListBuffer[S3Object],
+      listing: ObjectListing
+    ): List[S3Object] = {
+
+      if (listing.isTruncated) {
+        keepListing(
+          acc ++= listingToObjects(listing),
+          s3.listNextBatchOfObjects(listing)
+        )
+      } else {
+        (acc ++= listingToObjects(listing)).toList
+      }
     }
-    result.toList
+
+    keepListing(
+      scala.collection.mutable.ListBuffer(),
+      s3.listObjects(s3folder.bucket, s3folder.key)
+    )
   }
 
 
   def emptyBucket(name: String) {
-    listObjects(name).foreach{ objectAddress =>
-      s3.deleteObject(name, objectAddress.key)
-    }
-    s3.listObjects(name).getObjectSummaries.foreach { objectSummary =>
-      s3.deleteObject(objectSummary.getBucketName, objectSummary.getKey)
+    listObjects(S3Bucket(name)).foreach { objectAddress =>
+      s3.deleteObject(objectAddress.bucket, objectAddress.key)
     }
   }
 
