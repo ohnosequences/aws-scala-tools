@@ -14,8 +14,7 @@ import com.amazonaws.event._
 import com.amazonaws.event.{ProgressListener => PListener, ProgressEvent => PEvent}
 
 import scala.collection.JavaConversions._
-import scala.collection.mutable.ListBuffer
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 
 import scala.util.{Failure, Success, Try}
 
@@ -90,14 +89,10 @@ class S3(val s3: AmazonS3) {
     ).filter{ _.length > 0 }.isSuccess
   }
 
-  def generateTemporaryLink(address: S3Object, linkLifeTime: Duration): Try[URL] = {
-    Try {
-      val exp = new java.util.Date()
-      var expMs = exp.getTime()
-      expMs += linkLifeTime.toMillis
-      exp.setTime(expMs)
-      s3.generatePresignedUrl(address.bucket, address.key, exp)
-    }
+  def generateTemporaryLink(address: S3Object, linkLifeTime: FiniteDuration): URL = {
+    val deadline = linkLifeTime.fromNow
+    val date = new java.util.Date(deadline.time.toMillis)
+    s3.generatePresignedUrl(address.bucket, address.key, date)
   }
 
 }
