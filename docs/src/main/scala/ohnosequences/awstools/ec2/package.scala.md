@@ -24,7 +24,6 @@ package object ec2 {
 [main/scala/ohnosequences/awstools/autoscaling/AutoScalingGroup.scala]: ../autoscaling/AutoScalingGroup.scala.md
 [main/scala/ohnosequences/awstools/autoscaling/LaunchConfiguration.scala]: ../autoscaling/LaunchConfiguration.scala.md
 [main/scala/ohnosequences/awstools/autoscaling/PurchaseModel.scala]: ../autoscaling/PurchaseModel.scala.md
-[main/scala/ohnosequences/awstools/AWSClients.scala]: ../AWSClients.scala.md
 [main/scala/ohnosequences/awstools/dynamodb/DynamoDBUtils.scala]: ../dynamodb/DynamoDBUtils.scala.md
 [main/scala/ohnosequences/awstools/ec2/AMI.scala]: AMI.scala.md
 [main/scala/ohnosequences/awstools/ec2/EC2.scala]: EC2.scala.md
@@ -34,7 +33,10 @@ package object ec2 {
 [main/scala/ohnosequences/awstools/ec2/LaunchSpecs.scala]: LaunchSpecs.scala.md
 [main/scala/ohnosequences/awstools/ec2/package.scala]: package.scala.md
 [main/scala/ohnosequences/awstools/regions/Region.scala]: ../regions/Region.scala.md
-[main/scala/ohnosequences/awstools/s3/S3.scala]: ../s3/S3.scala.md
+[main/scala/ohnosequences/awstools/s3/address.scala]: ../s3/address.scala.md
+[main/scala/ohnosequences/awstools/s3/client.scala]: ../s3/client.scala.md
+[main/scala/ohnosequences/awstools/s3/package.scala]: ../s3/package.scala.md
+[main/scala/ohnosequences/awstools/s3/transfers.scala]: ../s3/transfers.scala.md
 [main/scala/ohnosequences/awstools/sns/SNS.scala]: ../sns/SNS.scala.md
 [main/scala/ohnosequences/awstools/sns/Topic.scala]: ../sns/Topic.scala.md
 [main/scala/ohnosequences/awstools/sqs/Queue.scala]: ../sqs/Queue.scala.md
@@ -44,8 +46,6 @@ package object ec2 {
 [main/scala/ohnosequences/awstools/utils/SQSUtils.scala]: ../utils/SQSUtils.scala.md
 [main/scala/ohnosequences/benchmark/Benchmark.scala]: ../../benchmark/Benchmark.scala.md
 [main/scala/ohnosequences/logging/Logger.scala]: ../../logging/Logger.scala.md
-[main/scala/ohnosequences/logging/S3Logger.scala]: ../../logging/S3Logger.scala.md
-[test/scala/ohnosequences/awstools/AWSClients.scala]: ../../../../../test/scala/ohnosequences/awstools/AWSClients.scala.md
 [test/scala/ohnosequences/awstools/EC2Tests.scala]: ../../../../../test/scala/ohnosequences/awstools/EC2Tests.scala.md
 [test/scala/ohnosequences/awstools/RegionTests.scala]: ../../../../../test/scala/ohnosequences/awstools/RegionTests.scala.md
 [test/scala/ohnosequences/awstools/S3Tests.scala]: ../../../../../test/scala/ohnosequences/awstools/S3Tests.scala.md

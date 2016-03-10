@@ -1,46 +1,72 @@
 
 ```scala
-package ohnosequences.awstools.sns
+package ohnosequences.awstools.s3
 
-import java.io.File
+import ohnosequences.awstools.regions._
 
-import ohnosequences.awstools.regions.Region._
+import java.net.URI
+import java.net.URL
 
-import com.amazonaws.auth._
-import com.amazonaws.services.sns.{AmazonSNSClient, AmazonSNS}
-import com.amazonaws.services.sns.model.{CreateTopicRequest}
-import com.amazonaws.internal.StaticCredentialsProvider
 
-class SNS(val sns: AmazonSNS) {
+sealed trait AnyS3Address {
+  // These are the inputs
+  val _bucket: String
+  val _key: String
 
-  def createTopic(name: String) = {
-    Topic(sns, sns.createTopic(new CreateTopicRequest(name)).getTopicArn, name)
-  }
+  def toURI: URI = new URI("s3", _bucket, s"/${_key}", null).normalize
 
-  def shutdown() {
-    sns.shutdown()
-  }
+  // We use URI as a way to sanitize things (dropping extra /)
+  lazy val bucket: String = toURI.getHost
+  lazy val key: String = toURI.getPath
 
+  lazy val segments: Seq[String] = key.split("/").filter(_.nonEmpty).toSeq
+
+  @deprecated("Use toURI method instead, or just toString", since = "v0.17.0")
+  final def url = "s3://" + bucket + "/" + key
+
+  override def toString = toURI.toString
+
+  def toHttpsURL(region: Region): URL = new URL("https", s"s3-${region}.amazonaws.com", s"${bucket}/${key}")
 }
 
-object SNS {
 
-  def create(): SNS = {
-    create(new InstanceProfileCredentialsProvider())
-  }
+case class S3Folder(b: String, k: String) extends AnyS3Address {
+  val _bucket = b
+  // NOTE: we explicitly add / in the end here (it represents the empty S3 object of the folder)
+  val _key = k + "/"
 
-  def create(credentialsFile: File): SNS = {
-    create(new StaticCredentialsProvider(new PropertiesCredentials(credentialsFile)))
-  }
+  def /(suffix: String): S3Object = S3Object(bucket, key + suffix)
+}
 
-  def create(accessKey: String, secretKey: String): SNS = {
-    create(new StaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
-  }
+object S3Folder {
 
-  def create(credentials: AWSCredentialsProvider, region: ohnosequences.awstools.regions.Region = Ireland): SNS = {
-    val snsClient = new AmazonSNSClient(credentials)
-    snsClient.setRegion(region.toAWSRegion)
-    new SNS(snsClient)
+  def apply(uri: URI): S3Folder = S3Folder(uri.getHost, uri.getPath)
+
+  implicit def toS3Object(f: S3Folder): S3Object =
+    S3Object(f.bucket, f.key.stripSuffix("/"))
+}
+
+
+case class S3Object(_bucket: String, _key: String) extends AnyS3Address {
+
+  def /(): S3Folder = S3Folder(bucket, key)
+
+  def /(suffix: String): S3Object = this./ / suffix
+}
+
+object S3Object {
+
+  def apply(uri: URI): S3Object = S3Object(uri.getHost, uri.getPath)
+}
+
+
+case class S3AddressFromString(val sc: StringContext) extends AnyVal {
+
+  // This allows to write things like s3"bucket" / "foo" / "bar" /
+  // or s3"org.com/${suffix}/${folder.getName}" / "file.foo"
+  def s3(args: Any*): S3Folder = {
+    val str = sc.s(args: _*)
+    S3Folder(new URI("s3://" + str))
   }
 }
 
@@ -62,12 +88,12 @@ object SNS {
 [main/scala/ohnosequences/awstools/ec2/LaunchSpecs.scala]: ../ec2/LaunchSpecs.scala.md
 [main/scala/ohnosequences/awstools/ec2/package.scala]: ../ec2/package.scala.md
 [main/scala/ohnosequences/awstools/regions/Region.scala]: ../regions/Region.scala.md
-[main/scala/ohnosequences/awstools/s3/address.scala]: ../s3/address.scala.md
-[main/scala/ohnosequences/awstools/s3/client.scala]: ../s3/client.scala.md
-[main/scala/ohnosequences/awstools/s3/package.scala]: ../s3/package.scala.md
-[main/scala/ohnosequences/awstools/s3/transfers.scala]: ../s3/transfers.scala.md
-[main/scala/ohnosequences/awstools/sns/SNS.scala]: SNS.scala.md
-[main/scala/ohnosequences/awstools/sns/Topic.scala]: Topic.scala.md
+[main/scala/ohnosequences/awstools/s3/address.scala]: address.scala.md
+[main/scala/ohnosequences/awstools/s3/client.scala]: client.scala.md
+[main/scala/ohnosequences/awstools/s3/package.scala]: package.scala.md
+[main/scala/ohnosequences/awstools/s3/transfers.scala]: transfers.scala.md
+[main/scala/ohnosequences/awstools/sns/SNS.scala]: ../sns/SNS.scala.md
+[main/scala/ohnosequences/awstools/sns/Topic.scala]: ../sns/Topic.scala.md
 [main/scala/ohnosequences/awstools/sqs/Queue.scala]: ../sqs/Queue.scala.md
 [main/scala/ohnosequences/awstools/sqs/SQS.scala]: ../sqs/SQS.scala.md
 [main/scala/ohnosequences/awstools/utils/AutoScalingUtils.scala]: ../utils/AutoScalingUtils.scala.md

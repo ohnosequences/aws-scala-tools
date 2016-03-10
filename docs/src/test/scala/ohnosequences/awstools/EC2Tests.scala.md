@@ -47,7 +47,6 @@
 [main/scala/ohnosequences/awstools/autoscaling/AutoScalingGroup.scala]: ../../../../main/scala/ohnosequences/awstools/autoscaling/AutoScalingGroup.scala.md
 [main/scala/ohnosequences/awstools/autoscaling/LaunchConfiguration.scala]: ../../../../main/scala/ohnosequences/awstools/autoscaling/LaunchConfiguration.scala.md
 [main/scala/ohnosequences/awstools/autoscaling/PurchaseModel.scala]: ../../../../main/scala/ohnosequences/awstools/autoscaling/PurchaseModel.scala.md
-[main/scala/ohnosequences/awstools/AWSClients.scala]: ../../../../main/scala/ohnosequences/awstools/AWSClients.scala.md
 [main/scala/ohnosequences/awstools/dynamodb/DynamoDBUtils.scala]: ../../../../main/scala/ohnosequences/awstools/dynamodb/DynamoDBUtils.scala.md
 [main/scala/ohnosequences/awstools/ec2/AMI.scala]: ../../../../main/scala/ohnosequences/awstools/ec2/AMI.scala.md
 [main/scala/ohnosequences/awstools/ec2/EC2.scala]: ../../../../main/scala/ohnosequences/awstools/ec2/EC2.scala.md
@@ -57,7 +56,10 @@
 [main/scala/ohnosequences/awstools/ec2/LaunchSpecs.scala]: ../../../../main/scala/ohnosequences/awstools/ec2/LaunchSpecs.scala.md
 [main/scala/ohnosequences/awstools/ec2/package.scala]: ../../../../main/scala/ohnosequences/awstools/ec2/package.scala.md
 [main/scala/ohnosequences/awstools/regions/Region.scala]: ../../../../main/scala/ohnosequences/awstools/regions/Region.scala.md
-[main/scala/ohnosequences/awstools/s3/S3.scala]: ../../../../main/scala/ohnosequences/awstools/s3/S3.scala.md
+[main/scala/ohnosequences/awstools/s3/address.scala]: ../../../../main/scala/ohnosequences/awstools/s3/address.scala.md
+[main/scala/ohnosequences/awstools/s3/client.scala]: ../../../../main/scala/ohnosequences/awstools/s3/client.scala.md
+[main/scala/ohnosequences/awstools/s3/package.scala]: ../../../../main/scala/ohnosequences/awstools/s3/package.scala.md
+[main/scala/ohnosequences/awstools/s3/transfers.scala]: ../../../../main/scala/ohnosequences/awstools/s3/transfers.scala.md
 [main/scala/ohnosequences/awstools/sns/SNS.scala]: ../../../../main/scala/ohnosequences/awstools/sns/SNS.scala.md
 [main/scala/ohnosequences/awstools/sns/Topic.scala]: ../../../../main/scala/ohnosequences/awstools/sns/Topic.scala.md
 [main/scala/ohnosequences/awstools/sqs/Queue.scala]: ../../../../main/scala/ohnosequences/awstools/sqs/Queue.scala.md
@@ -67,8 +69,6 @@
 [main/scala/ohnosequences/awstools/utils/SQSUtils.scala]: ../../../../main/scala/ohnosequences/awstools/utils/SQSUtils.scala.md
 [main/scala/ohnosequences/benchmark/Benchmark.scala]: ../../../../main/scala/ohnosequences/benchmark/Benchmark.scala.md
 [main/scala/ohnosequences/logging/Logger.scala]: ../../../../main/scala/ohnosequences/logging/Logger.scala.md
-[main/scala/ohnosequences/logging/S3Logger.scala]: ../../../../main/scala/ohnosequences/logging/S3Logger.scala.md
-[test/scala/ohnosequences/awstools/AWSClients.scala]: AWSClients.scala.md
 [test/scala/ohnosequences/awstools/EC2Tests.scala]: EC2Tests.scala.md
 [test/scala/ohnosequences/awstools/RegionTests.scala]: RegionTests.scala.md
 [test/scala/ohnosequences/awstools/S3Tests.scala]: S3Tests.scala.md

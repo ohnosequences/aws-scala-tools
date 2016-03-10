@@ -1,41 +1,46 @@
 
 ```scala
-package ohnosequences.awstools.autoscaling
+package ohnosequences.awstools
 
-import ohnosequences.awstools.ec2._
-import com.amazonaws.{ services => amzn }
-import scala.collection.JavaConversions._
-import java.util.Date
+import com.amazonaws.auth._
+import com.amazonaws.services.s3.{AmazonS3, AmazonS3Client}
+import com.amazonaws.services.s3.transfer.TransferManager
+import ohnosequences.awstools.regions._
 
-case class AutoScalingGroupSize(
-  min: Int,
-  desired: Int,
-  max: Int
-)
 
-case class AutoScalingGroup(
-  val launchConfiguration: LaunchConfiguration,
-  val name: String,
-  val size: AutoScalingGroupSize,
-  val availabilityZones: List[String] = List()
-)
+package object s3 {
 
-case object AutoScalingGroup {
+  // Just an alias for the "root" S3 fodler:
+  def S3Bucket(b: String): S3Folder = S3Folder(b, "")
 
-  def fromAWS(autoScalingGroup: amzn.autoscaling.model.AutoScalingGroup, autoscaling: AutoScaling): Option[AutoScalingGroup] = {
-    autoscaling.getLaunchConfigurationByName(autoScalingGroup.getLaunchConfigurationName) match {
-      case None => None //since launch configuration deleted this autoscaling group will be deleted soon
-      case Some(launchConfiguration) => Some(AutoScalingGroup(
-        launchConfiguration,
-        name = autoScalingGroup.getAutoScalingGroupName,
-        size = AutoScalingGroupSize(
-          autoScalingGroup.getMinSize,
-          autoScalingGroup.getDesiredCapacity,
-          autoScalingGroup.getMaxSize
-        )
-      ))
-    }
+  // Convenience constructors:
+  def defaultCredentialsProvider():
+        DefaultAWSCredentialsProviderChain =
+    new DefaultAWSCredentialsProviderChain()
+
+
+  def client(
+    credentials: AWSCredentialsProvider = defaultCredentialsProvider,
+    region: Region
+  ): AmazonS3Client = {
+    val javaClient = new AmazonS3Client(credentials)
+    javaClient.setRegion(region.toAWSRegion)
+    javaClient
   }
+
+
+  // Various ops:
+  implicit def s3AddressFromString(sc: StringContext):
+    S3AddressFromString =
+    S3AddressFromString(sc)
+
+  implicit def toScalaClient(s3: AmazonS3):
+    ScalaS3Client =
+    ScalaS3Client(s3)
+
+  implicit def transferManagerOps(tm: TransferManager):
+    TransferManagerOps =
+    TransferManagerOps(tm)
 }
 
 ```
@@ -43,10 +48,10 @@ case object AutoScalingGroup {
 
 
 
-[main/scala/ohnosequences/awstools/autoscaling/AutoScaling.scala]: AutoScaling.scala.md
-[main/scala/ohnosequences/awstools/autoscaling/AutoScalingGroup.scala]: AutoScalingGroup.scala.md
-[main/scala/ohnosequences/awstools/autoscaling/LaunchConfiguration.scala]: LaunchConfiguration.scala.md
-[main/scala/ohnosequences/awstools/autoscaling/PurchaseModel.scala]: PurchaseModel.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/AutoScaling.scala]: ../autoscaling/AutoScaling.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/AutoScalingGroup.scala]: ../autoscaling/AutoScalingGroup.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/LaunchConfiguration.scala]: ../autoscaling/LaunchConfiguration.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/PurchaseModel.scala]: ../autoscaling/PurchaseModel.scala.md
 [main/scala/ohnosequences/awstools/dynamodb/DynamoDBUtils.scala]: ../dynamodb/DynamoDBUtils.scala.md
 [main/scala/ohnosequences/awstools/ec2/AMI.scala]: ../ec2/AMI.scala.md
 [main/scala/ohnosequences/awstools/ec2/EC2.scala]: ../ec2/EC2.scala.md
@@ -56,10 +61,10 @@ case object AutoScalingGroup {
 [main/scala/ohnosequences/awstools/ec2/LaunchSpecs.scala]: ../ec2/LaunchSpecs.scala.md
 [main/scala/ohnosequences/awstools/ec2/package.scala]: ../ec2/package.scala.md
 [main/scala/ohnosequences/awstools/regions/Region.scala]: ../regions/Region.scala.md
-[main/scala/ohnosequences/awstools/s3/address.scala]: ../s3/address.scala.md
-[main/scala/ohnosequences/awstools/s3/client.scala]: ../s3/client.scala.md
-[main/scala/ohnosequences/awstools/s3/package.scala]: ../s3/package.scala.md
-[main/scala/ohnosequences/awstools/s3/transfers.scala]: ../s3/transfers.scala.md
+[main/scala/ohnosequences/awstools/s3/address.scala]: address.scala.md
+[main/scala/ohnosequences/awstools/s3/client.scala]: client.scala.md
+[main/scala/ohnosequences/awstools/s3/package.scala]: package.scala.md
+[main/scala/ohnosequences/awstools/s3/transfers.scala]: transfers.scala.md
 [main/scala/ohnosequences/awstools/sns/SNS.scala]: ../sns/SNS.scala.md
 [main/scala/ohnosequences/awstools/sns/Topic.scala]: ../sns/Topic.scala.md
 [main/scala/ohnosequences/awstools/sqs/Queue.scala]: ../sqs/Queue.scala.md

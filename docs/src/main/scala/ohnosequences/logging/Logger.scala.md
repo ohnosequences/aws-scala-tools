@@ -2,6 +2,8 @@
 ```scala
 package ohnosequences.logging
 
+import com.amazonaws.services.s3.AmazonS3
+
 import java.io.{FileWriter, PrintWriter, File}
 import java.nio.file.{StandardCopyOption, Files}
 import java.text.SimpleDateFormat
@@ -307,7 +309,7 @@ class FileLogger(val prefix: String,
 
 
 object S3Logger {
-  def apply(s3: S3,
+  def apply(s3: AmazonS3,
             prefix: String,
             loggingDirectory: File,
             logFileName: String,
@@ -324,7 +326,7 @@ object S3Logger {
   }
 }
 
-class S3Logger(s3: S3,
+class S3Logger(s3: AmazonS3,
                prefix: String,
                loggingDirectory: File,
                logFileName: String,
@@ -341,7 +343,7 @@ class S3Logger(s3: S3,
       loggingDestination.foreach { dst =>
        // log.flush()
         s3.createBucket(dst.bucket)
-        s3.uploadFile(dst / logFileName, logFile)
+        s3.createTransferManager.upload(logFile, dst / logFileName)
       }
     }
   }
@@ -351,7 +353,7 @@ class S3Logger(s3: S3,
       loggingDestination.foreach { dst =>
         val path = file.getAbsolutePath.replace(zeroDir.getAbsolutePath, "")
         s3.createBucket(dst.bucket)
-        s3.uploadFile(dst / path, file)
+        s3.createTransferManager.upload(file, dst / path)
       }
     }
   }
@@ -384,7 +386,6 @@ class S3Logger(s3: S3,
 [main/scala/ohnosequences/awstools/autoscaling/AutoScalingGroup.scala]: ../awstools/autoscaling/AutoScalingGroup.scala.md
 [main/scala/ohnosequences/awstools/autoscaling/LaunchConfiguration.scala]: ../awstools/autoscaling/LaunchConfiguration.scala.md
 [main/scala/ohnosequences/awstools/autoscaling/PurchaseModel.scala]: ../awstools/autoscaling/PurchaseModel.scala.md
-[main/scala/ohnosequences/awstools/AWSClients.scala]: ../awstools/AWSClients.scala.md
 [main/scala/ohnosequences/awstools/dynamodb/DynamoDBUtils.scala]: ../awstools/dynamodb/DynamoDBUtils.scala.md
 [main/scala/ohnosequences/awstools/ec2/AMI.scala]: ../awstools/ec2/AMI.scala.md
 [main/scala/ohnosequences/awstools/ec2/EC2.scala]: ../awstools/ec2/EC2.scala.md
@@ -394,7 +395,10 @@ class S3Logger(s3: S3,
 [main/scala/ohnosequences/awstools/ec2/LaunchSpecs.scala]: ../awstools/ec2/LaunchSpecs.scala.md
 [main/scala/ohnosequences/awstools/ec2/package.scala]: ../awstools/ec2/package.scala.md
 [main/scala/ohnosequences/awstools/regions/Region.scala]: ../awstools/regions/Region.scala.md
-[main/scala/ohnosequences/awstools/s3/S3.scala]: ../awstools/s3/S3.scala.md
+[main/scala/ohnosequences/awstools/s3/address.scala]: ../awstools/s3/address.scala.md
+[main/scala/ohnosequences/awstools/s3/client.scala]: ../awstools/s3/client.scala.md
+[main/scala/ohnosequences/awstools/s3/package.scala]: ../awstools/s3/package.scala.md
+[main/scala/ohnosequences/awstools/s3/transfers.scala]: ../awstools/s3/transfers.scala.md
 [main/scala/ohnosequences/awstools/sns/SNS.scala]: ../awstools/sns/SNS.scala.md
 [main/scala/ohnosequences/awstools/sns/Topic.scala]: ../awstools/sns/Topic.scala.md
 [main/scala/ohnosequences/awstools/sqs/Queue.scala]: ../awstools/sqs/Queue.scala.md
@@ -404,8 +408,6 @@ class S3Logger(s3: S3,
 [main/scala/ohnosequences/awstools/utils/SQSUtils.scala]: ../awstools/utils/SQSUtils.scala.md
 [main/scala/ohnosequences/benchmark/Benchmark.scala]: ../benchmark/Benchmark.scala.md
 [main/scala/ohnosequences/logging/Logger.scala]: Logger.scala.md
-[main/scala/ohnosequences/logging/S3Logger.scala]: S3Logger.scala.md
-[test/scala/ohnosequences/awstools/AWSClients.scala]: ../../../../test/scala/ohnosequences/awstools/AWSClients.scala.md
 [test/scala/ohnosequences/awstools/EC2Tests.scala]: ../../../../test/scala/ohnosequences/awstools/EC2Tests.scala.md
 [test/scala/ohnosequences/awstools/RegionTests.scala]: ../../../../test/scala/ohnosequences/awstools/RegionTests.scala.md
 [test/scala/ohnosequences/awstools/S3Tests.scala]: ../../../../test/scala/ohnosequences/awstools/S3Tests.scala.md
