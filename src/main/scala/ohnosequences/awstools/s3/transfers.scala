@@ -56,15 +56,14 @@ case class TransferManagerOps(asJava: TransferManager) {
       |""".stripMargin
     )
 
-    val transfer: Transfer = s3Address match {
+    lazy val transfer: Transfer = s3Address match {
       case S3Object(bucket, key) => asJava.download(bucket, key, destination)
       case S3Folder(bucket, key) => asJava.downloadDirectory(bucket, key, destination)
     }
 
-    // This should attach a default progress listener
-    transfer.addProgressListener(TransferListener(transfer))
-
     Future {
+      transfer.addProgressListener(TransferListener(transfer))
+
       // NOTE: this is blocking:
       transfer.waitForCompletion
 
@@ -87,7 +86,7 @@ case class TransferManagerOps(asJava: TransferManager) {
       |""".stripMargin
     )
 
-    val transfer: Transfer = if (file.isDirectory) {
+    lazy val transfer: Transfer = if (file.isDirectory) {
       asJava.uploadDirectory(
         s3Address.bucket,
         s3Address.key,
@@ -108,10 +107,9 @@ case class TransferManagerOps(asJava: TransferManager) {
       asJava.upload( request.withMetadata(metadata) )
     }
 
-    // This should attach a default progress listener
-    transfer.addProgressListener(TransferListener(transfer))
-
     Future {
+      transfer.addProgressListener(TransferListener(transfer))
+
       // NOTE: this is blocking:
       transfer.waitForCompletion
       s3Address
