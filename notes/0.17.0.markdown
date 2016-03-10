@@ -1,0 +1,9 @@
+This release introduces some breaking changes (related to S3).
+
+* Updated Scala version to `v2.11.8`
+* Updated AWS java SDK from `v1.9.39` to `v1.10.59`
+* Refactored S3-related code:
+  - #34: improved S3 address representation: added `.segments`, conversion to `URI`, etc.
+  - #36: added useful methods for transfer manager (download/upload)
+  - #37: changed the client code to be an extension of the java client
+  - removed most of the old methods, rewrote some
