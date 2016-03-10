@@ -7,3 +7,4 @@ This release introduces some breaking changes (related to S3).
   - #36: added useful methods for transfer manager (download/upload)
   - #37: changed the client code to be an extension of the java client
   - removed most of the old methods, rewrote some
+* Removed `AWSClients` (you can always create each client you need separately)
