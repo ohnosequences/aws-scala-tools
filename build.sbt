@@ -5,11 +5,11 @@ organization := "ohnosequences"
 description := "AWS Scala tools"
 
 bucketSuffix := "era7.com"
-scalaVersion := "2.11.7"
+scalaVersion := "2.11.8"
 crossScalaVersions := Seq(scalaVersion.value, "2.10.6")
 
 
-val sdkVersion = "1.10.54"
+val sdkVersion = "1.10.59"
 
 libraryDependencies ++= Seq(
   "com.amazonaws" % "aws-java-sdk-sns"         % sdkVersion,
