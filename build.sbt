@@ -15,10 +15,8 @@ libraryDependencies ++= Seq(
   "com.amazonaws" % "aws-java-sdk-sns"         % sdkVersion,
   "com.amazonaws" % "aws-java-sdk-sqs"         % sdkVersion,
   "com.amazonaws" % "aws-java-sdk-autoscaling" % sdkVersion,
-  "com.amazonaws" % "aws-java-sdk-dynamodb"    % sdkVersion,
   "com.amazonaws" % "aws-java-sdk-s3"          % sdkVersion,
   "com.amazonaws" % "aws-java-sdk-ec2"         % sdkVersion,
-  "com.amazonaws" % "aws-java-sdk-iam"         % sdkVersion,
   "org.scalatest" %% "scalatest"               % "2.2.6"     % Test
 )
 
