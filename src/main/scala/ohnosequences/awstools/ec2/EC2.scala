@@ -8,6 +8,7 @@ import com.amazonaws.auth._
 import com.amazonaws.internal.StaticCredentialsProvider
 import com.amazonaws.{ services => amzn }
 
+import scala.util.Try
 import scala.collection.JavaConversions._
 import com.amazonaws.AmazonServiceException
 

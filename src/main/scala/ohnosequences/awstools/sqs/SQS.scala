@@ -44,14 +44,6 @@ object SQS {
     create(new InstanceProfileCredentialsProvider())
   }
 
-  def create(credentialsFile: File): SQS = {
-    create(new StaticCredentialsProvider(new PropertiesCredentials(credentialsFile)))
-  }
-
-  def create(accessKey: String, secretKey: String): SQS = {
-    create(new StaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
-  }
-
   def create(provider: AWSCredentialsProvider, region: ohnosequences.awstools.regions.Region = Ireland): SQS = {
     val sqsClient = new AmazonSQSClient(provider)
     sqsClient.setRegion(region.toAWSRegion)

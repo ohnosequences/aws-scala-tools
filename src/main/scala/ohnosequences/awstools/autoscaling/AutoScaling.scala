@@ -231,14 +231,6 @@ object AutoScaling {
     create(new InstanceProfileCredentialsProvider(), ec2)
   }
 
-  def create(credentialsFile: File, ec2: ohnosequences.awstools.ec2.EC2): AutoScaling = {
-    create(new StaticCredentialsProvider(new PropertiesCredentials(credentialsFile)), ec2)
-  }
-
-  def create(accessKey: String, secretKey: String, ec2: ohnosequences.awstools.ec2.EC2): AutoScaling = {
-    create(new StaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)), ec2)
-  }
-
   def create(credentials: AWSCredentialsProvider, ec2: ohnosequences.awstools.ec2.EC2, region: Region = Region.Ireland): AutoScaling = {
     val asClient = new AmazonAutoScalingClient(credentials)
     asClient.setRegion(region.toAWSRegion)

@@ -27,14 +27,6 @@ object SNS {
     create(new InstanceProfileCredentialsProvider())
   }
 
-  def create(credentialsFile: File): SNS = {
-    create(new StaticCredentialsProvider(new PropertiesCredentials(credentialsFile)))
-  }
-
-  def create(accessKey: String, secretKey: String): SNS = {
-    create(new StaticCredentialsProvider(new BasicAWSCredentials(accessKey, secretKey)))
-  }
-
   def create(credentials: AWSCredentialsProvider, region: ohnosequences.awstools.regions.Region = Ireland): SNS = {
     val snsClient = new AmazonSNSClient(credentials)
     snsClient.setRegion(region.toAWSRegion)
