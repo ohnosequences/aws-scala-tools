@@ -9,7 +9,7 @@ case class ScalaSNSClient(val asJava: AmazonSNS) extends AnyVal { sns =>
   def getOrCreate(name: String): Try[Topic] = Try {
     asJava.createTopic(name)
   }.map { response =>
-    Topic(asJava, response.getTopicArn, name)
+    Topic(asJava, response.getTopicArn)
   }
 
 }
