@@ -11,7 +11,7 @@ import java.net.URL
 case class Message(
   val queue: Queue,
   val asJava: sqs.model.Message
-) {
+) { message =>
 
   /* Unique message identifier. You get this when you send a message, but you can't use it to _refer_ to messages. */
   def id: MessageId = asJava.getMessageId()
@@ -24,7 +24,7 @@ case class Message(
   def delete(): Try[Unit] = Try {
     queue.sqs.deleteMessage(
       queue.url.toString,
-      this.receiptHandle
+      message.receiptHandle
     )
   }
 
@@ -33,9 +33,14 @@ case class Message(
   def changeVisibility(additionalSeconds: Integer): Try[Unit] = Try {
     queue.sqs.changeMessageVisibility(
       queue.url.toString,
-      this.receiptHandle,
+      message.receiptHandle,
       additionalSeconds
     )
   }
 
+  override def toString = Map(
+    "id" -> message.id,
+    "receiptHandle" -> message.receiptHandle,
+    "body" -> message.body
+  ).toString
 }
