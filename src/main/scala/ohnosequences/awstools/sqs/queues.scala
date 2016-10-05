@@ -1,7 +1,8 @@
 package ohnosequences.awstools.sqs
 
-import com.amazonaws.services.sqs.model._
+import com.amazonaws.services.sqs.model.{ Message => AmazonMessage, _ }
 import com.amazonaws.services.sqs.AmazonSQS
+import scala.concurrent.duration._
 import scala.collection.JavaConversions._
 import java.net.URL
 import scala.util.Try
@@ -32,9 +33,53 @@ case class Queue(
     response.getMessages.map { msg => Message(queue, msg) }
   }
 
-  // TODO: polling
-  // def shortPoll = ???
-  // def longPoll = ???
+  def poll(
+    responseWaitTime: Option[Integer]            = None,
+    additionalVisibilityTimeout: Option[Integer] = None,
+    pollingDeadline: Option[Deadline]            = None,
+    iterationSleep: Duration                     = 300.millis,
+    maxSequentialEmptyResonses: Integer          = 5,
+    maxMessages: Option[Integer]                 = None
+  ): Seq[Message] = {
+
+    val request = {
+      val r1 = new ReceiveMessageRequest(queue.url.toString)
+        .withMaxNumberOfMessages(10)
+      val r2 = additionalVisibilityTimeout.map { r1.withVisibilityTimeout }.getOrElse(r1)
+      val r3 = responseWaitTime.map { r2.withWaitTimeSeconds }.getOrElse(r2)
+      r3
+    }
+
+    def deadlineHasCome: Boolean = pollingDeadline.map(_.isOverdue).getOrElse(false)
+
+    def gotEnough[M](msgs: Iterable[M]): Boolean = maxMessages.map{ _ < msgs.size }.getOrElse(false)
+
+    def wrapResult(msgs: Iterable[AmazonMessage]): Seq[Message] = msgs.toSeq.map(Message(queue, _))
+
+    @scala.annotation.tailrec
+    def poll_rec(
+      acc: scala.collection.mutable.Map[String, AmazonMessage],
+      emptyResponses: Int
+    ): Seq[Message] = {
+
+      Thread.sleep(iterationSleep.toMillis)
+
+      if (deadlineHasCome || gotEnough(acc)) wrapResult(acc.values)
+      else {
+        val response = sqs.receiveMessage(request).getMessages.map { msg =>
+          msg.getMessageId -> msg
+        }
+
+        if (response.isEmpty) {
+          if (emptyResponses > maxSequentialEmptyResonses) wrapResult(acc.values)
+          else poll_rec(acc ++= response, emptyResponses + 1)
+        } else
+          poll_rec(acc ++= response, 0)
+      }
+    }
+
+    poll_rec(scala.collection.mutable.Map(), 0)
+  }
 
   // TODO: these attributes seem to be useful
 
