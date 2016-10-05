@@ -5,7 +5,7 @@ description := "AWS Scala tools"
 bucketSuffix := "era7.com"
 scalaVersion := "2.11.8"
 
-val sdkVersion = "1.11.38"
+val sdkVersion = "1.11.40"
 
 val services = Seq(
   "autoscaling",
