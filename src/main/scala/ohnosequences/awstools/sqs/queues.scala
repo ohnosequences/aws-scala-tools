@@ -84,21 +84,30 @@ case class Queue(
 
   /* Providing read access to some useful attributes */
   def getAttribute(attr: QueueAttributeName): String = {
-    sqs.getQueueAttributes(queue.url.toString, Seq(attr))
-      .getAttributes.get(attr)
+    // NOTE: the only exception it throws is about invalid name of the attribute, but we control it by using the QueueAttributeName enum instead of just String.
+    sqs.getQueueAttributes(queue.url.toString, List(attr.toString))
+      .getAttributes.get(attr.toString)
   }
 
-  def arn: String = getAttribute(QueueAttributeName.QueueArn)
+  // This shouldn't change over time, so I make it a lazy val:
+  lazy val arn: String = getAttribute(QueueAttributeName.QueueArn)
 
   def approxMsgNumber:   Int = getAttribute(QueueAttributeName.ApproximateNumberOfMessages).toInt
   def approxMsgInFlight: Int = getAttribute(QueueAttributeName.ApproximateNumberOfMessagesNotVisible).toInt
 
-  // def setVisibilityTimeout(sec: Int) {
-  //   sqs.setQueueAttributes(
-  //     new SetQueueAttributesRequest(url, Map("VisibilityTimeout" -> String.valueOf(sec)))
-  //   )
-  // }
+  def visibilityTimeout: Duration = getAttribute(QueueAttributeName.VisibilityTimeout).toInt.seconds
+
+
+  /* A shortcut for setting attributes */
+  def setAttribute(attr: QueueAttributeName, value: String): Try[Unit] = Try {
+    sqs.setQueueAttributes(queue.url.toString, Map(attr.toString -> value))
+  }
+
+  /* Note that visibility timeout cannot be more than 12 hours */
+  def setVisibilityTimeout(seconds: Int): Try[Unit] = setAttribute(QueueAttributeName.VisibilityTimeout, seconds.toString)
+
+  // TODO: get/set for MessageRetentionPeriod, ReceiveMessageWaitTimeSeconds, etc.
+
 
   override def toString = url.toString
-
 }
