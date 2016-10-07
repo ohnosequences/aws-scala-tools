@@ -23,6 +23,23 @@ case class Queue(
     sqs.sendMessage(queue.url.toString, msg).getMessageId
   }
 
+  /* Batch and in parallel. Note that there is a total limit on the batch size: 256KiB. */
+  def sendBatch(msgs: Iterator[String]): (Seq[MessageId], Seq[(String, BatchResultErrorEntry)]) =
+    // TODO: check messages lenghts not to exceed the total batch size limit
+    msgs.grouped(10).foldLeft(
+      (Seq[MessageId](), Seq[(String, BatchResultErrorEntry)]())
+    ) { case ((succeses, failures), group) =>
+
+      val batch = group.zipWithIndex.map { case (msg, ix) =>
+        new SendMessageBatchRequestEntry(ix.toString, msg)
+      }
+      val response: SendMessageBatchResult = sqs.sendMessageBatch(queue.url.toString, batch)
+      (
+        response.getSuccessful.map { _.getMessageId } ++ succeses,
+        response.getFailed.map { err => (group.apply(err.getId.toInt), err) } ++ failures
+      )
+    }
+
   def receive(max: Int): Try[Seq[Message]] = Try {
 
     val response: ReceiveMessageResult = sqs.receiveMessage(
