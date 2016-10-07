@@ -17,7 +17,7 @@ import com.amazonaws.internal.StaticCredentialsProvider
 
 case class ScalaSQSClient(val asJava: AmazonSQS) extends AnyVal { sqs =>
 
-  def create(queueName: String): Try[Queue] = Try {
+  def createOrGet(queueName: String): Try[Queue] = Try {
     val response: CreateQueueResult = sqs.asJava.createQueue(queueName)
     Queue(sqs.asJava, new URL(response.getQueueUrl))
   }

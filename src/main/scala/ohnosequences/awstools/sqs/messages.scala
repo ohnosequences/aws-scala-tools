@@ -40,7 +40,7 @@ case class Message(
 
   override def toString = Map(
     "id" -> message.id,
-    "receiptHandle" -> message.receiptHandle,
+    // "receiptHandle" -> message.receiptHandle,
     "body" -> message.body
   ).toString
 }

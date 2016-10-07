@@ -2,7 +2,8 @@ package ohnosequences.awstools
 
 import com.amazonaws.auth._
 import com.amazonaws.services.sqs.{ AmazonSQS, AmazonSQSClient }
-// import com.amazonaws.services.sqs.model._
+import com.amazonaws.ClientConfiguration
+import com.amazonaws.PredefinedClientConfigurations
 import ohnosequences.awstools.regions._
 
 
@@ -12,19 +13,15 @@ package object sqs {
 
   def client(
     credentials: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain(),
+    configuration: ClientConfiguration = PredefinedClientConfigurations.defaultConfig(),
     region: Region
   ): AmazonSQSClient = {
-    val javaClient = new AmazonSQSClient(credentials)
-    javaClient.setRegion(region.toAWSRegion)
-    javaClient
+    new AmazonSQSClient(credentials, configuration)
+      .withRegion(region.toAWSRegion)
   }
 
   // Implicits
   implicit def toScalaClient(sqs: AmazonSQS):
     ScalaSQSClient =
     ScalaSQSClient(sqs)
-
-  // implicit def fromSendMessageResult(result: SendMessageResult): Message =
-  //   new Message
-  //     .withMessageId(result.getMessageId)
 }

@@ -14,9 +14,9 @@ case class Queue(
   val url: URL
 ) { queue =>
 
-  def delete: Try[Unit] = Try { sqs.deleteQueue(queue.url.toString) }
+  def delete(): Try[Unit] = Try { sqs.deleteQueue(queue.url.toString) }
 
-  def purge: Try[Unit] = Try { sqs.purgeQueue(new PurgeQueueRequest(queue.url.toString)) }
+  def purge(): Try[Unit] = Try { sqs.purgeQueue(new PurgeQueueRequest(queue.url.toString)) }
 
 
   def send(msg: String): Try[MessageId] = Try {
@@ -32,6 +32,9 @@ case class Queue(
 
     response.getMessages.map { msg => Message(queue, msg) }
   }
+
+  def receive(): Try[Message] = receive(1).map { _.head }
+
 
   def poll(
     responseWaitTime: Option[Integer]            = None,
@@ -92,8 +95,9 @@ case class Queue(
   // This shouldn't change over time, so I make it a lazy val:
   lazy val arn: String = getAttribute(QueueAttributeName.QueueArn)
 
-  def approxMsgNumber:   Int = getAttribute(QueueAttributeName.ApproximateNumberOfMessages).toInt
-  def approxMsgInFlight: Int = getAttribute(QueueAttributeName.ApproximateNumberOfMessagesNotVisible).toInt
+  def approxMsgAvailable: Int = getAttribute(QueueAttributeName.ApproximateNumberOfMessages).toInt
+  def approxMsgInFlight:  Int = getAttribute(QueueAttributeName.ApproximateNumberOfMessagesNotVisible).toInt
+  def approxMsgTotal:     Int = approxMsgAvailable + approxMsgInFlight
 
   def visibilityTimeout: Duration = getAttribute(QueueAttributeName.VisibilityTimeout).toInt.seconds
 

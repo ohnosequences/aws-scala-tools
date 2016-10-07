@@ -23,3 +23,4 @@ libraryDependencies ++= services.map { service =>
 
 // FIXME: warts should be turned on back after the code is cleaned up
 wartremoverErrors in (Compile, compile) := Seq()
+wartremoverErrors in (Test, compile) := Seq()
