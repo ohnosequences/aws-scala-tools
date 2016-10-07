@@ -14,9 +14,9 @@ case class Queue(
   val url: URL
 ) { queue =>
 
-  def delete(): Try[Unit] = Try { sqs.deleteQueue(queue.url.toString) }
+  def delete: Try[Unit] = Try { sqs.deleteQueue(queue.url.toString) }
 
-  def purge(): Try[Unit] = Try { sqs.purgeQueue(new PurgeQueueRequest(queue.url.toString)) }
+  def purge: Try[Unit] = Try { sqs.purgeQueue(new PurgeQueueRequest(queue.url.toString)) }
 
 
   def send(msg: String): Try[MessageId] = Try {
@@ -81,9 +81,17 @@ case class Queue(
     poll_rec(scala.collection.mutable.Map(), 0)
   }
 
-  // TODO: these attributes seem to be useful
 
-  // def getApproximateNumberOfMessages = getAttribute(QueueAttributeName.ApproximateNumberOfMessages).toInt
+  /* Providing read access to some useful attributes */
+  def getAttribute(attr: QueueAttributeName): String = {
+    sqs.getQueueAttributes(queue.url.toString, Seq(attr))
+      .getAttributes.get(attr)
+  }
+
+  def arn: String = getAttribute(QueueAttributeName.QueueArn)
+
+  def approxMsgNumber:   Int = getAttribute(QueueAttributeName.ApproximateNumberOfMessages).toInt
+  def approxMsgInFlight: Int = getAttribute(QueueAttributeName.ApproximateNumberOfMessagesNotVisible).toInt
 
   // def setVisibilityTimeout(sec: Int) {
   //   sqs.setQueueAttributes(
