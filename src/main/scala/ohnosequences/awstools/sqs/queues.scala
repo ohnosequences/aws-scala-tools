@@ -55,17 +55,25 @@ case class Queue(
     response.getMessages.map { msg => Message(queue, msg) }
   }
 
-  def receive(): Try[Message] = receive(1).map { _.head }
+  def receive(): Try[Option[Message]] = receive(1).map { _.headOption }
 
 
   def poll(
     responseWaitTime: Option[Integer]            = None,
     additionalVisibilityTimeout: Option[Integer] = None,
-    pollingDeadline: Option[Deadline]            = None,
+    timeout: Duration                            = Duration.Inf,
     iterationSleep: Duration                     = 300.millis,
-    maxSequentialEmptyResonses: Integer          = 5,
+    maxSequentialEmptyResponses: Integer         = 5,
     maxMessages: Option[Integer]                 = None
   ): Seq[Message] = {
+
+    val start = Deadline.now
+    def timePassed = -start.timeLeft
+    def deadlineHasCome: Boolean = timeout < timePassed
+
+    def gotEnough[M](msgs: Iterable[M]): Boolean = maxMessages.map{ _ < msgs.size }.getOrElse(false)
+
+    def wrapResult(msgs: Iterable[AmazonMessage]): Seq[Message] = msgs.toSeq.map(Message(queue, _))
 
     val request = {
       val r1 = new ReceiveMessageRequest(queue.url.toString)
@@ -74,12 +82,6 @@ case class Queue(
       val r3 = responseWaitTime.map { r2.withWaitTimeSeconds }.getOrElse(r2)
       r3
     }
-
-    def deadlineHasCome: Boolean = pollingDeadline.map(_.isOverdue).getOrElse(false)
-
-    def gotEnough[M](msgs: Iterable[M]): Boolean = maxMessages.map{ _ < msgs.size }.getOrElse(false)
-
-    def wrapResult(msgs: Iterable[AmazonMessage]): Seq[Message] = msgs.toSeq.map(Message(queue, _))
 
     @scala.annotation.tailrec
     def poll_rec(
@@ -96,7 +98,7 @@ case class Queue(
         }
 
         if (response.isEmpty) {
-          if (emptyResponses > maxSequentialEmptyResonses) wrapResult(acc.values)
+          if (emptyResponses > maxSequentialEmptyResponses) wrapResult(acc.values)
           else poll_rec(acc ++= response, emptyResponses + 1)
         } else
           poll_rec(acc ++= response, 0)

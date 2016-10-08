@@ -10,7 +10,7 @@ import com.amazonaws.auth.profile.ProfileCredentialsProvider
 import java.util.concurrent.Executors
 import scala.collection.JavaConversions._
 import scala.concurrent._, duration._
-import scala.util.{Failure, Try, Success}
+import scala.util.{ Try, Success, Failure, Random }
 
 
 class SQSTests extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterAll {
@@ -21,17 +21,22 @@ class SQSTests extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterA
     Region.Ireland
   )
 
-  lazy val queue: Queue = sqsClient.createOrGet("aws-scala-tools-sqs-testing").getOrElse(
-    sys.error("Couldn't create or get the testing queue")
-  )
+  // we append a random suffix to avoid waiting 60 seconds between test runs
+  val queueName: String = s"aws-scala-tools-sqs-testing-${Random.nextInt(100)}"
+  lazy val queue: Queue = sqsClient.createOrGet(queueName).get
 
   override def beforeAll() = {
-    queue.purge()
+    queue.setVisibilityTimeout(10)
   }
 
+  override def afterAll() = {
+    queue.delete()
+  }
+
+  def queueInfo: String = s"${queue.approxMsgAvailable} available, ${queue.approxMsgInFlight} in flight"
 
 
-  def testInParallel(threads: Int, amount: Int, timeout: Duration) =
+  def testSendingInParallel(threads: Int, amount: Int, timeout: Duration) =
     test(s"sending messages in parallel: ${threads} threads, ${amount} messages") {
 
       implicit val ec = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(threads))
@@ -66,7 +71,48 @@ class SQSTests extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterA
       ec.shutdown()
     }
 
-  // testInParallel(16, 1000, 21 seconds)
-  // testInParallel(24, 1000, 21 seconds)
-  testInParallel(32, 1000, 10 seconds)
+  // testSendingInParallel(16, 1000, 21 seconds)
+  // testSendingInParallel(24, 1000, 21 seconds)
+  // testSendingInParallel(32, 1000, 3 seconds)
+
+  testSendingInParallel(32, 1000, 11 seconds)
+
+  test("receiving and deleting messages") {
+
+    val N = queue.approxMsgAvailable
+
+    val result = queue.receive(7)
+
+    assert { result.isSuccess }
+    // assert { queue.approxMsgAvailable == N - 10 }
+
+    result.get.foreach { msg =>
+      info(msg.toString)
+      msg.delete
+    }
+  }
+
+
+  test("short-polling the queue") {
+
+    info(queueInfo)
+
+    val msgs = queue.poll(timeout = 15.seconds, iterationSleep = 0.millis)
+    info(s"polled: ${msgs.length}")
+
+    info(queueInfo)
+  }
+
+  test("purging the queue") {
+
+    info(queueInfo)
+
+    assert { queue.purge().isSuccess }
+
+    info(queueInfo)
+
+    // assert { queue.approxMsgAvailable == 0 }
+    // assert { queue.approxMsgInFlight == 0 }
+    // assert { queue.approxMsgTotal == 0 }
+  }
 }
