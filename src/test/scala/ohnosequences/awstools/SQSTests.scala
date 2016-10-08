@@ -36,15 +36,7 @@ class SQSTests extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterA
 
       implicit val ec = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(threads))
 
-      val inputs = (1 to amount).map(_.toString)
-
-      def sendOneByOne = Future.reduce(
-        inputs.map { msg => Future( queue.send(msg).isSuccess ) }
-      ) { _ && _ }
-
-      def sendInBatches = queue.sendBatch(inputs.toIterator).map { _.failures.isEmpty }
-
-      def runWithTimer(f: Future[Boolean], comment: String) = {
+      def runWithTimer(comment: String)(f: Future[Boolean]) = {
         val start = Deadline.now
 
         Try { Await.result(f, timeout) } match {
@@ -52,15 +44,24 @@ class SQSTests extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterA
           case Success(result) => {
 
             val took = -start.timeLeft
-            info(s"took ~${took.toMillis}ms ${comment}")
+            info(s"${comment}: ~${took.toMillis}ms")
 
             assert { result }
           }
         }
       }
 
-      runWithTimer(sendOneByOne, "sending one by one")
-      runWithTimer(sendInBatches, "sending in batches")
+      val inputs = (1 to amount).map(_.toString)
+
+      runWithTimer("one by one") {
+        Future.reduce(
+          inputs.map { msg => Future( queue.send(msg).isSuccess ) }
+        ) { _ && _ }
+      }
+
+      runWithTimer("in batches") {
+        queue.sendBatch(inputs.toIterator).map { _.failures.isEmpty }
+      }
 
       ec.shutdown()
     }
