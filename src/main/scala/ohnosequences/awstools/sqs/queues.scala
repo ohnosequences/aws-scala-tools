@@ -2,7 +2,7 @@ package ohnosequences.awstools.sqs
 
 import com.amazonaws.services.sqs.model.{ Message => AmazonMessage, _ }
 import com.amazonaws.services.sqs.AmazonSQS
-import scala.concurrent.duration._
+import scala.concurrent._, duration._
 import scala.collection.JavaConversions._
 import java.net.URL
 import scala.util.Try
@@ -23,22 +23,27 @@ case class Queue(
     sqs.sendMessage(queue.url.toString, msg).getMessageId
   }
 
-  /* Batch and in parallel. Note that there is a total limit on the batch size: 256KiB. */
-  def sendBatch(msgs: Iterator[String]): (Seq[MessageId], Seq[(String, BatchResultErrorEntry)]) =
-    // TODO: check messages lenghts not to exceed the total batch size limit
-    msgs.grouped(10).foldLeft(
-      (Seq[MessageId](), Seq[(String, BatchResultErrorEntry)]())
-    ) { case ((succeses, failures), group) =>
+  /* Sending messages in batches and in parallel. This method doesn't have the limitation of maximum 10 messages. */
+  def sendBatch(msgs: Iterator[String])(implicit ec: ExecutionContext): Future[SendBatchResult] = {
 
+    // NOTE: maximum 10 messages at a time
+    def sendGroup(group: Seq[String]): SendBatchResult = {
       val batch = group.zipWithIndex.map { case (msg, ix) =>
         new SendMessageBatchRequestEntry(ix.toString, msg)
       }
       val response: SendMessageBatchResult = sqs.sendMessageBatch(queue.url.toString, batch)
-      (
-        response.getSuccessful.map { _.getMessageId } ++ succeses,
-        response.getFailed.map { err => (group.apply(err.getId.toInt), err) } ++ failures
+
+      SendBatchResult(
+        response.getSuccessful.map { _.getMessageId },
+        response.getFailed.map { err => (group.apply(err.getId.toInt), err) }
       )
     }
+
+    Future.reduce(
+      // TODO: check messages lenghts not to exceed the total batch size limit
+      msgs.grouped(10).map { grp => Future { sendGroup(grp) } }
+    ){ _ ++ _ }
+  }
 
   def receive(max: Int): Try[Seq[Message]] = Try {
 
@@ -131,4 +136,22 @@ case class Queue(
 
 
   override def toString = url.toString
+}
+
+
+/* When sending messages in batch, some may fail, so the result will be a set of IDs for successfully sent and a set of those that failed together with the information about the reason (see Amazon documentation for BatchResultErrorEntry) */
+case class SendBatchResult(
+  val sent: Seq[MessageId],
+  val failures: Seq[(String, BatchResultErrorEntry)]
+) {
+
+  def ++(other: SendBatchResult) = SendBatchResult(
+    other.sent ++ this.sent,
+    other.failures ++ this.failures
+  )
+}
+
+case object SendBatchResult {
+
+  val empty: SendBatchResult = SendBatchResult(Seq(), Seq())
 }
