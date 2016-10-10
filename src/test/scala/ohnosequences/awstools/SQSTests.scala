@@ -26,7 +26,7 @@ class SQSTests extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterA
   lazy val queue: Queue = sqsClient.createOrGet(queueName).get
 
   override def beforeAll() = {
-    queue.setVisibilityTimeout(10)
+    queue.setVisibilityTimeout(2)
   }
 
   override def afterAll() = {
@@ -77,7 +77,7 @@ class SQSTests extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterA
 
   testSendingInParallel(32, 1000, 11 seconds)
 
-  test("receiving and deleting messages") {
+  test("receiving and deleting a message") {
 
     val N = queue.approxMsgAvailable
 
@@ -95,7 +95,7 @@ class SQSTests extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterA
     info(queueInfo)
 
     val msgs = queue.poll(
-      timeout = 15.seconds,
+      timeout = 10.seconds,
       iterationSleep = 0.millis
     ).get
     info(s"polled: ${msgs.length}")
@@ -104,15 +104,17 @@ class SQSTests extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterA
   }
 
   test("purging the queue") {
+    // waiting for all the messages to return from flight
+    Thread.sleep(3.seconds.toMillis)
 
     info(queueInfo)
 
     assert { queue.purge().isSuccess }
 
+    Thread.sleep(1.seconds.toMillis)
     info(queueInfo)
 
-    // assert { queue.approxMsgAvailable == 0 }
-    // assert { queue.approxMsgInFlight == 0 }
-    // assert { queue.approxMsgTotal == 0 }
+    assert { queue.approxMsgAvailable == 0 }
+    assert { queue.approxMsgInFlight == 0 }
   }
 }
