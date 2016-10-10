@@ -5,10 +5,11 @@ import com.amazonaws.services.sqs.AmazonSQS
 import scala.concurrent._, duration._
 import scala.collection.JavaConversions._
 import java.net.URL
-import scala.util.Try
+import scala.util.{ Try, Success, Failure }
 
 
-/* Amazon Java SDK doesn't have an explicit abstraction for SQS queues */
+/* Amazon Java SDK doesn't have an explicit abstraction for SQS queues. This API provides some convenience methods that are just wrappers for the Java SDK ones, mostly for the same of bettern return types, and some methods that have some more involved implementation, such as `sendBatch` and `poll`.
+*/
 case class Queue(
   val sqs: AmazonSQS,
   val url: URL
@@ -16,10 +17,12 @@ case class Queue(
 
   def delete(): Try[Unit] = Try { sqs.deleteQueue(queue.url.toString) }
 
-  def purge(): Try[Unit] = Try { sqs.purgeQueue(new PurgeQueueRequest(queue.url.toString)) }
+  /* Note, that you have to wait 60s after purging a queue until you can do it again. */
+  def purge():  Try[Unit] = Try { sqs.purgeQueue(new PurgeQueueRequest(queue.url.toString)) }
 
 
-  def send(msg: String): Try[MessageId] = Try {
+  /* Sending just one message */
+  def sendOne(msg: String): Try[MessageId] = Try {
     sqs.sendMessage(queue.url.toString, msg).getMessageId
   }
 
@@ -45,27 +48,34 @@ case class Queue(
     ){ _ ++ _ }
   }
 
-  def receive(max: Int): Try[Seq[Message]] = Try {
+  /* This method tries to get just one message. It returns `Success(None)` if the queue is empty (at this particular moment). */
+  def receiveOne: Try[Option[Message]] = Try {
 
-    val response: ReceiveMessageResult = sqs.receiveMessage(
-      new ReceiveMessageRequest(queue.url.toString)
-        .withMaxNumberOfMessages(max)
-    )
-
-    response.getMessages.map { msg => Message(queue, msg) }
+    val response: ReceiveMessageResult = sqs.receiveMessage(queue.url.toString)
+    response.getMessages.headOption.map { Message(queue, _) }
   }
 
-  def receive(): Try[Option[Message]] = receive(1).map { _.headOption }
 
+  /* This method performs queue polling with various configurable parameters. It makes iterative receive message calls, until one of the conditions is met:
+    - maximum messages received (`maxMessages`)
+    - it gets N empty responses in a row (`maxSequentialEmptyResponses`) — this is useful for short-polling, because it eventually returns empty responses
+    - timeout is met (`timeout`)
+    - maximum number of messages in flight is reached (see [`OverLimitException`](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/sqs/model/OverLimitException.html))
 
+    Note that you can do either "short" or "long" polling by regulating the `responseWaitTime` parameter. See [Amazon documentation](http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-long-polling.html) for more details.
+    You can also change the default visibility timeout of the received messages with the `visibilityTimeout` parameter.
+
+    Note, that polling is quite a slow process, so don't use it for "just getting all messages" from a queue.
+  */
   def poll(
-    responseWaitTime: Option[Integer]            = None,
-    additionalVisibilityTimeout: Option[Integer] = None,
-    timeout: Duration                            = Duration.Inf,
-    iterationSleep: Duration                     = 300.millis,
-    maxSequentialEmptyResponses: Integer         = 5,
-    maxMessages: Option[Integer]                 = None
-  ): Seq[Message] = {
+    responseWaitTime: Option[Integer]    = None,
+    visibilityTimeout: Option[Integer]   = None,
+    iterationSleep: Duration             = 10.millis,
+    timeout: Duration                    = 10.seconds,
+    maxSequentialEmptyResponses: Integer = 5,
+    maxMessages: Option[Integer]         = None
+    // TODO: minimum number of messages?
+  ): Try[Seq[Message]] = {
 
     val start = Deadline.now
     def timePassed = -start.timeLeft
@@ -73,35 +83,49 @@ case class Queue(
 
     def gotEnough[M](msgs: Iterable[M]): Boolean = maxMessages.map{ _ < msgs.size }.getOrElse(false)
 
-    def wrapResult(msgs: Iterable[AmazonMessage]): Seq[Message] = msgs.toSeq.map(Message(queue, _))
+    def wrapResult(msgs: Iterable[AmazonMessage]): Success[Seq[Message]] = Success(
+      msgs.toSeq.map { Message(queue, _) }
+    )
 
     val request = {
       val r1 = new ReceiveMessageRequest(queue.url.toString)
         .withMaxNumberOfMessages(10)
-      val r2 = additionalVisibilityTimeout.map { r1.withVisibilityTimeout }.getOrElse(r1)
+      val r2 = visibilityTimeout.map { r1.withVisibilityTimeout }.getOrElse(r1)
       val r3 = responseWaitTime.map { r2.withWaitTimeSeconds }.getOrElse(r2)
       r3
     }
 
     @scala.annotation.tailrec
     def poll_rec(
-      acc: scala.collection.mutable.Map[String, AmazonMessage],
+      acc: scala.collection.mutable.Map[MessageId, AmazonMessage],
       emptyResponses: Int
-    ): Seq[Message] = {
+    ): Try[Seq[Message]] = {
 
       Thread.sleep(iterationSleep.toMillis)
 
       if (deadlineHasCome || gotEnough(acc)) wrapResult(acc.values)
       else {
-        val response = sqs.receiveMessage(request).getMessages.map { msg =>
-          msg.getMessageId -> msg
-        }
+        val response: Try[ Seq[(MessageId, AmazonMessage)] ] =
+          Try {
+            sqs.receiveMessage(request).getMessages.map { msg =>
+              msg.getMessageId -> msg
+            }
+          }.recover {
+            // "ReceiveMessage returns this error if the maximum number of messages inflight has already been reached"
+            case e: OverLimitException => Seq()
+          }
 
-        if (response.isEmpty) {
-          if (emptyResponses > maxSequentialEmptyResponses) wrapResult(acc.values)
-          else poll_rec(acc ++= response, emptyResponses + 1)
-        } else
-          poll_rec(acc ++= response, 0)
+        response match {
+          case Failure(ex) => Failure(ex) // here we change X in Failure[X]
+          case Success(msgs) => {
+
+            if (msgs.isEmpty) {
+              if (emptyResponses > maxSequentialEmptyResponses) wrapResult(acc.values)
+              else poll_rec(acc ++= msgs, emptyResponses + 1)
+            } else
+              poll_rec(acc ++= msgs, 0)
+          }
+        }
       }
     }
 
@@ -119,9 +143,9 @@ case class Queue(
   // This shouldn't change over time, so I make it a lazy val:
   lazy val arn: String = getAttribute(QueueAttributeName.QueueArn)
 
+  /* Note that these attributes return **approximate** numbers, meaning that you cannot reliably use them for determining the number of messages in a queue. */
   def approxMsgAvailable: Int = getAttribute(QueueAttributeName.ApproximateNumberOfMessages).toInt
   def approxMsgInFlight:  Int = getAttribute(QueueAttributeName.ApproximateNumberOfMessagesNotVisible).toInt
-  def approxMsgTotal:     Int = approxMsgAvailable + approxMsgInFlight
 
   def visibilityTimeout: Duration = getAttribute(QueueAttributeName.VisibilityTimeout).toInt.seconds
 
