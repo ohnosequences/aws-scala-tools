@@ -13,8 +13,8 @@ package object sqs {
 
   def client(
     credentials: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain(),
-    configuration: ClientConfiguration = PredefinedClientConfigurations.defaultConfig(),
-    region: Region
+    region: Region,
+    configuration: ClientConfiguration = PredefinedClientConfigurations.defaultConfig()
   ): AmazonSQSClient = {
     new AmazonSQSClient(credentials, configuration)
       .withRegion(region.toAWSRegion)
