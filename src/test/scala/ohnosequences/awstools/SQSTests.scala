@@ -60,7 +60,7 @@ class SQSTests extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterA
 
       runWithTimer("one by one") {
         Future.reduce(
-          inputs.map { msg => Future( queue.send(msg).isSuccess ) }
+          inputs.map { msg => Future( queue.sendOne(msg).isSuccess ) }
         ) { _ && _ }
       }
 
@@ -81,12 +81,9 @@ class SQSTests extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterA
 
     val N = queue.approxMsgAvailable
 
-    val result = queue.receive(7)
+    val result = queue.receiveOne.get
 
-    assert { result.isSuccess }
-    // assert { queue.approxMsgAvailable == N - 10 }
-
-    result.get.foreach { msg =>
+    result.foreach { msg =>
       info(msg.toString)
       msg.delete
     }
@@ -97,7 +94,10 @@ class SQSTests extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterA
 
     info(queueInfo)
 
-    val msgs = queue.poll(timeout = 15.seconds, iterationSleep = 0.millis)
+    val msgs = queue.poll(
+      timeout = 15.seconds,
+      iterationSleep = 0.millis
+    ).get
     info(s"polled: ${msgs.length}")
 
     info(queueInfo)

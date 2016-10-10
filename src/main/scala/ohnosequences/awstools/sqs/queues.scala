@@ -26,6 +26,14 @@ case class Queue(
     sqs.sendMessage(queue.url.toString, msg).getMessageId
   }
 
+  /* This method tries to get just one message. It returns `Success(None)` if the queue is empty (at this particular moment). */
+  def receiveOne: Try[Option[Message]] = Try {
+
+    val response: ReceiveMessageResult = sqs.receiveMessage(queue.url.toString)
+    response.getMessages.headOption.map { Message(queue, _) }
+  }
+
+
   /* Sending messages in batches and in parallel. This method doesn't have the limitation of maximum 10 messages. */
   def sendBatch(msgs: Iterator[String])(implicit ec: ExecutionContext): Future[SendBatchResult] = {
 
@@ -46,13 +54,6 @@ case class Queue(
       // TODO: check messages lenghts not to exceed the total batch size limit
       msgs.grouped(10).map { grp => Future { sendGroup(grp) } }
     ){ _ ++ _ }
-  }
-
-  /* This method tries to get just one message. It returns `Success(None)` if the queue is empty (at this particular moment). */
-  def receiveOne: Try[Option[Message]] = Try {
-
-    val response: ReceiveMessageResult = sqs.receiveMessage(queue.url.toString)
-    response.getMessages.headOption.map { Message(queue, _) }
   }
 
 
