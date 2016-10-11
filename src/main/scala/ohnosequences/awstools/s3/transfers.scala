@@ -13,16 +13,17 @@ import scala.collection.JavaConversions._
 import scala.util.Try
 
 
-case class TransferListener(transfer: Transfer) extends PListener {
+case class TransferListener(description: String) extends PListener {
 
   def progressChanged(progressEvent: PEvent): Unit = {
     import ProgressEventType._
     progressEvent.getEventType match {
-      case TRANSFER_STARTED_EVENT   => print(s"${transfer.getDescription}... ")
-      case TRANSFER_CANCELED_EVENT  => println("canceled.")
-      case TRANSFER_COMPLETED_EVENT => println("completed.")
-      case TRANSFER_FAILED_EVENT    => println("failed.")
-      // case TRANSFER_PART_COMPLETED_EVENT  => println("Completed part: "+ transfer.getProgress.getBytesTransferred)
+      case TRANSFER_STARTED_EVENT   => print(description)
+      case TRANSFER_PART_COMPLETED_EVENT => print(".")
+      case TRANSFER_PART_FAILED_EVENT    => print("!")
+      case TRANSFER_CANCELED_EVENT  => println(" canceled")
+      case TRANSFER_COMPLETED_EVENT => println(" completed")
+      case TRANSFER_FAILED_EVENT    => println(" failed")
       case _ => ()
     }
   }
@@ -57,7 +58,9 @@ case class TransferManagerOps(asJava: TransferManager) {
     }
 
     Try {
-      if (!silent) { transfer.addProgressListener(TransferListener(transfer)) }
+      if (!silent) {
+        transfer.addProgressListener(TransferListener(s"${transfer.getDescription} to ${destination.getCanonicalPath}"))
+      }
       transfer.waitForCompletion
 
       // if this was a virtual directory, the destination actually differs:
@@ -97,7 +100,9 @@ case class TransferManagerOps(asJava: TransferManager) {
     }
 
     Try {
-      if (!silent) { transfer.addProgressListener(TransferListener(transfer)) }
+      if (!silent) {
+        transfer.addProgressListener(TransferListener(s"${transfer.getDescription} to ${destination.getCanonicalPath}"))
+      }
       transfer.waitForCompletion
       s3Address
     }
