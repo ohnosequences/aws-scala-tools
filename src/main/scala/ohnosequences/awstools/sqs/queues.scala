@@ -69,32 +69,24 @@ case class Queue(
     Note, that polling is quite a slow process, so don't use it for "just getting all messages" from a queue.
   */
   def poll(
-    responseWaitTime: Option[Integer]    = None,
-    visibilityTimeout: Option[Integer]   = None,
-    iterationSleep: Duration             = 10.millis,
-    timeout: Duration                    = 10.seconds,
-    maxSequentialEmptyResponses: Integer = 5,
-    maxMessages: Option[Integer]         = None
+    timeout: Duration                = 10.seconds,
+    maxSequentialEmptyResponses: Int = 5,
+    maxMessages: Option[Int]         = None
     // TODO: minimum number of messages?
+  )(
+    iterationSleep: Duration = 10.millis,
+    adjustRequest: ReceiveMessageRequest => ReceiveMessageRequest = { _.withMaxNumberOfMessages(10) }
   ): Try[Seq[Message]] = {
 
     val start = Deadline.now
     def timePassed = -start.timeLeft
     def deadlineHasCome: Boolean = timeout < timePassed
 
-    def gotEnough[M](msgs: Iterable[M]): Boolean = maxMessages.map{ _ < msgs.size }.getOrElse(false)
-
     def wrapResult(msgs: Iterable[AmazonMessage]): Success[Seq[Message]] = Success(
       msgs.toSeq.map { Message(queue, _) }
     )
 
-    val request = {
-      val r1 = new ReceiveMessageRequest(queue.url.toString)
-        .withMaxNumberOfMessages(10)
-      val r2 = visibilityTimeout.map { r1.withVisibilityTimeout }.getOrElse(r1)
-      val r3 = responseWaitTime.map { r2.withWaitTimeSeconds }.getOrElse(r2)
-      r3
-    }
+    val request = adjustRequest(new ReceiveMessageRequest(queue.url.toString))
 
     @scala.annotation.tailrec
     def poll_rec(
@@ -104,11 +96,19 @@ case class Queue(
 
       Thread.sleep(iterationSleep.toMillis)
 
-      if (deadlineHasCome || gotEnough(acc)) wrapResult(acc.values)
+      val maxMessagesForNextRequest: Int = maxMessages.map { max =>
+        // Always not more than 10
+        math.min(10, max - acc.size)
+        // And if there's no maximum we want 10 messages every time
+      }.getOrElse(10)
+
+      if (deadlineHasCome || maxMessagesForNextRequest > 0) wrapResult(acc.values)
       else {
         val response: Try[ Seq[(MessageId, AmazonMessage)] ] =
           Try {
-            sqs.receiveMessage(request).getMessages.map { msg =>
+            sqs.receiveMessage(
+              request.withMaxNumberOfMessages(maxMessagesForNextRequest)
+            ).getMessages.map { msg =>
               msg.getMessageId -> msg
             }
           }.recover {
