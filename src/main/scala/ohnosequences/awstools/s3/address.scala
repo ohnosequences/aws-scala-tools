@@ -40,7 +40,7 @@ object S3Folder {
 
   def apply(uri: URI): S3Folder = S3Folder(uri.getHost, uri.getPath)
 
-  implicit def toS3Object(f: S3Folder): S3Object =
+  def toS3Object(f: S3Folder): S3Object =
     S3Object(f.bucket, f.key.stripSuffix("/"))
 }
 
