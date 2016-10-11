@@ -18,10 +18,10 @@ case class TransferListener(transfer: Transfer) extends PListener {
   def progressChanged(progressEvent: PEvent): Unit = {
     import ProgressEventType._
     progressEvent.getEventType match {
-      // case TRANSFER_STARTED_EVENT  => println("Started")
-      case TRANSFER_CANCELED_EVENT  => println(s"${transfer.getDescription} is canceled")
-      case TRANSFER_COMPLETED_EVENT => println(s"${transfer.getDescription} is completed")
-      case TRANSFER_FAILED_EVENT    => println(s"${transfer.getDescription} is failed")
+      case TRANSFER_STARTED_EVENT   => print(s"${transfer.getDescription}... ")
+      case TRANSFER_CANCELED_EVENT  => println("canceled.")
+      case TRANSFER_COMPLETED_EVENT => println("completed.")
+      case TRANSFER_FAILED_EVENT    => println("failed.")
       // case TRANSFER_PART_COMPLETED_EVENT  => println("Completed part: "+ transfer.getProgress.getBytesTransferred)
       case _ => ()
     }
@@ -47,13 +47,9 @@ case class TransferManagerOps(asJava: TransferManager) {
 
   def download(
     s3Address: AnyS3Address,
-    destination: File
+    destination: File,
+    silent: Boolean = true
   ): Try[File] = {
-    println(s"""Dowloading object
-      |from: ${s3Address}
-      |to: ${destination.getCanonicalPath}
-      |""".stripMargin
-    )
 
     lazy val transfer: Transfer = s3Address match {
       case S3Object(bucket, key) => asJava.download(bucket, key, destination)
@@ -61,7 +57,7 @@ case class TransferManagerOps(asJava: TransferManager) {
     }
 
     Try {
-      transfer.addProgressListener(TransferListener(transfer))
+      if (!silent) { transfer.addProgressListener(TransferListener(transfer)) }
       transfer.waitForCompletion
 
       // if this was a virtual directory, the destination actually differs:
@@ -75,13 +71,9 @@ case class TransferManagerOps(asJava: TransferManager) {
   def upload(
     file: File,
     s3Address: AnyS3Address,
-    userMetadata: Map[String, String] = Map()
+    userMetadata: Map[String, String] = Map(),
+    silent: Boolean = true
   ): Try[AnyS3Address] = {
-    println(s"""Uploading object
-      |from: ${file.getCanonicalPath}
-      |to: ${s3Address}
-      |""".stripMargin
-    )
 
     lazy val transfer: Transfer = if (file.isDirectory) {
       asJava.uploadDirectory(
@@ -105,7 +97,7 @@ case class TransferManagerOps(asJava: TransferManager) {
     }
 
     Try {
-      transfer.addProgressListener(TransferListener(transfer))
+      if (!silent) { transfer.addProgressListener(TransferListener(transfer)) }
       transfer.waitForCompletion
       s3Address
     }
