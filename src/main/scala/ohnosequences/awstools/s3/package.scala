@@ -25,7 +25,7 @@ package object s3 {
     S3AddressFromString =
     S3AddressFromString(sc)
 
-  implicit def toScalaClient(s3: AmazonS3):
+  implicit def toScalaS3Client(s3: AmazonS3):
     ScalaS3Client =
     ScalaS3Client(s3)
 

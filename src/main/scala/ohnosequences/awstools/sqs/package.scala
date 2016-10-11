@@ -21,7 +21,7 @@ package object sqs {
   }
 
   // Implicits
-  implicit def toScalaClient(sqs: AmazonSQS):
+  implicit def toScalaSQSClient(sqs: AmazonSQS):
     ScalaSQSClient =
     ScalaSQSClient(sqs)
 }
