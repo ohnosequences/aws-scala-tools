@@ -15,7 +15,7 @@ sealed trait AnyS3Address {
 
   // We use URI as a way to sanitize things (dropping extra /)
   lazy val bucket: String = toURI.getHost
-  lazy val key: String = toURI.getPath
+  lazy val key: String = toURI.getPath.stripPrefix("/")
 
   lazy val segments: Seq[String] = key.split("/").filter(_.nonEmpty).toSeq
 
@@ -62,8 +62,8 @@ case class S3AddressFromString(val sc: StringContext) extends AnyVal {
 
   // This allows to write things like s3"bucket" / "foo" / "bar" /
   // or s3"org.com/${suffix}/${folder.getName}" / "file.foo"
-  def s3(args: Any*): S3Folder = {
+  def s3(args: Any*): S3Object = {
     val str = sc.s(args: _*)
-    S3Folder(new URI("s3://" + str))
+    S3Object(new URI("s3://" + str))
   }
 }
