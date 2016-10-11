@@ -101,7 +101,7 @@ case class TransferManagerOps(asJava: TransferManager) {
 
     Try {
       if (!silent) {
-        transfer.addProgressListener(TransferListener(s"${transfer.getDescription} to ${destination.getCanonicalPath}"))
+        transfer.addProgressListener(TransferListener(s"${transfer.getDescription} to ${file.getCanonicalPath}"))
       }
       transfer.waitForCompletion
       s3Address
