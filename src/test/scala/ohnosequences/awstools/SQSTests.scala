@@ -17,8 +17,8 @@ class SQSTests extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterA
 
   lazy val sqsClient: AmazonSQSClient = sqs.client(
     new DefaultAWSCredentialsProviderChain(),
-    PredefinedClientConfigurations.defaultConfig.withMaxConnections(100),
-    Region.Ireland
+    Region.Ireland,
+    PredefinedClientConfigurations.defaultConfig.withMaxConnections(100)
   )
 
   // we append a random suffix to avoid waiting 60 seconds between test runs
@@ -96,7 +96,8 @@ class SQSTests extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterA
 
     val msgs = queue.poll(
       timeout = 10.seconds,
-      iterationSleep = 0.millis
+      amountLimit = None,
+      adjustRequest = { _.withWaitTimeSeconds(2) }
     ).get
     info(s"polled: ${msgs.length}")
 

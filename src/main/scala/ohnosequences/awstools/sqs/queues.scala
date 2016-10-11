@@ -58,24 +58,19 @@ case class Queue(
 
 
   /* This method performs queue polling with various configurable parameters. It makes iterative receive message calls, until one of the conditions is met:
-    - maximum messages received (`maxMessages`)
-    - it gets N empty responses in a row (`maxSequentialEmptyResponses`) — this is useful for short-polling, because it eventually returns empty responses
+    - maximum messages received (`amountLimit`)
+    - it gets 5 empty responses in a row (this is useful for short-polling, because it eventually returns empty responses)
     - timeout is met (`timeout`)
     - maximum number of messages in flight is reached (see [`OverLimitException`](http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/sqs/model/OverLimitException.html))
 
-    Note that you can do either "short" or "long" polling by regulating the `responseWaitTime` parameter. See [Amazon documentation](http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-long-polling.html) for more details.
-    You can also change the default visibility timeout of the received messages with the `visibilityTimeout` parameter.
+    Note that you can do either "short" or "long" polling by regulating the `adjustRequest` parameter. See [Amazon documentation](http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-long-polling.html) for more details.
 
     Note, that polling is quite a slow process, so don't use it for "just getting all messages" from a queue.
   */
   def poll(
-    timeout: Duration                = 10.seconds,
-    maxSequentialEmptyResponses: Int = 5,
-    maxMessages: Option[Int]         = None
-    // TODO: minimum number of messages?
-  )(
-    iterationSleep: Duration = 10.millis,
-    adjustRequest: ReceiveMessageRequest => ReceiveMessageRequest = { _.withMaxNumberOfMessages(10) }
+    timeout: Duration        = 10.seconds,
+    amountLimit: Option[Int] = None,
+    adjustRequest: ReceiveMessageRequest => ReceiveMessageRequest = identity
   ): Try[Seq[Message]] = {
 
     val start = Deadline.now
@@ -94,9 +89,7 @@ case class Queue(
       emptyResponses: Int
     ): Try[Seq[Message]] = {
 
-      Thread.sleep(iterationSleep.toMillis)
-
-      val maxMessagesForNextRequest: Int = maxMessages.map { max =>
+      val maxMessagesForNextRequest: Int = amountLimit.map { max =>
         // Always not more than 10
         math.min(10, max - acc.size)
         // And if there's no maximum we want 10 messages every time
@@ -121,7 +114,8 @@ case class Queue(
           case Success(msgs) => {
 
             if (msgs.isEmpty) {
-              if (emptyResponses > maxSequentialEmptyResponses) wrapResult(acc.values)
+              // If we receive over 5 empty responses in a row, there's unlikely anything else left in the queue
+              if (emptyResponses > 5) wrapResult(acc.values)
               else poll_rec(acc ++= msgs, emptyResponses + 1)
             } else
               poll_rec(acc ++= msgs, 0)
