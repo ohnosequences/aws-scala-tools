@@ -5,7 +5,7 @@ description := "AWS Scala tools"
 bucketSuffix := "era7.com"
 scalaVersion := "2.11.8"
 
-val sdkVersion = "1.11.38"
+val sdkVersion = "1.11.40"
 
 val services = Seq(
   "autoscaling",
@@ -23,3 +23,4 @@ libraryDependencies ++= services.map { service =>
 
 // FIXME: warts should be turned on back after the code is cleaned up
 wartremoverErrors in (Compile, compile) := Seq()
+wartremoverErrors in (Test, compile) := Seq()

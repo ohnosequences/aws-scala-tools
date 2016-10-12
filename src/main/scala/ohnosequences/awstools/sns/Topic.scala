@@ -25,22 +25,22 @@ case class Topic(sns: AmazonSNS, topicArn: String, name: String) {
     sns.setTopicAttributes(new SetTopicAttributesRequest(topicArn, name, value))
   }
 
-  def subscribeQueue(queue: Queue) {
-
-    sns.subscribe(new SubscribeRequest(topicArn, "sqs", queue.getArn))
-
-    val policyId = queue.getArn + "\\SQSDefaultPolicy"
-
-    val policy = new Policy(policyId).withStatements(new Statement(Effect.Allow)
-      .withPrincipals(Principal.AllUsers)
-      .withActions(SQSActions.SendMessage)
-      .withResources(new Resource(queue.getArn))
-      .withConditions(ConditionFactory.newSourceArnCondition(topicArn))
-    )
-
-    queue.setAttributes(Map(QueueAttributeName.Policy.toString -> policy.toJson))
-
-  }
+  // def subscribeQueue(queue: Queue) {
+  //
+  //   sns.subscribe(new SubscribeRequest(topicArn, "sqs", queue.getArn))
+  //
+  //   val policyId = queue.getArn + "\\SQSDefaultPolicy"
+  //
+  //   val policy = new Policy(policyId).withStatements(new Statement(Effect.Allow)
+  //     .withPrincipals(Principal.AllUsers)
+  //     .withActions(SQSActions.SendMessage)
+  //     .withResources(new Resource(queue.getArn))
+  //     .withConditions(ConditionFactory.newSourceArnCondition(topicArn))
+  //   )
+  //
+  //   queue.setAttributes(Map(QueueAttributeName.Policy.toString -> policy.toJson))
+  //
+  // }
 
   def isEmailSubscribed(email: String): Boolean = {
 
