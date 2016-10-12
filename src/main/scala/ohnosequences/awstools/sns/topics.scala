@@ -11,6 +11,7 @@ import com.amazonaws.auth.policy.conditions.ConditionFactory
 import com.amazonaws.services.sqs.model.QueueAttributeName
 import scala.collection.JavaConversions._
 import scala.util.Try
+import java.net.URI
 
 case class Topic(
   sns: AmazonSNS,
@@ -27,6 +28,8 @@ case class Topic(
   def publish(msg: String, subject: String): Try[String] = Try {
     sns.publish(topic.arn, msg, subject).getMessageId
   }
+
+  // TODO: publishJSON with dispatch by the subscriber protocol
 
   // TODO: make it return a Stream making more requests only if needed
   def listAllSubscriptions: Seq[Subscription] = {
@@ -48,19 +51,19 @@ case class Topic(
     tokens_rec(sns.listSubscriptionsByTopic(topic.arn), Seq())
   }
 
-  def subscribeQueue(queue: Queue): Try[Unit] = Try {
-    sns.subscribe(topic.arn, "sqs", queue.arn)
+  def subscribe(subscriber: Subscriber): Try[String] = Try {
+    sns.subscribe(
+      topic.arn,
+      subscriber.protocol,
+      subscriber.endpoint
+    ).getSubscriptionArn
   }
 
-  def subscribeEmail(email: String): Try[Unit] = Try {
-    sns.subscribe(topic.arn, "email", email)
-  }
-
-  def isEmailSubscribed(email: String): Boolean = {
+  def subscribed(subscriber: Subscriber): Boolean = {
 
     listAllSubscriptions.exists { sub =>
-      sub.getProtocol.equals("email") &&
-      sub.getEndpoint.equals(email)
+      (sub.getProtocol == subscriber.protocol) &&
+      (sub.getEndpoint == subscriber.endpoint)
     }
   }
 
@@ -69,4 +72,32 @@ case class Topic(
   // }
 
   override def toString = topic.arn
+}
+
+
+sealed abstract class Subscriber private[awstools](
+  val protocol: String,
+  val endpoint: String
+)
+
+case object Subscriber {
+
+  // delivery of JSON-encoded message via HTTP POST
+  case class http(uri: URI)  extends Subscriber("http", uri.normalize.toString)
+  // delivery of JSON-encoded message via HTTPS POST
+  case class https(uri: URI) extends Subscriber("https", uri.normalize.toString)
+  // delivery of message via SMTP
+  case class email(addr: String)      extends Subscriber("email", addr)
+  // delivery of JSON-encoded message via SMTP
+  case class email_json(addr: String) extends Subscriber("email-json", addr)
+  // delivery of message via SMS
+  case class sms(phone: Long) extends Subscriber("sms", math.abs(phone).toString)
+  // delivery of JSON-encoded message to an Amazon SQS queue
+  case class sqs(queue: Queue) extends Subscriber("sqs", queue.arn)
+
+  // TODO:
+  // delivery of JSON-encoded message to an EndpointArn for a mobile app and device.
+  // case class application()
+  // delivery of JSON-encoded message to an AWS Lambda function.
+  // case class lambda(lamdba: Lambda)
 }
