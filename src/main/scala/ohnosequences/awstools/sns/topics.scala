@@ -48,28 +48,12 @@ case class Topic(
     tokens_rec(sns.listSubscriptionsByTopic(topic.arn), Seq())
   }
 
-  def subscribeQueue(queue: Queue): Unit = {
-
-    sns.subscribe(new SubscribeRequest(topic.arn, "sqs", queue.arn))
-
-    val policyId = queue.arn + "\\SQSDefaultPolicy"
-
-    val policy = new Policy(policyId).withStatements(new Statement(Effect.Allow)
-      .withPrincipals(Principal.AllUsers)
-      .withActions(SQSActions.SendMessage)
-      .withResources(new Resource(queue.arn))
-      .withConditions(ConditionFactory.newSourceArnCondition(topic.arn))
-    )
-
-    queue.setAttribute(QueueAttributeName.Policy, policy.toJson)
+  def subscribeQueue(queue: Queue): Try[Unit] = Try {
+    sns.subscribe(topic.arn, "sqs", queue.arn)
   }
 
-  def subscribeEmail(email: String): Unit = {
-    sns.subscribe(new SubscribeRequest()
-      .withTopicArn(topic.arn)
-      .withProtocol("email")
-      .withEndpoint(email)
-    )
+  def subscribeEmail(email: String): Try[Unit] = Try {
+    sns.subscribe(topic.arn, "email", email)
   }
 
   def isEmailSubscribed(email: String): Boolean = {
