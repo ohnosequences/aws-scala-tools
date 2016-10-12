@@ -78,11 +78,13 @@ case class ScalaS3Client(val asJava: AmazonS3) extends AnyVal {
     }
   }
 
-  def objectExists(address: S3Object): Boolean = {
-    Try(
-      asJava.listObjects(address.bucket, address.key).getObjectSummaries
-    ).filter{ _.length > 0 }.isSuccess
-  }
+  def prefixExists(address: AnyS3Address): Boolean =
+    Try { asJava.listObjects(address.bucket, address.key).getObjectSummaries }
+      .filter{ _.nonEmpty }
+      .isSuccess
+
+  def objectExists(address: S3Object): Boolean =
+    asJava.doesObjectExist(address.bucket, address.key)
 
   def generateTemporaryLink(address: S3Object, linkLifeTime: FiniteDuration): URL = {
     val deadline = linkLifeTime.fromNow

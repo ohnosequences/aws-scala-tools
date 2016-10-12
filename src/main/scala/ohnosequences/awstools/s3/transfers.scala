@@ -10,20 +10,20 @@ import com.amazonaws.event.{ProgressListener => PListener, ProgressEvent => PEve
 import java.io.File
 
 import scala.collection.JavaConversions._
-import scala.concurrent._, Future._
-import ExecutionContext.Implicits.global
+import scala.util.Try
 
 
-case class TransferListener(transfer: Transfer) extends PListener {
+case class TransferListener(description: String) extends PListener {
 
   def progressChanged(progressEvent: PEvent): Unit = {
     import ProgressEventType._
     progressEvent.getEventType match {
-      // case TRANSFER_STARTED_EVENT  => println("Started")
-      case TRANSFER_CANCELED_EVENT  => println(s"${transfer.getDescription} is canceled")
-      case TRANSFER_COMPLETED_EVENT => println(s"${transfer.getDescription} is completed")
-      case TRANSFER_FAILED_EVENT    => println(s"${transfer.getDescription} is failed")
-      // case TRANSFER_PART_COMPLETED_EVENT  => println("Completed part: "+ transfer.getProgress.getBytesTransferred)
+      case TRANSFER_STARTED_EVENT   => print(description)
+      case TRANSFER_PART_COMPLETED_EVENT => print(".")
+      case TRANSFER_PART_FAILED_EVENT    => print("!")
+      case TRANSFER_CANCELED_EVENT  => println(" canceled")
+      case TRANSFER_COMPLETED_EVENT => println(" completed")
+      case TRANSFER_FAILED_EVENT    => println(" failed")
       case _ => ()
     }
   }
@@ -48,23 +48,19 @@ case class TransferManagerOps(asJava: TransferManager) {
 
   def download(
     s3Address: AnyS3Address,
-    destination: File
-  ): Future[File] = {
-    println(s"""Dowloading object
-      |from: ${s3Address}
-      |to: ${destination.getCanonicalPath}
-      |""".stripMargin
-    )
+    destination: File,
+    silent: Boolean = true
+  ): Try[File] = {
 
     lazy val transfer: Transfer = s3Address match {
       case S3Object(bucket, key) => asJava.download(bucket, key, destination)
       case S3Folder(bucket, key) => asJava.downloadDirectory(bucket, key, destination)
     }
 
-    Future {
-      transfer.addProgressListener(TransferListener(transfer))
-
-      // NOTE: this is blocking:
+    Try {
+      if (!silent) {
+        transfer.addProgressListener(TransferListener(s"${transfer.getDescription} to ${destination.getCanonicalPath}"))
+      }
       transfer.waitForCompletion
 
       // if this was a virtual directory, the destination actually differs:
@@ -78,13 +74,9 @@ case class TransferManagerOps(asJava: TransferManager) {
   def upload(
     file: File,
     s3Address: AnyS3Address,
-    userMetadata: Map[String, String] = Map()
-  ): Future[AnyS3Address] = {
-    println(s"""Uploading object
-      |from: ${file.getCanonicalPath}
-      |to: ${s3Address}
-      |""".stripMargin
-    )
+    userMetadata: Map[String, String] = Map(),
+    silent: Boolean = true
+  ): Try[AnyS3Address] = {
 
     lazy val transfer: Transfer = if (file.isDirectory) {
       asJava.uploadDirectory(
@@ -107,10 +99,10 @@ case class TransferManagerOps(asJava: TransferManager) {
       asJava.upload( request.withMetadata(metadata) )
     }
 
-    Future {
-      transfer.addProgressListener(TransferListener(transfer))
-
-      // NOTE: this is blocking:
+    Try {
+      if (!silent) {
+        transfer.addProgressListener(TransferListener(s"${transfer.getDescription} to ${file.getCanonicalPath}"))
+      }
       transfer.waitForCompletion
       s3Address
     }

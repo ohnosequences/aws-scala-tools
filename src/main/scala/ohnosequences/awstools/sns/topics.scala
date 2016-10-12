@@ -30,18 +30,18 @@ case class Topic(
 
   def subscribeQueue(queue: Queue): Unit = {
 
-    sns.subscribe(new SubscribeRequest(topic.arn, "sqs", queue.getArn))
+    sns.subscribe(new SubscribeRequest(topic.arn, "sqs", queue.arn))
 
-    val policyId = queue.getArn + "\\SQSDefaultPolicy"
+    val policyId = queue.arn + "\\SQSDefaultPolicy"
 
     val policy = new Policy(policyId).withStatements(new Statement(Effect.Allow)
       .withPrincipals(Principal.AllUsers)
       .withActions(SQSActions.SendMessage)
-      .withResources(new Resource(queue.getArn))
+      .withResources(new Resource(queue.arn))
       .withConditions(ConditionFactory.newSourceArnCondition(topic.arn))
     )
 
-    queue.setAttributes(Map(QueueAttributeName.Policy.toString -> policy.toJson))
+    queue.setAttribute(QueueAttributeName.Policy, policy.toJson)
   }
 
   def isEmailSubscribed(email: String): Boolean = {
