@@ -28,6 +28,26 @@ case class Topic(
     sns.publish(topic.arn, msg, subject).getMessageId
   }
 
+  // TODO: make it return a Stream making more requests only if needed
+  def listAllSubscriptions: Seq[Subscription] = {
+
+    @scala.annotation.tailrec
+    def tokens_rec(response: ListSubscriptionsByTopicResult, acc: Seq[Subscription]): Seq[Subscription] = {
+      val subs = response.getSubscriptions
+
+      // NOTE: next token is null if there's nothing more to list
+      Option(response.getNextToken) match {
+        case Some(token) if (subs.nonEmpty) => tokens_rec(
+          sns.listSubscriptionsByTopic(topic.arn, token),
+          subs ++ acc
+        )
+        case _ => acc
+      }
+    }
+
+    tokens_rec(sns.listSubscriptionsByTopic(topic.arn), Seq())
+  }
+
   def subscribeQueue(queue: Queue): Unit = {
 
     sns.subscribe(new SubscribeRequest(topic.arn, "sqs", queue.arn))
@@ -44,28 +64,20 @@ case class Topic(
     queue.setAttribute(QueueAttributeName.Policy, policy.toJson)
   }
 
-  def isEmailSubscribed(email: String): Boolean = {
-
-    listAllSubscriptions.exists { sub =>
-      sub.getProtocol.equals("email") &&
-      sub.getEndpoint.equals(email)
-    }
-  }
-
-  // TODO: iterate over returned tokens
-  def listAllSubscriptions: Seq[Subscription] = {
-
-    sns.listSubscriptionsByTopic(new ListSubscriptionsByTopicRequest()
-      .withTopicArn(topic.arn)
-    ).getSubscriptions.toSeq
-  }
-
   def subscribeEmail(email: String): Unit = {
     sns.subscribe(new SubscribeRequest()
       .withTopicArn(topic.arn)
       .withProtocol("email")
       .withEndpoint(email)
     )
+  }
+
+  def isEmailSubscribed(email: String): Boolean = {
+
+    listAllSubscriptions.exists { sub =>
+      sub.getProtocol.equals("email") &&
+      sub.getEndpoint.equals(email)
+    }
   }
 
   // def setAttribute(name: String, value: String) {
