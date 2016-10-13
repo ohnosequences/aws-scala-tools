@@ -19,7 +19,7 @@ import scala.util.Try
 import scala.collection.JavaConversions._
 
 
-class AutoScaling(val as: AmazonAutoScaling, val ec2: EC2) { autoscaling =>
+class AutoScaling(val as: AmazonAutoScaling, val ec2: ScalaEC2Client) { autoscaling =>
 
   def shutdown(): Unit = { as.shutdown() }
 
@@ -79,7 +79,7 @@ class AutoScaling(val as: AmazonAutoScaling, val ec2: EC2) { autoscaling =>
   }
 
   def getAllAvailableZones(): List[String] = {
-    ec2.ec2.describeAvailabilityZones(
+    ec2.asJava.describeAvailabilityZones(
       new DescribeAvailabilityZonesRequest()
         .withFilters(new ec2Filter("state", List("available")))
     )
@@ -227,11 +227,7 @@ class AutoScaling(val as: AmazonAutoScaling, val ec2: EC2) { autoscaling =>
 
 object AutoScaling {
 
-  def create(ec2: ohnosequences.awstools.ec2.EC2): AutoScaling = {
-    create(new InstanceProfileCredentialsProvider(), ec2)
-  }
-
-  def create(credentials: AWSCredentialsProvider, ec2: ohnosequences.awstools.ec2.EC2, region: Region = Region.Ireland): AutoScaling = {
+  def create(credentials: AWSCredentialsProvider, ec2: ScalaEC2Client, region: Region = Region.Ireland): AutoScaling = {
     val asClient = new AmazonAutoScalingClient(credentials)
     asClient.setRegion(region.toAWSRegion)
     new AutoScaling(asClient, ec2)

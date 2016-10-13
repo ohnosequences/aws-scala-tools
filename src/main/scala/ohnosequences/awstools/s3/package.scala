@@ -3,6 +3,8 @@ package ohnosequences.awstools
 import com.amazonaws.auth._
 import com.amazonaws.services.s3.{ AmazonS3, AmazonS3Client }
 import com.amazonaws.services.s3.transfer.TransferManager
+import com.amazonaws.ClientConfiguration
+import com.amazonaws.PredefinedClientConfigurations
 import ohnosequences.awstools.regions._
 
 
@@ -11,13 +13,13 @@ package object s3 {
   // Just an alias for the "root" S3 fodler:
   def S3Bucket(b: String): S3Folder = S3Folder(b, "")
 
-  def client(
+  def S3Client(
+    region: Region,
     credentials: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain(),
-    region: Region
+    configuration: ClientConfiguration = PredefinedClientConfigurations.defaultConfig()
   ): AmazonS3Client = {
-    val javaClient = new AmazonS3Client(credentials)
-    javaClient.setRegion(region.toAWSRegion)
-    javaClient
+    new AmazonS3Client(credentials, configuration)
+      .withRegion(region.toAWSRegion)
   }
 
   // Implicits
