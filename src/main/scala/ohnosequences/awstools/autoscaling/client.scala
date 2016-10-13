@@ -19,7 +19,7 @@ import scala.util.Try
 import scala.collection.JavaConversions._
 
 
-class AutoScaling(val as: AmazonAutoScaling, val ec2: ScalaEC2Client) { autoscaling =>
+case class ScalaAutoScalingClient(val as: AmazonAutoScaling) { autoscaling =>
 
   def shutdown(): Unit = { as.shutdown() }
 
@@ -41,7 +41,7 @@ class AutoScaling(val as: AmazonAutoScaling, val ec2: ScalaEC2Client) { autoscal
     )
   }
 
-  def createLaunchingConfiguration(launchConfiguration: ohnosequences.awstools.autoscaling.LaunchConfiguration) {
+  def createLaunchingConfiguration(launchConfiguration: ohnosequences.awstools.autoscaling.LaunchConfiguration, ec2: ScalaEC2Client) {
     try {
 
       var lcr = new CreateLaunchConfigurationRequest()
@@ -78,7 +78,7 @@ class AutoScaling(val as: AmazonAutoScaling, val ec2: ScalaEC2Client) { autoscal
     }
   }
 
-  def getAllAvailableZones(): List[String] = {
+  def getAllAvailableZones(ec2: ScalaEC2Client): List[String] = {
     ec2.asJava.describeAvailabilityZones(
       new DescribeAvailabilityZonesRequest()
         .withFilters(new ec2Filter("state", List("available")))
@@ -87,7 +87,7 @@ class AutoScaling(val as: AmazonAutoScaling, val ec2: ScalaEC2Client) { autoscal
     .toList.map{ _.getZoneName }
   }
 
-  def createAutoScalingGroup(autoScalingGroup: ohnosequences.awstools.autoscaling.AutoScalingGroup) = {
+  def createAutoScalingGroup(autoScalingGroup: ohnosequences.awstools.autoscaling.AutoScalingGroup, ec2: ScalaEC2Client) = {
     getAutoScalingGroupByName(autoScalingGroup.name) match {
       case Some(group) => {
         println("aws-scala-tools WARNING: group with name " + autoScalingGroup.name + " is already exists")
@@ -96,13 +96,13 @@ class AutoScaling(val as: AmazonAutoScaling, val ec2: ScalaEC2Client) { autoscal
       case None => {
         val configZones = autoScalingGroup.availabilityZones
 
-        createLaunchingConfiguration(autoScalingGroup.launchConfiguration)
+        createLaunchingConfiguration(autoScalingGroup.launchConfiguration, ec2)
         as.createAutoScalingGroup(new CreateAutoScalingGroupRequest()
           .withAutoScalingGroupName(autoScalingGroup.name)
           .withLaunchConfigurationName(autoScalingGroup.launchConfiguration.name)
           .withAvailabilityZones(
             if (configZones.nonEmpty) configZones
-            else getAllAvailableZones
+            else getAllAvailableZones(ec2)
           )
           .withMaxSize(autoScalingGroup.size.max)
           .withMinSize(autoScalingGroup.size.min)
@@ -223,13 +223,4 @@ class AutoScaling(val as: AmazonAutoScaling, val ec2: ScalaEC2Client) { autoscal
 
   }
 
-}
-
-object AutoScaling {
-
-  def create(credentials: AWSCredentialsProvider, ec2: ScalaEC2Client, region: Region = Region.Ireland): AutoScaling = {
-    val asClient = new AmazonAutoScalingClient(credentials)
-    asClient.setRegion(region.toAWSRegion)
-    new AutoScaling(asClient, ec2)
-  }
 }
