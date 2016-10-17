@@ -17,7 +17,7 @@ import com.amazonaws.AmazonServiceException
 case class InstanceStatus(val instanceStatus: String, val systemStatus: String)
 
 case class ScalaEC2Client(val asJava: AmazonEC2)
-// extends AnyVal 
+// extends AnyVal
 { ec2 =>
 
   class Instance(instanceId: String) {
@@ -340,5 +340,14 @@ case class ScalaEC2Client(val asJava: AmazonEC2)
       .withSpotInstanceRequestIds(requestsId)
     ).getSpotInstanceRequests.headOption
   }
+
+  // def getAllAvailableZones(ec2: ScalaEC2Client): List[String] = {
+  //   ec2.asJava.describeAvailabilityZones(
+  //     new DescribeAvailabilityZonesRequest()
+  //       .withFilters(new ec2Filter("state", List("available")))
+  //   )
+  //   .getAvailabilityZones
+  //   .toList.map{ _.getZoneName }
+  // }
 
 }

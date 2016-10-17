@@ -1,28 +1,31 @@
 package ohnosequences.awstools.autoscaling
 
+import com.amazonaws.auth._
 import com.amazonaws.services.ec2.AmazonEC2
 import ohnosequences.awstools.ec2._
+import ohnosequences.awstools.regions._
 import com.amazonaws.{ services => amzn }
 
 sealed trait AnyPurchaseModel
 
 case object OnDemand extends AnyPurchaseModel
 
-sealed trait AnySpotModel extends AnyPurchaseModel {
-  val maxPrice: Option[Double]
-
+// NOTE: Spot purchase model needs region and credentials to evaluate current spot price (using an EC2 client)
+case class Spot(
+  val region: Region,
+  val credentials: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain()
+)(val maxPrice: Option[Double] = None,
   // variation from the current spot price
-  val delta: Option[Double]
+  val delta: Option[Double] = Some(0.001D)
+) extends AnyPurchaseModel {
 
-  def price(ec2: ScalaEC2Client, instanceType: AnyInstanceType): Double = {
+  def getPrice(instanceType: AnyInstanceType): Double = {
+
+    val currentPrice = EC2Client(region, credentials).getCurrentSpotPrice(instanceType)
+
     math.max(
-      ec2.getCurrentSpotPrice(instanceType) + delta.getOrElse(0D),
-      maxPrice.getOrElse(0D)
+      maxPrice.getOrElse(0D),
+      currentPrice + delta.getOrElse(0D)
     )
   }
 }
-
-case class Spot(
-  val maxPrice: Option[Double] = None,
-  val delta: Option[Double] = Some(0.001D)
-) extends AnySpotModel
