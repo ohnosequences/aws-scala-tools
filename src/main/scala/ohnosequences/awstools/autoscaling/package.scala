@@ -5,6 +5,7 @@ import com.amazonaws.services.autoscaling.{ AmazonAutoScaling, AmazonAutoScaling
 import com.amazonaws.services.autoscaling.model._
 import com.amazonaws.ClientConfiguration
 import com.amazonaws.PredefinedClientConfigurations
+import com.amazonaws.waiters._
 import ohnosequences.awstools.regions._
 
 
@@ -32,4 +33,20 @@ package object autoscaling {
       .withResourceId(td.getResourceId)
       .withResourceType(td.getResourceType)
       .withValue(td.getValue)
+
+  /* Waiting for the group to transition to a certain state. This is useful, for example, immediately after creating a group */
+  type GroupWaiter = Waiter[DescribeAutoScalingGroupsRequest]
+
+  implicit class waitersOps(val waiter: GroupWaiter) extends AnyVal {
+
+    def apply(groupName: String): Unit = {
+
+      waiter.run(
+        new WaiterParameters(
+          new DescribeAutoScalingGroupsRequest()
+            .withAutoScalingGroupNames(groupName)
+        )
+      )
+    }
+  }
 }
