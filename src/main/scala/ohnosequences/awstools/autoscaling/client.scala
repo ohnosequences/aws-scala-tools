@@ -21,26 +21,26 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
 
   /* ### Launch configuration operations */
 
-  def getLaunchConfig(name: String): Try[LaunchConfiguration] = Try {
+  def getLaunchConfig(configName: String): Try[LaunchConfiguration] = Try {
     val response = autoscaling.asJava.describeLaunchConfigurations(
       new DescribeLaunchConfigurationsRequest()
-        .withLaunchConfigurationNames(name)
+        .withLaunchConfigurationNames(configName)
         .withMaxRecords(1)
     )
     response.getLaunchConfigurations
       .headOption.getOrElse(
-        throw new java.util.NoSuchElementException(s"Launch configuration with the name [${name}] doesn't exist")
+        throw new java.util.NoSuchElementException(s"Launch configuration with the name [${configName}] doesn't exist")
       )
   }
 
-  def createOrGetLaunchConfig(
-    name: String,
+  def createLaunchConfig(
+    configName: String,
     purchaseModel: PurchaseModel,
     launchSpecs: AnyLaunchSpecs
-  ): Try[LaunchConfiguration] = {
+  ): Try[Unit] = {
 
     val request = new CreateLaunchConfigurationRequest()
-      .withLaunchConfigurationName(name)
+      .withLaunchConfigurationName(configName)
       .withImageId(launchSpecs.instanceSpecs.ami.id)
       .withInstanceType(launchSpecs.instanceSpecs.instanceType.toString)
       // TODO: review this base64encode
@@ -65,17 +65,13 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
     Try {
       // NOTE: response doesn't carry any information
       autoscaling.asJava.createLaunchConfiguration(request)
-    }.recoverWith {
-      case _: AlreadyExistsException => scala.util.Success(())
-    }.flatMap { _ =>
-      getLaunchConfig(name)
     }
   }
 
-  def deleteLaunchConfig(name: String): Try[Unit] = Try {
+  def deleteLaunchConfig(configName: String): Try[Unit] = Try {
     autoscaling.asJava.deleteLaunchConfiguration(
       new DeleteLaunchConfigurationRequest()
-        .withLaunchConfigurationName(name)
+        .withLaunchConfigurationName(configName)
     )
   }
 
@@ -83,27 +79,28 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
 
   /* ### Auto Scaling groups operations */
 
-  def getGroup(name: String): Try[AutoScalingGroup] = Try {
+  def getGroup(groupName: String): Try[AutoScalingGroup] = Try {
     val response = autoscaling.asJava.describeAutoScalingGroups(
       new DescribeAutoScalingGroupsRequest()
-        .withAutoScalingGroupNames(name)
+        .withAutoScalingGroupNames(groupName)
+        .withMaxRecords(1)
     )
 
     response.getAutoScalingGroups
       .headOption.getOrElse(
-        throw new java.util.NoSuchElementException(s"Auto Scaling group with the name [${name}] doesn't exist")
+        throw new java.util.NoSuchElementException(s"Auto Scaling group with the name [${groupName}] doesn't exist")
       )
   }
 
-  def createOrGetGroup(
-    name: String,
+  def createGroup(
+    groupName: String,
     launchConfigName: String,
     size: AutoScalingGroupSize,
     zones: List[String] = List()
-  ): Try[AutoScalingGroup] = {
+  ): Try[Unit] = {
     val request = {
       val r = new CreateAutoScalingGroupRequest()
-        .withAutoScalingGroupName(name)
+        .withAutoScalingGroupName(groupName)
         .withLaunchConfigurationName(launchConfigName)
         .withMinSize(size.min)
         .withDesiredCapacity(size.desired)
@@ -116,21 +113,19 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
     Try {
       // NOTE: response doesn't carry any information
       autoscaling.asJava.createAutoScalingGroup(request)
-    }.recoverWith {
-      case _: AlreadyExistsException => scala.util.Success(())
-    }.flatMap { _ =>
-      getGroup(name)
+    }.map { _ =>
+      waitGroup(groupName, autoscaling.asJava.waiters.groupExists)
     }
   }
 
   def deleteGroup(
-    name: String,
+    groupName: String,
     //  NOTE: with force `true` deletes the group along with all instances associated with the group, without waiting for all instances to be terminated
     force: Boolean = true
   ): Try[Unit] = Try {
     autoscaling.asJava.deleteAutoScalingGroup(
       new DeleteAutoScalingGroupRequest()
-        .withAutoScalingGroupName(name)
+        .withAutoScalingGroupName(groupName)
         .withForceDelete(force)
     )
   }
