@@ -1,21 +1,11 @@
 package ohnosequences.awstools.autoscaling
 
-import java.io.File
-
 import com.amazonaws.auth._
-import com.amazonaws.services.autoscaling.AmazonAutoScaling
-import com.amazonaws.services.autoscaling.AmazonAutoScalingClient
-import com.amazonaws.services.autoscaling.model
+import com.amazonaws.services.autoscaling.{ AmazonAutoScaling, AmazonAutoScalingClient }
 import com.amazonaws.services.autoscaling.model._
-// import com.amazonaws.services.autoscaling.model.Tag
-// import com.amazonaws.services.ec2.model.{ DescribeAvailabilityZonesRequest, Filter => ec2Filter }
-
-import ohnosequences.awstools.regions._
 import ohnosequences.awstools.ec2._
-
-// import java.util.Date
-import scala.util.Try
 import scala.collection.JavaConversions._
+import scala.util.Try
 
 
 case class AutoScalingGroupSize(
@@ -29,7 +19,7 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
 
   /* ### Launch configuration operations */
 
-  def getLaunchConfig(name: String): Try[model.LaunchConfiguration] = Try {
+  def getLaunchConfig(name: String): Try[LaunchConfiguration] = Try {
     val response = asJava.describeLaunchConfigurations(
       new DescribeLaunchConfigurationsRequest()
         .withLaunchConfigurationNames(name)
@@ -45,13 +35,14 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
     name: String,
     purchaseModel: AnyPurchaseModel,
     launchSpecs: AnyLaunchSpecs
-  ): Try[model.LaunchConfiguration] = {
+  ): Try[LaunchConfiguration] = {
 
     val request = {
       val r1 =new CreateLaunchConfigurationRequest()
         .withLaunchConfigurationName(name)
         .withImageId(launchSpecs.instanceSpecs.ami.id)
         .withInstanceType(launchSpecs.instanceSpecs.instanceType.toString)
+        // TODO: review this base64encode
         .withUserData(base64encode(launchSpecs.userData))
         .withKeyName(launchSpecs.keyName)
         .withSecurityGroups(launchSpecs.securityGroups)
@@ -97,7 +88,7 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
 
   /* ### Auto Scaling groups operations */
 
-  def getGroup(name: String): Try[model.AutoScalingGroup] = Try {
+  def getGroup(name: String): Try[AutoScalingGroup] = Try {
     val response = asJava.describeAutoScalingGroups(
       new DescribeAutoScalingGroupsRequest()
         .withAutoScalingGroupNames(name)
@@ -114,7 +105,7 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
     launchConfigName: String,
     size: AutoScalingGroupSize,
     zones: List[String] = List()
-  ): Try[model.AutoScalingGroup] = {
+  ): Try[AutoScalingGroup] = {
     val request = {
       val r = new CreateAutoScalingGroupRequest()
         .withAutoScalingGroupName(name)
@@ -151,66 +142,64 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
 
   // TODO: list all groups
 
-  // def fixAutoScalingGroupUserData(group: AutoScalingGroup, fixedUserData: String): AutoScalingGroup = {
-  //   val lc = group.launchConfiguration
-  //   val ls = lc.launchSpecs
-  //
-  //   group.copy( launchConfiguration =
-  //     lc.copy( launchSpecs =
-  //       LaunchSpecs(ls.instanceSpecs)(
-  //         ls.keyName,
-  //         userData = fixedUserData,
-  //         ls.instanceProfile,
-  //         ls.securityGroups,
-  //         ls.instanceMonitoring,
-  //         ls.deviceMapping
-  //       )
-  //     )
-  //   )
-  // }
-
-  // def setDesiredCapacity(group: ohnosequences.awstools.autoscaling.AutoScalingGroup, capacity: Int) {
-  //   asJava.updateAutoScalingGroup(new UpdateAutoScalingGroupRequest()
-  //     .withAutoScalingGroupName(group.name)
-  //     .withDesiredCapacity(capacity)
-  //   )
-  // }
-  //
-  // def getCreatedTimeTry(name: String): Try[Date] = {
-  //   Try {
-  //     asJava.describeAutoScalingGroups(new DescribeAutoScalingGroupsRequest()
-  //       .withAutoScalingGroupNames(name)
-  //     ).getAutoScalingGroups.head.getCreatedTime
-  //   }
-  // }
+  def setDesiredCapacity(groupName: String, capacity: Int): Try[Unit] = Try {
+    asJava.setDesiredCapacity(
+      new SetDesiredCapacityRequest()
+        .withAutoScalingGroupName(groupName)
+        .withDesiredCapacity(capacity)
+    )
+  }
 
 
   /* ### Tags operations */
 
-  // def describeTags(name: String): List[InstanceTag] = {
-  //   asJava.describeTags(new DescribeTagsRequest()
-  //     .withFilters(
-  //       new Filter()
-  //         .withName("auto-scaling-group")
-  //         .withValues(name)
-  //     )
-  //   ).getTags.toList.map { tagDescription =>
-  //     InstanceTag(tagDescription.getKey, tagDescription.getValue)
-  //   }
-  // }
-  //
-  // def getTagValue(groupName: String, tagName: String): Option[String] = {
-  //   describeTags(groupName).find(_.name.equals(tagName)).map(_.value)
-  // }
-  //
-  // def createTags(name: String, tags: InstanceTag*) {
-  //   val asTags = tags.map { tag =>
-  //     new Tag().withKey(tag.name).withValue(tag.value).withResourceId(name).withPropagateAtLaunch(true).withResourceType("auto-scaling-group")
-  //   }
-  //   asJava.createOrUpdateTags(new CreateOrUpdateTagsRequest()
-  //     .withTags(asTags)
-  //   )
-  // }
+  /* This method returns all tags retrieved with the given filters */
+  def tags(filters: AutoScalingTagFilter*): Try[Seq[Tag]] = Try {
 
+    // FIXME: rotate the token to get all tags
+    asJava.describeTags(
+      new DescribeTagsRequest().withFilters(filters.map(_.asJava))
+    ).getTags
+      // NOTE: Amazon returns a `TagDescription` which is **exactly** the same as just `Tag`, so we just convert the former to the latter
+      .map(tagDescriptionToTag)
+  }
+
+  /* Same as the `tags` method, but with the result as a simple `String` map */
+  def tagsMap(filters: AutoScalingTagFilter*): Try[Map[String, String]] = {
+    tags(filters: _*).map {
+      _.map { tag =>
+        tag.getKey -> tag.getValue
+      }.toMap
+    }
+  }
+
+  /* Tries to get the value of the tag with the given key. If a tag with this key doesn't exist, it will fail with the `NoSuchElementException` */
+  def tagValue(groupName: String, tagKey: String): Try[String] = {
+    tagsMap(
+      ByGroupNames(groupName),
+      ByTagKeys(tagKey)
+    ).map {
+      _.apply(tagKey)
+    }
+  }
+
+  /* This method sets/updates tag values for a given Auto Scaling group or creates them if they don't exist */
+  def setTags(
+    groupName: String,
+    tags: Map[String, String],
+    propagateAtLaunch: Boolean = true
+  ): Try[Unit] = Try {
+
+    val autoscalingTags = tags.map { case (key, value) =>
+      new Tag()
+        .withResourceType("auto-scaling-group").withResourceId(groupName)
+        .withKey(key).withValue(value)
+        .withPropagateAtLaunch(propagateAtLaunch)
+    }
+
+    asJava.createOrUpdateTags(
+      new CreateOrUpdateTagsRequest().withTags(autoscalingTags)
+    )
+  }
 
 }
