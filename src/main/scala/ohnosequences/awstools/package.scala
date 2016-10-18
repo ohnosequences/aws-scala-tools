@@ -4,29 +4,7 @@ package object awstools {
 
   type Token = String
 
-
   def rotateTokens[Result](
-    makeRequest: Option[Token] => (Option[Token], Seq[Result])
-  ): Seq[Result] = {
-
-    @scala.annotation.tailrec
-    def rotateTokens_rec(
-      token: Option[Token],
-      acc: Seq[Result]
-    ): Seq[Result] = {
-
-      if (token.isEmpty) acc
-      else {
-        val (newToken, newChunk) = makeRequest(token)
-        rotateTokens_rec(newToken, newChunk ++ acc)
-      }
-    }
-
-    val (firstToken, firstChunk) = makeRequest(None)
-    rotateTokens_rec(firstToken, firstChunk)
-  }
-
-  def rotateTokensLazily[Result](
     makeRequest: Option[Token] => (Option[Token], Seq[Result])
   ): Stream[Result] = {
 
@@ -43,4 +21,27 @@ package object awstools {
     firstChunk.toStream #::: rotateTokens_rec(firstToken)
   }
 
+  // def rotate[
+  //   Request <: AmazonWebServiceRequest,
+  //   Response <: AmazonWebServiceResult[ResponseMetadata],
+  //   Result
+  // ](baseRequest: Request,
+  //   makeRequest: Request => Response
+  // )(withToken: Request => (Token => Request),
+  //   getNextToken: Request => Token,
+  //   getResults: Response => Seq[Result]
+  // ): Stream[Result] = {
+  //
+  //   def fromResponse(response: Response) = (
+  //     // NOTE: next token is null if there's nothing more to list
+  //     Option(getNextToken(response)),
+  //     getResults(response)
+  //   )
+  //
+  //   rotateTokens { token =>
+  //     fromResponse(makeRequest(
+  //       token.fold(baseRequest)(withToken(baseRequest))
+  //     ))
+  //   }
+  // }
 }

@@ -1,9 +1,9 @@
 package ohnosequences.awstools.autoscaling
 
+import ohnosequences.awstools._, ec2._
 import com.amazonaws.auth._
 import com.amazonaws.services.autoscaling.{ AmazonAutoScaling, AmazonAutoScalingClient }
 import com.amazonaws.services.autoscaling.model._
-import ohnosequences.awstools.ec2._
 import scala.collection.JavaConversions._
 import scala.util.Try
 
@@ -20,7 +20,7 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
   /* ### Launch configuration operations */
 
   def getLaunchConfig(name: String): Try[LaunchConfiguration] = Try {
-    val response = asJava.describeLaunchConfigurations(
+    val response = autoscaling.asJava.describeLaunchConfigurations(
       new DescribeLaunchConfigurationsRequest()
         .withLaunchConfigurationNames(name)
         .withMaxRecords(1)
@@ -69,7 +69,7 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
 
     Try {
       // NOTE: response doesn't carry any information
-      asJava.createLaunchConfiguration(request)
+      autoscaling.asJava.createLaunchConfiguration(request)
     }.recoverWith {
       case _: AlreadyExistsException => scala.util.Success(())
     }.flatMap { _ =>
@@ -78,7 +78,7 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
   }
 
   def deleteLaunchConfig(name: String): Try[Unit] = Try {
-    asJava.deleteLaunchConfiguration(
+    autoscaling.asJava.deleteLaunchConfiguration(
       new DeleteLaunchConfigurationRequest()
         .withLaunchConfigurationName(name)
     )
@@ -89,7 +89,7 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
   /* ### Auto Scaling groups operations */
 
   def getGroup(name: String): Try[AutoScalingGroup] = Try {
-    val response = asJava.describeAutoScalingGroups(
+    val response = autoscaling.asJava.describeAutoScalingGroups(
       new DescribeAutoScalingGroupsRequest()
         .withAutoScalingGroupNames(name)
     )
@@ -120,7 +120,7 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
 
     Try {
       // NOTE: response doesn't carry any information
-      asJava.createAutoScalingGroup(request)
+      autoscaling.asJava.createAutoScalingGroup(request)
     }.recoverWith {
       case _: AlreadyExistsException => scala.util.Success(())
     }.flatMap { _ =>
@@ -133,7 +133,7 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
     //  NOTE: with force `true` deletes the group along with all instances associated with the group, without waiting for all instances to be terminated
     force: Boolean = true
   ): Try[Unit] = Try {
-    asJava.deleteAutoScalingGroup(
+    autoscaling.asJava.deleteAutoScalingGroup(
       new DeleteAutoScalingGroupRequest()
         .withAutoScalingGroupName(name)
         .withForceDelete(force)
@@ -143,7 +143,7 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
   // TODO: list all groups
 
   def setDesiredCapacity(groupName: String, capacity: Int): Try[Unit] = Try {
-    asJava.setDesiredCapacity(
+    autoscaling.asJava.setDesiredCapacity(
       new SetDesiredCapacityRequest()
         .withAutoScalingGroupName(groupName)
         .withDesiredCapacity(capacity)
@@ -154,32 +154,41 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
   /* ### Tags operations */
 
   /* This method returns all tags retrieved with the given filters */
-  def tags(filters: AutoScalingTagFilter*): Try[Seq[Tag]] = Try {
+  def filterTags(filters: AutoScalingTagFilter*): Try[Seq[Tag]] = Try {
 
-    // FIXME: rotate the token to get all tags
-    asJava.describeTags(
-      new DescribeTagsRequest().withFilters(filters.map(_.asJava))
-    ).getTags
-      // NOTE: Amazon returns a `TagDescription` which is **exactly** the same as just `Tag`, so we just convert the former to the latter
-      .map(tagDescriptionToTag)
+    val request = new DescribeTagsRequest()
+      .withFilters(filters.map(_.asJava))
+
+    def fromResponse(response: DescribeTagsResult) = (
+      Option(response.getNextToken),
+      response.getTags.map(tagDescriptionToTag)
+    )
+
+    rotateTokens { token =>
+      fromResponse(autoscaling.asJava.describeTags(
+        token.fold(request)(request.withNextToken)
+      ))
+    }
   }
 
-  /* Same as the `tags` method, but with the result as a simple `String` map */
-  def tagsMap(filters: AutoScalingTagFilter*): Try[Map[String, String]] = {
-    tags(filters: _*).map {
+  /* All tags key/value map for a given Auto Scaling group.Note that in contrast to filterTags this method is not lazy. */
+  def tagsMap(groupName: String): Try[Map[String, String]] = {
+    filterTags(ByGroupNames(groupName)).map {
       _.map { tag =>
         tag.getKey -> tag.getValue
       }.toMap
     }
   }
 
-  /* Tries to get the value of the tag with the given key. If a tag with this key doesn't exist, it will fail with the `NoSuchElementException` */
+  /* Tries to get the value of a tag with the given key */
   def tagValue(groupName: String, tagKey: String): Try[String] = {
-    tagsMap(
+    filterTags(
       ByGroupNames(groupName),
       ByTagKeys(tagKey)
     ).map {
-      _.apply(tagKey)
+      _.headOption.getOrElse(
+        throw new java.util.NoSuchElementException(s"Tag with the key [${tagKey}] doesn't exist")
+      ).getValue
     }
   }
 
@@ -197,7 +206,7 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
         .withPropagateAtLaunch(propagateAtLaunch)
     }
 
-    asJava.createOrUpdateTags(
+    autoscaling.asJava.createOrUpdateTags(
       new CreateOrUpdateTagsRequest().withTags(autoscalingTags)
     )
   }
