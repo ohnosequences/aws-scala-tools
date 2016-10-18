@@ -4,6 +4,8 @@ import ohnosequences.awstools._, ec2._
 import com.amazonaws.auth._
 import com.amazonaws.services.autoscaling.{ AmazonAutoScaling, AmazonAutoScalingClient }
 import com.amazonaws.services.autoscaling.model._
+import com.amazonaws.waiters._
+import com.amazonaws.services.autoscaling.waiters._
 import scala.collection.JavaConversions._
 import scala.util.Try
 
@@ -143,6 +145,20 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
     )
   }
 
+  /* This method waits for the group to transition to a certain state. This is useful, for example, immediately after creating a group */
+  def waitGroup(
+    groupName: String,
+    waiter: Waiter[DescribeAutoScalingGroupsRequest] =
+      autoscaling.asJava.waiters.groupInService
+  ): Unit = {
+
+    waiter.run(
+      new WaiterParameters(
+        new DescribeAutoScalingGroupsRequest()
+          .withAutoScalingGroupNames(groupName)
+      )
+    )
+  }
 
   /* ### Tags operations */
 
