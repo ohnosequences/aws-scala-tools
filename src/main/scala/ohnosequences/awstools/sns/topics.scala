@@ -1,5 +1,6 @@
 package ohnosequences.awstools.sns
 
+import ohnosequences.awstools._
 import com.amazonaws.services.sns.AmazonSNS
 import com.amazonaws.services.sns.model._
 import com.amazonaws.auth.policy.{Resource, Principal, Statement, Policy}
@@ -29,24 +30,18 @@ case class Topic(
 
   // TODO: publishJSON with dispatch by the subscriber protocol
 
-  // TODO: make it return a Stream making more requests only if needed
-  def listAllSubscriptions: Seq[Subscription] = {
+  def listAllSubscriptions: Stream[Subscription] = {
 
-    @scala.annotation.tailrec
-    def tokens_rec(response: ListSubscriptionsByTopicResult, acc: Seq[Subscription]): Seq[Subscription] = {
-      val subs = response.getSubscriptions
-
+    def fromResponse(response: ListSubscriptionsByTopicResult) = (
       // NOTE: next token is null if there's nothing more to list
-      Option(response.getNextToken) match {
-        case Some(token) if (subs.nonEmpty) => tokens_rec(
-          sns.listSubscriptionsByTopic(topic.arn, token),
-          subs ++ acc
-        )
-        case _ => acc
-      }
-    }
+      Option(response.getNextToken),
+      response.getSubscriptions.toSeq
+    )
 
-    tokens_rec(sns.listSubscriptionsByTopic(topic.arn), Seq())
+    rotateTokens {
+      case None        => fromResponse(sns.listSubscriptionsByTopic(topic.arn))
+      case Some(token) => fromResponse(sns.listSubscriptionsByTopic(topic.arn, token))
+    }
   }
 
   def subscribe(subscriber: Subscriber): Try[String] = Try {
