@@ -33,38 +33,31 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
 
   def createOrGetLaunchConfig(
     name: String,
-    purchaseModel: AnyPurchaseModel,
+    purchaseModel: PurchaseModel,
     launchSpecs: AnyLaunchSpecs
   ): Try[LaunchConfiguration] = {
 
-    val request = {
-      val r1 =new CreateLaunchConfigurationRequest()
-        .withLaunchConfigurationName(name)
-        .withImageId(launchSpecs.instanceSpecs.ami.id)
-        .withInstanceType(launchSpecs.instanceSpecs.instanceType.toString)
-        // TODO: review this base64encode
-        .withUserData(base64encode(launchSpecs.userData))
-        .withKeyName(launchSpecs.keyName)
-        .withSecurityGroups(launchSpecs.securityGroups)
-        .withInstanceMonitoring(new InstanceMonitoring().withEnabled(launchSpecs.instanceMonitoring))
-        .withBlockDeviceMappings(
-          launchSpecs.deviceMapping.map{ case (key, value) =>
-            new BlockDeviceMapping().withDeviceName(key).withVirtualName(value)
-          }
-        )
-
-      val r2 = purchaseModel match {
-        case OnDemand => r1
-        case pm @ Spot(_, _) => {
-          val price = pm.getPrice(launchSpecs.instanceSpecs.instanceType)
-          r1.withSpotPrice(price.toString)
+    val request = new CreateLaunchConfigurationRequest()
+      .withLaunchConfigurationName(name)
+      .withImageId(launchSpecs.instanceSpecs.ami.id)
+      .withInstanceType(launchSpecs.instanceSpecs.instanceType.toString)
+      // TODO: review this base64encode
+      .withUserData(base64encode(launchSpecs.userData))
+      .withKeyName(launchSpecs.keyName)
+      .withSecurityGroups(launchSpecs.securityGroups)
+      .withInstanceMonitoring(new InstanceMonitoring().withEnabled(launchSpecs.instanceMonitoring))
+      .withBlockDeviceMappings(
+        launchSpecs.deviceMapping.map{ case (key, value) =>
+          new BlockDeviceMapping().withDeviceName(key).withVirtualName(value)
         }
-      }
+      )
 
-      launchSpecs.instanceProfile match {
-        case None => r2
-        case Some(name) => r2.withIamInstanceProfile(name)
-      }
+    purchaseModel.maxPrice.fold() { price =>
+      request.setSpotPrice(price.toString)
+    }
+
+    launchSpecs.instanceProfile.fold() {
+      request.setIamInstanceProfile
     }
 
     Try {
