@@ -98,12 +98,12 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
       )
   }
 
-  // NOTE: ec2 client is needed here to get all available zones in case the user passed an empty list (otherwise the request will fail); at the moment I don't see any easy way to get available zones without an EC2 client
-  def createGroup(ec2: AmazonEC2)(
+  def createGroup(
     groupName: String,
     launchConfigName: String,
     size: AutoScalingGroupSize,
-    zones: Set[String] = ec2.getAllAvailableZones
+    // NOTE: at the moment I don't see any easy way to get available zones without using an EC2 client (see getAllAvailableZones) and an unset list fails this request
+    zones: Set[String]
   ): Try[Unit] = {
 
     val request = new CreateAutoScalingGroupRequest()
