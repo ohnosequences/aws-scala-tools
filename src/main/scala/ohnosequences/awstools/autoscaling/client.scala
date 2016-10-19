@@ -113,6 +113,16 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
 
       if (zones.isEmpty) r
       else r.withAvailabilityZones(zones)
+
+      // def getAllAvailableZones(): List[String] = {
+      //   ec2.ec2.describeAvailabilityZones(
+      //     new DescribeAvailabilityZonesRequest()
+      //     .withFilters(new ec2Filter("state", List("available")))
+      //   )
+      //   .getAvailabilityZones
+      //   .toList.map{ _.getZoneName }
+      // }
+
     }
 
     Try {
