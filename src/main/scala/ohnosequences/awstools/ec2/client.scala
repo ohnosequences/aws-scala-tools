@@ -341,13 +341,14 @@ case class ScalaEC2Client(val asJava: AmazonEC2)
     ).getSpotInstanceRequests.headOption
   }
 
-  // def getAllAvailableZones(ec2: ScalaEC2Client): List[String] = {
-  //   ec2.asJava.describeAvailabilityZones(
-  //     new DescribeAvailabilityZonesRequest()
-  //       .withFilters(new ec2Filter("state", List("available")))
-  //   )
-  //   .getAvailabilityZones
-  //   .toList.map{ _.getZoneName }
-  // }
+  def getAllAvailableZones: Set[String] = {
+    ec2.asJava.describeAvailabilityZones(
+      new amzn.ec2.model.DescribeAvailabilityZonesRequest()
+        .withFilters(
+          new amzn.ec2.model.Filter("state", List("available"))
+        )
+    ).getAvailabilityZones
+      .map{ _.getZoneName }.toSet
+  }
 
 }

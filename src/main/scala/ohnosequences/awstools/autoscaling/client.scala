@@ -1,5 +1,6 @@
 package ohnosequences.awstools.autoscaling
 
+import com.amazonaws.services.ec2.AmazonEC2
 import ohnosequences.awstools._, ec2._
 import com.amazonaws.auth._
 import com.amazonaws.services.autoscaling.{ AmazonAutoScaling, AmazonAutoScalingClient }
@@ -97,33 +98,21 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
       )
   }
 
-  def createGroup(
+  // NOTE: ec2 client is needed here to get all available zones in case the user passed an empty list (otherwise the request will fail); at the moment I don't see any easy way to get available zones without an EC2 client
+  def createGroup(ec2: AmazonEC2)(
     groupName: String,
     launchConfigName: String,
     size: AutoScalingGroupSize,
-    zones: List[String] = List()
+    zones: Set[String] = ec2.getAllAvailableZones
   ): Try[Unit] = {
-    val request = {
-      val r = new CreateAutoScalingGroupRequest()
-        .withAutoScalingGroupName(groupName)
-        .withLaunchConfigurationName(launchConfigName)
-        .withMinSize(size.min)
-        .withDesiredCapacity(size.desired)
-        .withMaxSize(size.max)
 
-      if (zones.isEmpty) r
-      else r.withAvailabilityZones(zones)
-
-      // def getAllAvailableZones(): List[String] = {
-      //   ec2.ec2.describeAvailabilityZones(
-      //     new DescribeAvailabilityZonesRequest()
-      //     .withFilters(new ec2Filter("state", List("available")))
-      //   )
-      //   .getAvailabilityZones
-      //   .toList.map{ _.getZoneName }
-      // }
-
-    }
+    val request = new CreateAutoScalingGroupRequest()
+      .withAutoScalingGroupName(groupName)
+      .withLaunchConfigurationName(launchConfigName)
+      .withMinSize(size.min)
+      .withDesiredCapacity(size.desired)
+      .withMaxSize(size.max)
+      .withAvailabilityZones(zones)
 
     Try {
       // NOTE: response doesn't carry any information
