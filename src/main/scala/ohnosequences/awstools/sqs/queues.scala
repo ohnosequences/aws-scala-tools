@@ -95,7 +95,7 @@ case class Queue(
         // And if there's no maximum we want 10 messages every time
       }.getOrElse(10)
 
-      if (deadlineHasCome || maxMessagesForNextRequest > 0) wrapResult(acc.values)
+      if (deadlineHasCome || maxMessagesForNextRequest <= 0) wrapResult(acc.values)
       else {
         val response: Try[ Seq[(MessageId, AmazonMessage)] ] =
           Try {

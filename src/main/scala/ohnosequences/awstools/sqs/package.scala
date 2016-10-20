@@ -11,9 +11,9 @@ package object sqs {
 
   type MessageId = String
 
-  def client(
-    credentials: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain(),
+  def SQSClient(
     region: Region,
+    credentials: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain(),
     configuration: ClientConfiguration = PredefinedClientConfigurations.defaultConfig()
   ): AmazonSQSClient = {
     new AmazonSQSClient(credentials, configuration)

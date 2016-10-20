@@ -1,4 +1,4 @@
-package ohnosequences.awstools.test.sqs
+package ohnosequences.awstools.test
 
 import com.amazonaws.services.sqs.AmazonSQSClient
 import com.amazonaws.services.sqs.model.SendMessageBatchRequestEntry
@@ -13,11 +13,11 @@ import scala.concurrent._, duration._
 import scala.util.{ Try, Success, Failure, Random }
 
 
-class SQSTests extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterAll {
+class SQS extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterAll {
 
-  lazy val sqsClient: AmazonSQSClient = sqs.client(
-    new DefaultAWSCredentialsProviderChain(),
+  lazy val sqsClient: AmazonSQSClient = SQSClient(
     Region.Ireland,
+    new DefaultAWSCredentialsProviderChain(),
     PredefinedClientConfigurations.defaultConfig.withMaxConnections(100)
   )
 
@@ -90,7 +90,7 @@ class SQSTests extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterA
   }
 
 
-  test("short-polling the queue") {
+  test("polling the queue") {
 
     info(queueInfo)
 
@@ -100,6 +100,8 @@ class SQSTests extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterA
       adjustRequest = { _.withWaitTimeSeconds(2) }
     ).get
     info(s"polled: ${msgs.length}")
+
+    assert { msgs.length > 0 }
 
     info(queueInfo)
   }
