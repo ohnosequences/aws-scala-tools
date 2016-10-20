@@ -90,7 +90,7 @@ class SQS extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterAll {
   }
 
 
-  test("short-polling the queue") {
+  test("polling the queue") {
 
     info(queueInfo)
 
@@ -100,6 +100,8 @@ class SQS extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterAll {
       adjustRequest = { _.withWaitTimeSeconds(2) }
     ).get
     info(s"polled: ${msgs.length}")
+
+    assert { msgs.length > 0 }
 
     info(queueInfo)
   }
