@@ -30,16 +30,17 @@ case object InstanceStore extends AnyStorageType //; type InstanceStore = Instan
 
 
 /* Just some base trait: */
-trait AnyAMI {
+trait AnyAMI { val id: String }
 
-  val id: String
-}
+case class AMI(id: String) extends AnyAMI
+
 
 trait AnyLinuxAMI extends AnyAMI {
 
   val version: String
 
-  val  region: Regions
+  type Region <: RegionAlias
+  val  region: Region
 
   type Arch <: Architecture
   val  arch: Arch
@@ -53,145 +54,104 @@ trait AnyLinuxAMI extends AnyAMI {
 
 // Amazon Linux AMI 2016.09.0
 // See http://aws.amazon.com/amazon-linux-ami/
-trait AnyAmazonLinuxAMI extends AnyLinuxAMI {
+trait AnyAmazonLinuxAMI {
 
   final val version: String = "2016.09.0"
 
   type Arch = x86_64.type
   final val arch: Arch = x86_64
-
-  final lazy val id: String = s"ami-${idNum}"
-
-  private lazy val idNum: String = {
-    val v: AnyVirtualization = virt
-    val s: AnyStorageType = storage
-
-    region match {
-      case NorthernVirginia  => v match {
-        case HVM => s match {
-          case EBS           => "c481fad3"
-          case InstanceStore => "4487fc53"
-        }
-        case PV  => s match {
-          case EBS           => "4d87fc5a"
-          case InstanceStore => "4287fc55"
-        }
-      }
-      // TODO: add Ohio (PV is N/A)
-      case Oregon => v match {
-        case HVM => s match {
-          case EBS           => "b04e92d0"
-          case InstanceStore => "dd4894bd"
-        }
-        case PV  => s match {
-          case EBS           => "1d49957d"
-          case InstanceStore => "48499528"
-        }
-      }
-      case NorthernCalifornia => v match {
-        case HVM => s match {
-          case EBS           => "de347abe"
-          case InstanceStore => "9e3779fe"
-        }
-        case PV  => s match {
-          case EBS           => "df3779bf"
-          case InstanceStore => "69367809"
-        }
-      }
-      case Ireland => v match {
-        case HVM => s match {
-          case EBS           => "d41d58a7"
-          case InstanceStore => "64105517"
-        }
-        case PV  => s match {
-          case EBS           => "0e10557d"
-          case InstanceStore => "8c1d58ff"
-        }
-      }
-      case Frankfurt => v match {
-        case HVM => s match {
-          case EBS           => "0044b96f"
-          case InstanceStore => "a74ab7c8"
-        }
-        case PV  => s match {
-          case EBS           => "1345b87c"
-          case InstanceStore => "f64ab799"
-        }
-      }
-      case Singapore => v match {
-        case HVM => s match {
-          case EBS           => "7243e611"
-          case InstanceStore => "4841e42b"
-        }
-        case PV  => s match {
-          case EBS           => "a743e6c4"
-          case InstanceStore => "d846e3bb"
-        }
-      }
-      // TODO: add Seoul (PV is N/A)
-      case Tokyo => v match {
-        case HVM => s match {
-          case EBS           => "1a15c77b"
-          case InstanceStore => "9016c4f1"
-        }
-        case PV  => s match {
-          case EBS           => "cf14c6ae"
-          case InstanceStore => "4615c727"
-        }
-      }
-      case Sydney => v match {
-        case HVM => s match {
-          case EBS           => "55d4e436"
-          case InstanceStore => "fbd6e698"
-        }
-        case PV  => s match {
-          case EBS           => "3ad6e659"
-          case InstanceStore => "3fd6e65c"
-        }
-      }
-      // TODO: add Mumbai (PV is N/A)
-      case SaoPaulo => v match {
-        case HVM => s match {
-          case EBS           => "b777e4db"
-          case InstanceStore => "5075e63c"
-        }
-        case PV  => s match {
-          case EBS           => "1d75e671"
-          case InstanceStore => "b477e4d8"
-        }
-      }
-      case Beijing => v match {
-        case HVM => s match {
-          case EBS           => "fa875397"
-          case InstanceStore => "cb8357a6"
-        }
-        case PV  => s match {
-          case EBS           => "d98357b4"
-          case InstanceStore => "1a8e5a77"
-        }
-      }
-      case GovCloud => v match {
-        case HVM => s match {
-          case EBS           => "7b4df41a"
-          case InstanceStore => "ae4bf2cf"
-        }
-        case PV  => s match {
-          case EBS           => "144cf575"
-          case InstanceStore => "bc48f1dd"
-        }
-      }
-    }
-  }
 }
 
-case class AmazonLinuxAMI[
+class AmazonLinuxAMI[
+  R <: RegionAlias,
   V <: AnyVirtualization,
   S <: AnyStorageType
-](val region: Regions,
+] private(
+  val region: R,
   val virt: V,
   val storage: S
 ) extends AnyAmazonLinuxAMI {
 
+  type Region = R
   type Virt = V
   type Storage = S
+
+  val id = this.toString.replaceAll("_", "-")
+}
+
+case object AmazonLinuxAMI {
+
+  def apply[
+    R <: RegionAlias,
+    V <: AnyVirtualization,
+    S <: AnyStorageType
+  ](region: R,
+    virt: V,
+    storage: S
+  )(implicit
+    ami: AmazonLinuxAMI[R, V, S]
+  ): ami.type = ami
+
+
+  implicit case object ami_c481fad3 extends AmazonLinuxAMI(NorthernVirginia, HVM, EBS)
+  implicit case object ami_4487fc53 extends AmazonLinuxAMI(NorthernVirginia, HVM, InstanceStore)
+  implicit case object ami_4d87fc5a extends AmazonLinuxAMI(NorthernVirginia, PV,  EBS)
+  implicit case object ami_4287fc55 extends AmazonLinuxAMI(NorthernVirginia, PV,  InstanceStore)
+
+  // TODO: add Ohio (PV is N/A)
+
+  implicit case object ami_b04e92d0 extends AmazonLinuxAMI(Oregon, HVM, EBS)
+  implicit case object ami_dd4894bd extends AmazonLinuxAMI(Oregon, HVM, InstanceStore)
+  implicit case object ami_1d49957d extends AmazonLinuxAMI(Oregon, PV,  EBS)
+  implicit case object ami_48499528 extends AmazonLinuxAMI(Oregon, PV,  InstanceStore)
+
+  implicit case object ami_de347abe extends AmazonLinuxAMI(NorthernCalifornia, HVM, EBS)
+  implicit case object ami_9e3779fe extends AmazonLinuxAMI(NorthernCalifornia, HVM, InstanceStore)
+  implicit case object ami_df3779bf extends AmazonLinuxAMI(NorthernCalifornia, PV,  EBS)
+  implicit case object ami_69367809 extends AmazonLinuxAMI(NorthernCalifornia, PV,  InstanceStore)
+
+  implicit case object ami_d41d58a7 extends AmazonLinuxAMI(Ireland, HVM, EBS)
+  implicit case object ami_64105517 extends AmazonLinuxAMI(Ireland, HVM, InstanceStore)
+  implicit case object ami_0e10557d extends AmazonLinuxAMI(Ireland, PV,  EBS)
+  implicit case object ami_8c1d58ff extends AmazonLinuxAMI(Ireland, PV,  InstanceStore)
+
+  implicit case object ami_0044b96f extends AmazonLinuxAMI(Frankfurt, HVM, EBS)
+  implicit case object ami_a74ab7c8 extends AmazonLinuxAMI(Frankfurt, HVM, InstanceStore)
+  implicit case object ami_1345b87c extends AmazonLinuxAMI(Frankfurt, PV,  EBS)
+  implicit case object ami_f64ab799 extends AmazonLinuxAMI(Frankfurt, PV,  InstanceStore)
+
+  implicit case object ami_7243e611 extends AmazonLinuxAMI(Singapore, HVM, EBS)
+  implicit case object ami_4841e42b extends AmazonLinuxAMI(Singapore, HVM, InstanceStore)
+  implicit case object ami_a743e6c4 extends AmazonLinuxAMI(Singapore, PV,  EBS)
+  implicit case object ami_d846e3bb extends AmazonLinuxAMI(Singapore, PV,  InstanceStore)
+
+  // TODO: add Seoul (PV is N/A)
+
+  implicit case object ami_1a15c77b extends AmazonLinuxAMI(Tokyo, HVM, EBS)
+  implicit case object ami_9016c4f1 extends AmazonLinuxAMI(Tokyo, HVM, InstanceStore)
+  implicit case object ami_cf14c6ae extends AmazonLinuxAMI(Tokyo, PV,  EBS)
+  implicit case object ami_4615c727 extends AmazonLinuxAMI(Tokyo, PV,  InstanceStore)
+
+  implicit case object ami_55d4e436 extends AmazonLinuxAMI(Sydney, HVM, EBS)
+  implicit case object ami_fbd6e698 extends AmazonLinuxAMI(Sydney, HVM, InstanceStore)
+  implicit case object ami_3ad6e659 extends AmazonLinuxAMI(Sydney, PV,  EBS)
+  implicit case object ami_3fd6e65c extends AmazonLinuxAMI(Sydney, PV,  InstanceStore)
+
+  // TODO: add Mumbai (PV is N/A)
+
+  implicit case object ami_b777e4db extends AmazonLinuxAMI(SaoPaulo, HVM, EBS)
+  implicit case object ami_5075e63c extends AmazonLinuxAMI(SaoPaulo, HVM, InstanceStore)
+  implicit case object ami_1d75e671 extends AmazonLinuxAMI(SaoPaulo, PV,  EBS)
+  implicit case object ami_b477e4d8 extends AmazonLinuxAMI(SaoPaulo, PV,  InstanceStore)
+
+  implicit case object ami_fa875397 extends AmazonLinuxAMI(Beijing, HVM, EBS)
+  implicit case object ami_cb8357a6 extends AmazonLinuxAMI(Beijing, HVM, InstanceStore)
+  implicit case object ami_d98357b4 extends AmazonLinuxAMI(Beijing, PV,  EBS)
+  implicit case object ami_1a8e5a77 extends AmazonLinuxAMI(Beijing, PV,  InstanceStore)
+
+  implicit case object ami_7b4df41a extends AmazonLinuxAMI(GovCloud, HVM, EBS)
+  implicit case object ami_ae4bf2cf extends AmazonLinuxAMI(GovCloud, HVM, InstanceStore)
+  implicit case object ami_144cf575 extends AmazonLinuxAMI(GovCloud, PV,  EBS)
+  implicit case object ami_bc48f1dd extends AmazonLinuxAMI(GovCloud, PV,  InstanceStore)
+
 }

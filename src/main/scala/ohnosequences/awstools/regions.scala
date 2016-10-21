@@ -15,34 +15,41 @@ package object regions {
 
   /* Converting explicit region to an `AwsRegionProvider` and another way round */
   implicit def RegionToProvider(region: Region): AwsRegionProvider = new AwsRegionProvider {
-    // NOTE: this returns a String, thus the following conversion
+    // NOTE: this returns a String, thus the other way round conversion
     def getRegion(): String = region.getName
   }
+  implicit def RegionsToProvider(region: Regions): AwsRegionProvider = RegionToProvider(region)
   implicit def ProviderToRegion(provider: AwsRegionProvider): Region = Regions.fromName(provider.getRegion)
 
 
   /*  ### Geographical aliales */
+  sealed abstract class RegionAlias(val regions: Regions)
+
+  // NOTE: thanks to these conversions, you can use these aliases as any of the SDK's three region types
+  implicit def RegionAliasToRegions (alias: RegionAlias): Regions = alias.region
+  implicit def RegionAliasToRegion  (alias: RegionAlias): Region  = alias.region
+  implicit def RegionAliasToProvider(alias: RegionAlias): AwsRegionProvider = alias.region
 
   /* - Asia Pacific */
-  val Tokyo              = Regions.AP_NORTHEAST_1
-  val Seoul              = Regions.AP_NORTHEAST_2
-  val Mumbai             = Regions.AP_SOUTH_1
-  val Singapore          = Regions.AP_SOUTHEAST_1
-  val Sydney             = Regions.AP_SOUTHEAST_2
+  case object Tokyo              extends RegionAlias(Regions.AP_NORTHEAST_1)
+  case object Seoul              extends RegionAlias(Regions.AP_NORTHEAST_2)
+  case object Mumbai             extends RegionAlias(Regions.AP_SOUTH_1)
+  case object Singapore          extends RegionAlias(Regions.AP_SOUTHEAST_1)
+  case object Sydney             extends RegionAlias(Regions.AP_SOUTHEAST_2)
   /* - China */
-  val Beijing            = Regions.CN_NORTH_1
+  case object Beijing            extends RegionAlias(Regions.CN_NORTH_1)
   /* - Europe */
-  val Frankfurt          = Regions.EU_CENTRAL_1
-  val Ireland            = Regions.EU_WEST_1
+  case object Frankfurt          extends RegionAlias(Regions.EU_CENTRAL_1)
+  case object Ireland            extends RegionAlias(Regions.EU_WEST_1)
   /* - Somewhere in CIA */
-  val GovCloud           = Regions.GovCloud
+  case object GovCloud           extends RegionAlias(Regions.GovCloud)
   /* - South America */
-  val SaoPaulo           = Regions.SA_EAST_1
+  case object SaoPaulo           extends RegionAlias(Regions.SA_EAST_1)
   /* - US East */
-  val NorthernVirginia   = Regions.US_EAST_1
+  case object NorthernVirginia   extends RegionAlias(Regions.US_EAST_1)
   // TODO: update sdk version:
-  val Ohio               = Regions.US_EAST_2
+  case object Ohio               extends RegionAlias(Regions.US_EAST_2)
   /* - US West */
-  val NorthernCalifornia = Regions.US_WEST_1
-  val Oregon             = Regions.US_WEST_2
+  case object NorthernCalifornia extends RegionAlias(Regions.US_WEST_1)
+  case object Oregon             extends RegionAlias(Regions.US_WEST_2)
 }
