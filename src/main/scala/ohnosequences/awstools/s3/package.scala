@@ -14,7 +14,7 @@ package object s3 {
   def S3Bucket(b: String): S3Folder = S3Folder(b, "")
 
   def S3Client(
-    region: Regions,
+    region: AwsRegionProvider = new DefaultAwsRegionProviderChain(),
     credentials: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain(),
     configuration: ClientConfiguration = PredefinedClientConfigurations.defaultConfig()
   ): AmazonS3Client = {

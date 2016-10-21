@@ -12,7 +12,7 @@ package object sqs {
   type MessageId = String
 
   def SQSClient(
-    region: Regions,
+    region: AwsRegionProvider = new DefaultAwsRegionProviderChain(),
     credentials: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain(),
     configuration: ClientConfiguration = PredefinedClientConfigurations.defaultConfig()
   ): AmazonSQSClient = {

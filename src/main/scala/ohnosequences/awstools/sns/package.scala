@@ -9,7 +9,7 @@ import ohnosequences.awstools.regions._
 package object sns {
 
   def SNSClient(
-    region: Regions,
+    region: AwsRegionProvider = new DefaultAwsRegionProviderChain(),
     credentials: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain(),
     configuration: ClientConfiguration = PredefinedClientConfigurations.defaultConfig()
   ): AmazonSNSClient = {
