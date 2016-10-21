@@ -41,7 +41,7 @@ package object regions {
   /* - US East */
   val NorthernVirginia   = Regions.US_EAST_1
   // TODO: update sdk version:
-  // val Ohio               = Regions.US_EAST_2
+  val Ohio               = Regions.US_EAST_2
   /* - US West */
   val NorthernCalifornia = Regions.US_WEST_1
   val Oregon             = Regions.US_WEST_2
