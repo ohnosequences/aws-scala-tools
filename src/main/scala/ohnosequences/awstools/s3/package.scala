@@ -14,12 +14,12 @@ package object s3 {
   def S3Bucket(b: String): S3Folder = S3Folder(b, "")
 
   def S3Client(
-    region: Region,
+    region: AwsRegionProvider = new DefaultAwsRegionProviderChain(),
     credentials: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain(),
     configuration: ClientConfiguration = PredefinedClientConfigurations.defaultConfig()
   ): AmazonS3Client = {
     new AmazonS3Client(credentials, configuration)
-      .withRegion(region.toAWSRegion)
+      .withRegion(region)
   }
 
   // Implicits

@@ -6,7 +6,7 @@ import java.net.URL
 import scala.util.Try
 import scala.collection.JavaConversions._
 
-import ohnosequences.awstools.regions.Region._
+import ohnosequences.awstools.regions._
 
 import com.amazonaws.services.sqs._
 import com.amazonaws.services.sqs.model._
