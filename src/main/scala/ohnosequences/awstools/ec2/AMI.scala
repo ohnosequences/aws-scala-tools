@@ -81,6 +81,16 @@ class AmazonLinuxAMI[
 
 case object AmazonLinuxAMI {
 
+  /* This constructor allows us to use refer to these AMIs through their parameters instead of explicit IDs. For example, you can write:
+
+    ```scala
+    AmazonLinuxAMI(Oregon, PV,  EBS)
+    ```
+
+    and you get `ami_1d49957d` with it's precise type and the corresponding ID.
+
+    On the other hand you can't write `AmazonLinuxAMI(Ohio, PV, EBS)`, because such AMI doesn't exist.
+  */
   def apply[
     R <: RegionAlias,
     V <: AnyVirtualization,
@@ -92,13 +102,15 @@ case object AmazonLinuxAMI {
     ami: AmazonLinuxAMI[R, V, S]
   ): ami.type = ami
 
+  // NOTE: this list doesn't include HVM NAT
 
   implicit case object ami_c481fad3 extends AmazonLinuxAMI(NorthernVirginia, HVM, EBS)
   implicit case object ami_4487fc53 extends AmazonLinuxAMI(NorthernVirginia, HVM, InstanceStore)
   implicit case object ami_4d87fc5a extends AmazonLinuxAMI(NorthernVirginia, PV,  EBS)
   implicit case object ami_4287fc55 extends AmazonLinuxAMI(NorthernVirginia, PV,  InstanceStore)
 
-  // TODO: add Ohio (PV is N/A)
+  implicit case object ami_71ca9114 extends AmazonLinuxAMI(Ohio, HVM, EBS)
+  implicit case object ami_70ca9115 extends AmazonLinuxAMI(Ohio, HVM, InstanceStore)
 
   implicit case object ami_b04e92d0 extends AmazonLinuxAMI(Oregon, HVM, EBS)
   implicit case object ami_dd4894bd extends AmazonLinuxAMI(Oregon, HVM, InstanceStore)
@@ -125,7 +137,8 @@ case object AmazonLinuxAMI {
   implicit case object ami_a743e6c4 extends AmazonLinuxAMI(Singapore, PV,  EBS)
   implicit case object ami_d846e3bb extends AmazonLinuxAMI(Singapore, PV,  InstanceStore)
 
-  // TODO: add Seoul (PV is N/A)
+  implicit case object ami_a04297ce extends AmazonLinuxAMI(Seoul, HVM, EBS)
+  implicit case object ami_d34c99bd extends AmazonLinuxAMI(Seoul, HVM, InstanceStore)
 
   implicit case object ami_1a15c77b extends AmazonLinuxAMI(Tokyo, HVM, EBS)
   implicit case object ami_9016c4f1 extends AmazonLinuxAMI(Tokyo, HVM, InstanceStore)
@@ -137,7 +150,8 @@ case object AmazonLinuxAMI {
   implicit case object ami_3ad6e659 extends AmazonLinuxAMI(Sydney, PV,  EBS)
   implicit case object ami_3fd6e65c extends AmazonLinuxAMI(Sydney, PV,  InstanceStore)
 
-  // TODO: add Mumbai (PV is N/A)
+  implicit case object ami_cacbbea5 extends AmazonLinuxAMI(Mumbai, HVM, EBS)
+  implicit case object ami_cec2b7a1 extends AmazonLinuxAMI(Mumbai, HVM, InstanceStore)
 
   implicit case object ami_b777e4db extends AmazonLinuxAMI(SaoPaulo, HVM, EBS)
   implicit case object ami_5075e63c extends AmazonLinuxAMI(SaoPaulo, HVM, InstanceStore)
