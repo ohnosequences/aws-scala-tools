@@ -1,6 +1,6 @@
 package ohnosequences.awstools.ec2
 
-import ohnosequences.awstools.regions
+import ohnosequences.awstools.regions._
 
 /* ## [Amazon Machine Images (AMI)](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ComponentsAMIs.html) */
 
@@ -39,8 +39,7 @@ trait AnyLinuxAMI extends AnyAMI {
 
   val version: String
 
-  type Region <: regions.Region
-  val  region: Region
+  val  region: Regions
 
   type Arch <: Architecture
   val  arch: Arch
@@ -64,12 +63,10 @@ trait AnyAmazonLinuxAMI extends AnyLinuxAMI {
   final lazy val id: String = s"ami-${idNum}"
 
   private lazy val idNum: String = {
-    val r: regions.Region = region
     val v: AnyVirtualization = virt
     val s: AnyStorageType = storage
-    import regions.Region._
 
-    r match {
+    region match {
       case NorthernVirginia  => v match {
         case HVM => s match {
           case EBS           => "c481fad3"
@@ -80,6 +77,7 @@ trait AnyAmazonLinuxAMI extends AnyLinuxAMI {
           case InstanceStore => "4287fc55"
         }
       }
+      // TODO: add Ohio (PV is N/A)
       case Oregon => v match {
         case HVM => s match {
           case EBS           => "b04e92d0"
@@ -130,6 +128,7 @@ trait AnyAmazonLinuxAMI extends AnyLinuxAMI {
           case InstanceStore => "d846e3bb"
         }
       }
+      // TODO: add Seoul (PV is N/A)
       case Tokyo => v match {
         case HVM => s match {
           case EBS           => "1a15c77b"
@@ -150,6 +149,7 @@ trait AnyAmazonLinuxAMI extends AnyLinuxAMI {
           case InstanceStore => "3fd6e65c"
         }
       }
+      // TODO: add Mumbai (PV is N/A)
       case SaoPaulo => v match {
         case HVM => s match {
           case EBS           => "b777e4db"
@@ -185,15 +185,13 @@ trait AnyAmazonLinuxAMI extends AnyLinuxAMI {
 }
 
 case class AmazonLinuxAMI[
-  R <: regions.Region,
   V <: AnyVirtualization,
   S <: AnyStorageType
-](val region: R,
+](val region: Regions,
   val virt: V,
   val storage: S
 ) extends AnyAmazonLinuxAMI {
 
-  type Region = R
   type Virt = V
   type Storage = S
 }

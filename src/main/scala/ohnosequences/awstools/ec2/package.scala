@@ -9,12 +9,12 @@ import ohnosequences.awstools.regions._
 package object ec2 {
 
   def EC2Client(
-    region: Region,
+    region: Regions,
     credentials: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain(),
     configuration: ClientConfiguration = PredefinedClientConfigurations.defaultConfig()
   ): AmazonEC2Client = {
     new AmazonEC2Client(credentials, configuration)
-      .withRegion(region.toAWSRegion)
+      .withRegion(region)
   }
 
 

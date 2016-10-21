@@ -24,7 +24,7 @@ sealed trait AnyS3Address {
 
   override def toString = toURI.toString
 
-  def toHttpsURL(region: Region): URL = new URL("https", s"s3-${region}.amazonaws.com", s"${bucket}/${key}")
+  def toHttpsURL(region: Regions): URL = new URL("https", s"s3-${region}.amazonaws.com", s"${bucket}/${key}")
 }
 
 

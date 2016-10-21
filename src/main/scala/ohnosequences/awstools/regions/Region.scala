@@ -1,40 +1,42 @@
-package ohnosequences.awstools.regions
+package ohnosequences.awstools
 
-import com.amazonaws.regions.{Regions => JavaRegions}
-import com.amazonaws.regions.{Region => JavaRegion}
+import com.amazonaws.regions._
 
-sealed abstract class Region(val name: String) {
-  override def toString = name
+package object regions {
 
-  def toAWSRegions: JavaRegions = JavaRegions.fromName(name)
-  def toAWSRegion: JavaRegion = JavaRegion.getRegion(this.toAWSRegions)
-}
+  /* Adding SDK types to the scope without additional imports: */
+  type Regions = com.amazonaws.regions.Regions
+  type Region  = com.amazonaws.regions.Region
 
-case object Region {
+  /* Converting enum values to the `Region` type: */
+  implicit def RegionsToRegion(regions: Regions): Region = Region.getRegion(regions)
 
-  // The same names as in the Java AWS SDK
-  case object AP_NORTHEAST_1 extends Region("ap-northeast-1") // Tokyo
-  case object AP_SOUTHEAST_1 extends Region("ap-southeast-1") // Singapore
-  case object AP_SOUTHEAST_2 extends Region("ap-southeast-2") // Sydney
-  case object EU_WEST_1      extends Region("eu-west-1")      // Ireland
-  case object EU_CENTRAL_1   extends Region("eu-central-1")   // Frankfurt
-  case object SA_EAST_1      extends Region("sa-east-1")      // São Paulo
-  case object US_EAST_1      extends Region("us-east-1")      // Northern Virginia
-  case object US_WEST_1      extends Region("us-west-1")      // Northern California
-  case object US_WEST_2      extends Region("us-west-2")      // Oregon
-  case object CN_NORTH_1     extends Region("cn-north-1")     // Beijing
-  case object GovCloud       extends Region("us-gov-west-1")  // Secret cloud for CIA
+  /* Converting explicit region to an `AwsRegionProvider`: */
+  implicit def RegionToProvider(region: Region): AwsRegionProvider = new AwsRegionProvider {
+    def getRegion(): String = region.getName
+  }
 
+  /*  ### Geographical aliales */
 
-  // Nice geographical synonims:
-  val Tokyo              = AP_NORTHEAST_1
-  val Singapore          = AP_SOUTHEAST_1
-  val Sydney             = AP_SOUTHEAST_2
-  val Ireland            = EU_WEST_1
-  val Frankfurt          = EU_CENTRAL_1
-  val SaoPaulo           = SA_EAST_1
-  val NorthernVirginia   = US_EAST_1
-  val NorthernCalifornia = US_WEST_1
-  val Oregon             = US_WEST_2
-  val Beijing            = CN_NORTH_1
+  /* - Asia Pacific */
+  val Tokyo              = Regions.AP_NORTHEAST_1
+  val Seoul              = Regions.AP_NORTHEAST_2
+  val Mumbai             = Regions.AP_SOUTH_1
+  val Singapore          = Regions.AP_SOUTHEAST_1
+  val Sydney             = Regions.AP_SOUTHEAST_2
+  /* - China */
+  val Beijing            = Regions.CN_NORTH_1
+  /* - Europe */
+  val Frankfurt          = Regions.EU_CENTRAL_1
+  val Ireland            = Regions.EU_WEST_1
+  /* - Somewhere in CIA */
+  val GovCloud           = Regions.GovCloud
+  /* - South America */
+  val SaoPaulo           = Regions.SA_EAST_1
+  /* - US East */
+  val NorthernVirginia   = Regions.US_EAST_1
+  // val Ohio               = Regions.US_EAST_2
+  /* - US West */
+  val NorthernCalifornia = Regions.US_WEST_1
+  val Oregon             = Regions.US_WEST_2
 }

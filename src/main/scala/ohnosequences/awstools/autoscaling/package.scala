@@ -12,12 +12,12 @@ import ohnosequences.awstools.regions._
 package object autoscaling {
 
   def AutoScalingClient(
-    region: Region,
+    region: Regions,
     credentials: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain(),
     configuration: ClientConfiguration = PredefinedClientConfigurations.defaultConfig()
   ): AmazonAutoScalingClient = {
     new AmazonAutoScalingClient(credentials, configuration)
-      .withRegion(region.toAWSRegion)
+      .withRegion(region)
   }
 
   // Implicits
