@@ -14,122 +14,7 @@ import scala.collection.JavaConversions._
 import com.amazonaws.AmazonServiceException
 
 
-case class InstanceStatus(val instanceStatus: String, val systemStatus: String)
-
-case class ScalaEC2Client(val asJava: AmazonEC2)
-// extends AnyVal
-{ ec2 =>
-
-  class Instance(instanceId: String) {
-
-    private def getEC2Instance(): amzn.ec2.model.Instance = ec2.getEC2InstanceById(instanceId) match {
-      case None => {
-        throw new Error("Invalid instance of Instance class")
-      }
-      case Some(instance) => instance
-    }
-
-    def terminate(): Unit = {
-      ec2.terminateInstance(instanceId)
-    }
-
-    def createTag(tag: InstanceTag): Unit = {
-      ec2.createTags(instanceId, List(tag))
-    }
-
-    def createTags(tags: List[InstanceTag]): Unit = {
-      ec2.createTags(instanceId, tags)
-    }
-
-    def getTagValue(tagName: String): Option[String] = {
-      getEC2Instance().getTags.find(_.getKey == tagName).map(_.getValue)
-
-    }
-
-    def getInstanceId() = instanceId
-
-    def getSSHCommand(): Option[String] = {
-      val instance = getEC2Instance()
-      val keyPairFile = instance.getKeyName + ".pem"
-      val publicDNS = instance.getPublicDnsName
-      if (!publicDNS.isEmpty) {
-        Some("ssh -i " + keyPairFile + " ec2-user@" + publicDNS)
-      } else {
-        None
-      }
-    }
-
-    def getAMI(): String = {
-      val instance = getEC2Instance()
-      instance.getImageId()
-    }
-
-    // FIXME: kinda deprecated
-    // def getInstanceType(): AnyInstanceType = {
-    //   val instance = getEC2Instance()
-    //   InstanceType.fromName(instance.getInstanceType)
-    // }
-
-
-    def getState(): String = {
-      getEC2Instance().getState().getName
-    }
-
-    def getStatus(): Option[InstanceStatus] = {
-      val statuses = asJava.describeInstanceStatus(new amzn.ec2.model.DescribeInstanceStatusRequest()
-        .withInstanceIds(instanceId)
-        ).getInstanceStatuses()
-      if (statuses.isEmpty) None
-      else {
-        val is = statuses.head
-        Some(InstanceStatus(
-            is.getInstanceStatus().getStatus()
-          , is.getSystemStatus().getStatus()
-          )
-        )
-      }
-    }
-
-    def getPublicDNS(): Option[String] = {
-      val dns = getEC2Instance().getPublicDnsName()
-      if (dns.isEmpty) None else Some(dns)
-    }
-  }
-
-  class SpotInstanceRequest(requestId: String) {
-
-    def getSpotInstanceRequestId() = requestId
-
-
-    private def getEC2Request(): amzn.ec2.model.SpotInstanceRequest = ec2.getEC2SpotRequestsById(requestId) match {
-      case None => {
-        throw new Error("Invalid instance of SpotInstanceRequest class")
-      }
-      case Some(requests) => requests
-    }
-
-    def getTagValue(tagName: String): Option[String] = {
-      getEC2Request().getTags.find(_.getKey == tagName).map(_.getValue)
-    }
-
-    def getInstanceId(): Option[String] = {
-      val id = getEC2Request().getInstanceId
-      if(id.isEmpty) None else Some(id)
-    }
-
-    def createTags(tags: List[InstanceTag]): Unit = {
-      ec2.createTags(requestId, tags)
-    }
-
-    def getState(): String = {
-      getEC2Request().getState()
-    }
-
-    def getStatus(): String = {
-      getEC2Request().getState
-    }
-
-  }
+case class ScalaEC2Client(val asJava: AmazonEC2) extends AnyVal { ec2 =>
 
 
   def isKeyPairExists(name: String): Boolean = {
@@ -229,7 +114,7 @@ case class ScalaEC2Client(val asJava: AmazonEC2)
       .withInstanceCount(amount)
       .withLaunchSpecification(specs.toAWS)
     ).getSpotInstanceRequests.map{ request =>
-      new SpotInstanceRequest(request.getSpotInstanceRequestId)
+      SpotInstanceRequest(ec2.asJava, request.getSpotInstanceRequestId)
     }.toList
   }
 
@@ -249,7 +134,7 @@ case class ScalaEC2Client(val asJava: AmazonEC2)
     }
 
     asJava.runInstances(request).getReservation.getInstances.toList.map {
-      instance => new Instance(instance.getInstanceId)
+      instance => new Instance(ec2.asJava, instance.getInstanceId)
     }
   }
 
@@ -276,7 +161,7 @@ case class ScalaEC2Client(val asJava: AmazonEC2)
     asJava.describeInstances(
       new amzn.ec2.model.DescribeInstancesRequest().withFilters(filters.map(_.toEC2Filter))
     ).getReservations.flatMap(_.getInstances).map { instance =>
-        new Instance(instance.getInstanceId)
+        new Instance(ec2.asJava, instance.getInstanceId)
     }.toList
   }
 
@@ -285,7 +170,7 @@ case class ScalaEC2Client(val asJava: AmazonEC2)
     asJava.describeSpotInstanceRequests(
       new amzn.ec2.model.DescribeSpotInstanceRequestsRequest().withFilters(filters.map(_.toEC2Filter))
     ).getSpotInstanceRequests.map { request =>
-      new SpotInstanceRequest(request.getSpotInstanceRequestId)
+      SpotInstanceRequest(ec2.asJava, request.getSpotInstanceRequestId)
     }.toList
   }
 
@@ -306,22 +191,23 @@ case class ScalaEC2Client(val asJava: AmazonEC2)
     asJava.shutdown()
   }
 
-  def getCurrentInstanceId: Option[String] = {
-    try {
-      val m = new com.amazonaws.internal.EC2MetadataClient()
-      Some(m.readResource("/latest/meta-data/instance-id"))
-    } catch {
-      case t: IOException => None
-
-    }
-  }
-
-  def getCurrentInstance: Option[Instance] = getCurrentInstanceId.flatMap(getInstanceById(_))
+  // FIXME: EC2MetadataClient is deprecated
+  // def getCurrentInstanceId: Option[String] = {
+  //   try {
+  //     val m = new com.amazonaws.internal.EC2MetadataClient()
+  //     Some(m.readResource("/latest/meta-data/instance-id"))
+  //   } catch {
+  //     case t: IOException => None
+  //
+  //   }
+  // }
+  //
+  // def getCurrentInstance: Option[Instance] = getCurrentInstanceId.flatMap(getInstanceById(_))
 
   def getInstanceById(instanceId: String): Option[Instance] = {
     getEC2InstanceById(instanceId).map {
       ec2Instance =>
-        new Instance(ec2Instance.getInstanceId)
+        new Instance(ec2.asJava, ec2Instance.getInstanceId)
     }
   }
 
