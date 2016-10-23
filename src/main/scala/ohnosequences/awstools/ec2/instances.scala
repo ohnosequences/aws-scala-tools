@@ -1,8 +1,10 @@
 package ohnosequences.awstools.ec2
 
 import com.amazonaws.services.ec2.AmazonEC2
-import com.amazonaws.services.ec2.model
+import com.amazonaws.services.ec2.model.{ Instance => JavaInstance, _ }
 import scala.collection.JavaConversions._
+import scala.util.Try
+import java.util.Date
 
 
 case class InstanceStatus(val instanceStatus: String, val systemStatus: String)
@@ -10,79 +12,79 @@ case class InstanceStatus(val instanceStatus: String, val systemStatus: String)
 
 case class Instance(
   val ec2: AmazonEC2,
-  // val asJava: model.Instance
-  val instanceId: String
+  val asJava: JavaInstance
 ) { instance =>
 
-  private def getEC2Instance(): model.Instance = ec2.getEC2InstanceById(instanceId) match {
-    case None => {
-      throw new Error("Invalid instance of Instance class")
-    }
-    case Some(instance) => instance
-  }
+  /* ### Instance parameters
 
-  def terminate(): Unit = {
-    ec2.terminateInstance(instanceId)
-  }
+    These are either direct copies of the SDK methods, just as lazy vals where possible (things that are not supposed to change during the instance lifetime), or simply improved versions that return corresponding enumeration values instead of just Strings.
+  */
 
-  def createTag(tag: InstanceTag): Unit = {
-    ec2.createTags(instanceId, List(tag))
-  }
+  lazy val id:        String = asJava.getInstanceId
+  lazy val publicDNS: String = asJava.getPublicDnsName
+  lazy val publicIP:  String = asJava.getPublicIpAddress
+  lazy val keyName:   String = asJava.getKeyName
+  lazy val amiID:     String = asJava.getImageId
+  lazy val launchTime:  Date = asJava.getLaunchTime
 
-  def createTags(tags: List[InstanceTag]): Unit = {
-    ec2.createTags(instanceId, tags)
-  }
+  /* Either `I386` or `X86_64` */
+  lazy val architecture: ArchitectureValues = ArchitectureValues.fromValue(asJava.getArchitecture)
 
-  def getTagValue(tagName: String): Option[String] = {
-    getEC2Instance().getTags.find(_.getKey == tagName).map(_.getValue)
-  }
+  /* Either `Ebs` or `InstanceStore` */
+  lazy val rootDevice: DeviceType = DeviceType.fromValue(asJava.getRootDeviceType)
 
-  def getInstanceId() = instanceId
+  /* Either `Hvm` or `Paravirtual` */
+  lazy val virtualization: VirtualizationType = VirtualizationType.fromValue(asJava.getVirtualizationType)
 
-  def getSSHCommand(): Option[String] = {
-    val instance = getEC2Instance()
-    val keyPairFile = instance.getKeyName + ".pem"
-    val publicDNS = instance.getPublicDnsName
-    if (!publicDNS.isEmpty) {
-      Some("ssh -i " + keyPairFile + " ec2-user@" + publicDNS)
-    } else {
-      None
-    }
-  }
+  /* Either `Ovm` or `Xen` */
+  lazy val hypervisor: HypervisorType = HypervisorType.fromValue(asJava.getHypervisor)
 
-  def getAMI(): String = {
-    val instance = getEC2Instance()
-    instance.getImageId()
-  }
+  /* Either `Scheduled` or `Spot` */
+  lazy val lifecycle: InstanceLifecycleType = InstanceLifecycleType.fromValue(asJava.getInstanceLifecycle)
 
-  // FIXME: kinda deprecated
-  // def getInstanceType(): AnyInstanceType = {
-  //   val instance = getEC2Instance()
-  //   InstanceType.fromName(instance.getInstanceType)
+  // NOTE: this is the scala type, which should be convertible to the corresponding SDK enum
+  lazy val instanceType: AnyInstanceType = InstanceType.fromName(asJava.getInstanceType)
+
+  /* This will be `None` if the instance wasn't launched from a spot request */
+  lazy val spotRequestId: Option[String] = Option(asJava.getSpotInstanceRequestId).filter(_.nonEmpty)
+
+  /* Can be one of `Disabled`, `Disabling`, `Enabled`, `Pending` */
+  // NOTE: monitoring can be turned on/off with the client's (un)monitorInstances requests
+  def monitoringState: MonitoringState = MonitoringState.fromValue(asJava.getMonitoring.getState)
+
+
+  def state: InstanceStateName = InstanceStateName.fromValue(asJava.getState.getName)
+
+  // TODO: getStateReason with a corresponding enum of reasons
+
+
+  /* ### Actions on the instance
+
+    These methods involve requests on behalf of the EC2 client.
+  */
+
+  def terminate: Try[Unit] = Try { ec2.terminateInstance(instance.id) }
+
+  // def createTags(tags: List[InstanceTag]): Unit = {
+  //   ec2.createTags(instance.id, tags)
+  // }
+  //
+  // def getTagValue(tagName: String): Option[String] = {
+  //   getEC2Instance().getTags.find(_.getKey == tagName).map(_.getValue)
   // }
 
-
-  def getState(): String = {
-    getEC2Instance().getState().getName
-  }
-
-  def getStatus(): Option[InstanceStatus] = {
-    val statuses = ec2.describeInstanceStatus(new model.DescribeInstanceStatusRequest()
-      .withInstanceIds(instanceId)
-      ).getInstanceStatuses()
-    if (statuses.isEmpty) None
-    else {
-      val is = statuses.head
-      Some(InstanceStatus(
-          is.getInstanceStatus().getStatus()
-        , is.getSystemStatus().getStatus()
-        )
-      )
-    }
-  }
-
-  def getPublicDNS(): Option[String] = {
-    val dns = getEC2Instance().getPublicDnsName()
-    if (dns.isEmpty) None else Some(dns)
-  }
+  // def getStatus(): Option[InstanceStatus] = {
+  //   val statuses = ec2.describeInstanceStatus(new model.DescribeInstanceStatusRequest()
+  //     .withInstanceIds(instance.id)
+  //     ).getInstanceStatuses()
+  //   if (statuses.isEmpty) None
+  //   else {
+  //     val is = statuses.head
+  //     Some(InstanceStatus(
+  //         is.getInstanceStatus().getStatus()
+  //       , is.getSystemStatus().getStatus()
+  //       )
+  //     )
+  //   }
+  // }
 }

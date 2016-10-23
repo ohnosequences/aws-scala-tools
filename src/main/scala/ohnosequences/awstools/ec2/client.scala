@@ -133,9 +133,7 @@ case class ScalaEC2Client(val asJava: AmazonEC2) extends AnyVal { ec2 =>
       )
     }
 
-    asJava.runInstances(request).getReservation.getInstances.toList.map {
-      instance => new Instance(ec2.asJava, instance.getInstanceId)
-    }
+    asJava.runInstances(request).getReservation.getInstances.toList.map { Instance(ec2.asJava, _) }
   }
 
   def getCurrentSpotPrice(instanceType: AnyInstanceType, productDescription: String = "Linux/UNIX"): Double = {
@@ -157,12 +155,10 @@ case class ScalaEC2Client(val asJava: AmazonEC2) extends AnyVal { ec2 =>
     )
   }
 
-  def listInstancesByFilters(filters: InstanceFilter*): List[Instance] = {
+  def listInstancesByFilters(filters: InstanceFilter*): Seq[Instance] = {
     asJava.describeInstances(
       new amzn.ec2.model.DescribeInstancesRequest().withFilters(filters.map(_.toEC2Filter))
-    ).getReservations.flatMap(_.getInstances).map { instance =>
-        new Instance(ec2.asJava, instance.getInstanceId)
-    }.toList
+    ).getReservations.flatMap(_.getInstances).map { Instance(ec2.asJava, _) }
   }
 
 
@@ -205,10 +201,7 @@ case class ScalaEC2Client(val asJava: AmazonEC2) extends AnyVal { ec2 =>
   // def getCurrentInstance: Option[Instance] = getCurrentInstanceId.flatMap(getInstanceById(_))
 
   def getInstanceById(instanceId: String): Option[Instance] = {
-    getEC2InstanceById(instanceId).map {
-      ec2Instance =>
-        new Instance(ec2.asJava, ec2Instance.getInstanceId)
-    }
+    getEC2InstanceById(instanceId).map { Instance(ec2.asJava, _) }
   }
 
   def getEC2InstanceById(instanceId: String): Option[amzn.ec2.model.Instance] = {
