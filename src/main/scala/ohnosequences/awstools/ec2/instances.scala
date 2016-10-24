@@ -52,6 +52,7 @@ case class Instance(
   */
 
   def terminate: Try[Unit] = Try { ec2.terminateInstance(instance.id) }
+  def reboot:    Try[Unit] = Try { ec2.rebootInstances(new RebootInstancesRequest(List(instance.id))) }
 
   /* This method makes a `DescribeInstanceStatusRequest` and is supposed to be used with the implicit "shortcuts" from the `ec2._` package object returning corresponding enumeration values. Having `st: InstanceStatus`, you can use
 
@@ -68,8 +69,28 @@ case class Instance(
       }
   }
 
+
+  /* It doesn't seems to be possible to get this from the SDK's `Instance` type itself (unlike the rest of attributes). So it's the only attribute exposed in this API. */
+  def userData: Try[String] = Try {
+    ec2.describeInstanceAttribute(
+      new DescribeInstanceAttributeRequest(instance.id, InstanceAttributeName.UserData)
+    ).getInstanceAttribute.getUserData
+  }
+
   /* Can be one of `Disabled`, `Disabling`, `Enabled`, `Pending` */
-  // TODO: def monitoring: Try[MonitoringState] = ???
+  def setMonitoring(on: Boolean = true): Try[MonitoringState] = Try {
+
+    if (on) ec2.monitorInstances(new   MonitorInstancesRequest(List(instance.id))).getInstanceMonitorings
+    else  ec2.unmonitorInstances(new UnmonitorInstancesRequest(List(instance.id))).getInstanceMonitorings
+  }.map { monitorings =>
+
+    val monitoring: Monitoring = monitorings.headOption.getOrElse(
+      throw new java.util.NoSuchElementException(s"Instance [${instance.id}] doesn't exist")
+    ).getMonitoring
+
+    MonitoringState.fromValue(monitoring.getState)
+  }
+
 
   // def createTags(tags: List[InstanceTag]): Unit = {
   //   ec2.createTags(instance.id, tags)
