@@ -2,6 +2,7 @@ package ohnosequences.awstools
 
 import com.amazonaws.auth._
 import com.amazonaws.services.ec2.{ AmazonEC2, AmazonEC2Client }
+import com.amazonaws.services.ec2.model.{ Instance => JavaInstance, _ }
 import com.amazonaws.ClientConfiguration
 import com.amazonaws.PredefinedClientConfigurations
 import ohnosequences.awstools.regions._
@@ -32,4 +33,24 @@ package object ec2 {
   implicit def toScalaEC2Client(ec2: AmazonEC2):
     ScalaEC2Client =
     ScalaEC2Client(ec2)
+
+  implicit def toJavaInstance(instance: Instance): JavaInstance = instance.asJava
+
+  implicit class InstanceStateOps(val state: InstanceState) extends AnyVal {
+
+    def name: InstanceStateName = InstanceStateName.fromValue(state.getName)
+  }
+
+  implicit class InstanceStatusSummaryOps(val statusSummary: InstanceStatusSummary) extends AnyVal {
+
+    def summary: SummaryStatus = SummaryStatus.fromValue(statusSummary.getStatus)
+  }
+
+  implicit class InstanceStatusOps(val status: InstanceStatus) extends AnyVal {
+
+    def stateName: InstanceStateName = status.getInstanceState.name
+
+    def instanceSummary: SummaryStatus = status.getInstanceStatus.summary
+    def   systemSummary: SummaryStatus = status.getSystemStatus.summary
+  }
 }
