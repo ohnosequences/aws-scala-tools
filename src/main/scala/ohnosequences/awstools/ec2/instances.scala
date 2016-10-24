@@ -45,14 +45,18 @@ case class Instance(
   /* This will be `None` if the instance wasn't launched from a spot request */
   lazy val spotRequestId: Option[String] = Option(asJava.getSpotInstanceRequestId).filter(_.nonEmpty)
 
+  lazy val tagsMap: Map[String, String] = instance.asJava.getTags.map { tag =>
+    tag.getKey -> tag.getValue
+  }.toMap
+
 
   /* ### Actions on the instance
 
     These methods involve requests on behalf of the EC2 client.
   */
 
-  def terminate: Try[Unit] = Try { ec2.terminateInstance(instance.id) }
-  def reboot:    Try[Unit] = Try { ec2.rebootInstances(new RebootInstancesRequest(List(instance.id))) }
+  def terminate: Try[Unit] = Try { ec2.terminateInstances(new TerminateInstancesRequest(List(instance.id))) }
+  def reboot:    Try[Unit] = Try {    ec2.rebootInstances(new RebootInstancesRequest(List(instance.id))) }
 
   /* This method makes a `DescribeInstanceStatusRequest` and is supposed to be used with the implicit "shortcuts" from the `ec2._` package object returning corresponding enumeration values. Having `st: InstanceStatus`, you can use
 
@@ -77,8 +81,8 @@ case class Instance(
     ).getInstanceAttribute.getUserData
   }
 
-  /* Can be one of `Disabled`, `Disabling`, `Enabled`, `Pending` */
-  def setMonitoring(on: Boolean = true): Try[MonitoringState] = Try {
+  /* Enables or disables instance monitoring and returnes the monitoring state. It can be one of `Disabled`, `Disabling`, `Enabled` or `Pending`. */
+  def setMonitoring(on: Boolean): Try[MonitoringState] = Try {
 
     if (on) ec2.monitorInstances(new   MonitorInstancesRequest(List(instance.id))).getInstanceMonitorings
     else  ec2.unmonitorInstances(new UnmonitorInstancesRequest(List(instance.id))).getInstanceMonitorings
@@ -92,11 +96,18 @@ case class Instance(
   }
 
 
-  // def createTags(tags: List[InstanceTag]): Unit = {
-  //   ec2.createTags(instance.id, tags)
-  // }
-  //
-  // def getTagValue(tagName: String): Option[String] = {
-  //   getEC2Instance().getTags.find(_.getKey == tagName).map(_.getValue)
-  // }
+  def createTags(tags: Map[String, String]): Try[Unit] = Try {
+    ec2.createTags(new CreateTagsRequest()
+      .withResources(instance.id)
+      .withTags(tags.map { case (key, value) => new Tag(key, value) }.toList)
+    )
+  }
+
+  def deleteTags(keys: Set[String]): Try[Unit] = Try {
+    ec2.deleteTags(new DeleteTagsRequest()
+      .withResources(instance.id)
+      .withTags(keys.map { key => new Tag(key) })
+    )
+  }
+
 }

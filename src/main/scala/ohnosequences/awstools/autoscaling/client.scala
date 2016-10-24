@@ -148,7 +148,7 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
   /* ### Tags operations */
 
   /* This method returns all tags retrieved with the given filters */
-  def filterTags(filters: AutoScalingTagFilter*): Try[Seq[Tag]] = Try {
+  def filterTags(filters: AutoScalingTagFilter*): Try[Stream[Tag]] = Try {
 
     val request = new DescribeTagsRequest()
       .withFilters(filters.map(_.asJava))
