@@ -77,7 +77,7 @@ case object AnyLaunchSpecs {
 
       val request = new RunInstancesRequest()
         .withImageId(launchSpecs.ami.id)
-        .withInstanceType(launchSpecs.instanceType.toAWS)
+        .withInstanceType(launchSpecs.instanceType)
         .withUserData(base64encode(launchSpecs.userData))
         .withSecurityGroups(launchSpecs.securityGroups)
         .withKeyName(launchSpecs.keyName)
@@ -104,7 +104,7 @@ case object AnyLaunchSpecs {
 
       val ls = new LaunchSpecification()
         .withImageId(launchSpecs.ami.id)
-        .withInstanceType(launchSpecs.instanceType.toAWS)
+        .withInstanceType(launchSpecs.instanceType)
         .withUserData(base64encode(launchSpecs.userData))
         .withSecurityGroups(launchSpecs.securityGroups)
         .withKeyName(launchSpecs.keyName)

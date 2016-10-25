@@ -1,6 +1,6 @@
 package ohnosequences.awstools.ec2
 
-import com.amazonaws.services.ec2.{ model => amzn }
+import com.amazonaws.services.ec2.model
 
 sealed trait AnyInstanceType {
   type Family <: InstanceType.Family
@@ -10,8 +10,6 @@ sealed trait AnyInstanceType {
 
   final lazy val name: String = s"${family.prefix}.${size}"
   override def toString = name
-
-  def toAWS = amzn.InstanceType.fromValue(name)
 }
 
 case object AnyInstanceType {
@@ -19,6 +17,10 @@ case object AnyInstanceType {
 
   type ofGeneration[G <: AnyGeneration] = AnyInstanceType { type Family <: G }
   type ofFamily[F <: Family] = AnyInstanceType { type Family = F }
+
+  implicit def toJavaInstanceType(t: AnyInstanceType):
+    model.InstanceType = 
+    model.InstanceType.fromValue(t.name)
 }
 
 sealed class InstanceType[
@@ -28,17 +30,6 @@ sealed class InstanceType[
 }
 
 case object InstanceType {
-
-  @deprecated("Use conversion from an arbitrary String carefully", since = "v0.6.0")
-  private[awstools]
-    def fromName(name: String): AnyInstanceType = {
-       // TODO: improve the pattern
-       val pattern = """(.\d)\.(.*)""".r
-       name match {
-        case pattern(prefix, size) => new InstanceType(new Family(prefix), size)
-        case _ => throw new IllegalArgumentException(s"Couldn't parse instance type from [${name}]")
-      }
-    }
 
   // This is taken from http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html
   // TODO: write tests that check that the string name corresponds to the object name
