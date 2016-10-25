@@ -1,7 +1,6 @@
 package ohnosequences.awstools.ec2
 
-import com.amazonaws.services.ec2.AmazonEC2
-import com.amazonaws.services.ec2.model
+import com.amazonaws.services.ec2.{ AmazonEC2, model }
 import com.amazonaws.services.ec2.model.{ Instance => JavaInstance, _ }
 import scala.collection.JavaConversions._
 import scala.util.Try

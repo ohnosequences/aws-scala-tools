@@ -39,27 +39,12 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
     launchSpecs: AnyLaunchSpecs
   ): Try[Unit] = {
 
-    val request = new CreateLaunchConfigurationRequest()
+    val request = launchSpecs
+      .toCreateLaunchConfigurationRequest
       .withLaunchConfigurationName(configName)
-      .withImageId(launchSpecs.instanceSpecs.ami.id)
-      .withInstanceType(launchSpecs.instanceSpecs.instanceType.toString)
-      // TODO: review this base64encode
-      .withUserData(base64encode(launchSpecs.userData))
-      .withKeyName(launchSpecs.keyName)
-      .withSecurityGroups(launchSpecs.securityGroups)
-      .withInstanceMonitoring(new InstanceMonitoring().withEnabled(launchSpecs.instanceMonitoring))
-      .withBlockDeviceMappings(
-        launchSpecs.deviceMapping.map{ case (key, value) =>
-          new BlockDeviceMapping().withDeviceName(key).withVirtualName(value)
-        }
-      )
 
     purchaseModel.maxPrice.fold() { price =>
       request.setSpotPrice(price.toString)
-    }
-
-    launchSpecs.instanceProfile.fold() {
-      request.setIamInstanceProfile
     }
 
     Try {
