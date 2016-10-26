@@ -12,12 +12,10 @@ package object test {
     obj.instance.toString
   }
 
-  def allInstancesToString(prefix: String): Set[String] = {
+  def allInstances(className: String): Set[String] = {
     runtimeMirror
-      .staticClass(prefix)
+      .staticClass(className)
       .knownDirectSubclasses
-      .map { symbol =>
-        symbol.fullName.stripPrefix(s"${prefix}.")
-      }
+      .map { _.fullName }
   }
 }

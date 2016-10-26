@@ -49,7 +49,6 @@ doesn't support storage type of the chosen AMI
 """)
 sealed trait SupportsStorageType[T <: AnyInstanceType, S <: AnyStorageType]
 case object SupportsStorageType {
-  import InstanceType._
 
   implicit def ebs[T <: AnyInstanceType]:
       (T SupportsStorageType EBS.type) =
@@ -122,7 +121,6 @@ doesn't support virtualization of the chosen AMI
 """)
 sealed trait SupportsVirtualization[T <: AnyInstanceType, V <: AnyVirtualization]
 case object SupportsVirtualization {
-  import InstanceType._
 
   /* All current generation instance types support HVM AMIs.
      The CC2, CR1, HI1, and HS1 previous generation instance types support HVM AMIs. */

@@ -5,8 +5,13 @@ import com.amazonaws.services.ec2.model.{ InstanceType => JavaInstanceType }
 
 class InstanceTypes extends org.scalatest.FunSuite {
 
-  val scalaInstanceTypes: Set[String] = allInstancesToString("ohnosequences.awstools.ec2.InstanceType")
-  val  javaInstanceTypes: Set[String] = JavaInstanceType.values.map(_.toString).toSet
+  val  javaInstanceTypes: Set[String] =
+    JavaInstanceType.values.map(_.toString).toSet
+
+  val scalaInstanceTypes: Set[String] =
+    allInstances("ohnosequences.awstools.ec2.InstanceType").map { fqn =>
+      fqn.stripPrefix("ohnosequences.awstools.ec2.")
+    }
 
   test("instance types correspond to the SDK enum") {
 
