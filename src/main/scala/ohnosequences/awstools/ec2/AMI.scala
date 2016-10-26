@@ -5,12 +5,14 @@ import ohnosequences.awstools.regions._
 /* ## [Amazon Machine Images (AMI)](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ComponentsAMIs.html) */
 
 
+// TODO: com.amazonaws.services.ec2.model.ArchitectureValues
 sealed abstract class Architecture(val wordSize: Int)
 case object x86_32 extends Architecture(32)
 case object x86_64 extends Architecture(64)
 
 
 /* ### [Linux AMI Virtualization Types](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/virtualization_types.html) */
+// TODO: com.amazonaws.services.ec2.model.VirtualizationType
 sealed trait AnyVirtualization
 /* All current generation instance types support HVM AMIs.
    The CC2, CR1, HI1, and HS1 previous generation instance types support HVM AMIs. */
@@ -21,6 +23,7 @@ case object PV extends AnyVirtualization //; type PV = PV.type
 
 
 /* ### [Storage for the Root Device](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ComponentsAMIs.html#storage-for-the-root-device) */
+// TODO: http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/ec2/model/DeviceType.html
 sealed trait AnyStorageType
 case object EBS extends AnyStorageType //; type EBS = EBS.type
 case object InstanceStore extends AnyStorageType //; type InstanceStore = InstanceStore.type

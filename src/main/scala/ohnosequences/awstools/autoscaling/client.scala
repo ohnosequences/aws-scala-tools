@@ -39,27 +39,12 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
     launchSpecs: AnyLaunchSpecs
   ): Try[Unit] = {
 
-    val request = new CreateLaunchConfigurationRequest()
+    val request = launchSpecs
+      .toCreateLaunchConfigurationRequest
       .withLaunchConfigurationName(configName)
-      .withImageId(launchSpecs.instanceSpecs.ami.id)
-      .withInstanceType(launchSpecs.instanceSpecs.instanceType.toString)
-      // TODO: review this base64encode
-      .withUserData(base64encode(launchSpecs.userData))
-      .withKeyName(launchSpecs.keyName)
-      .withSecurityGroups(launchSpecs.securityGroups)
-      .withInstanceMonitoring(new InstanceMonitoring().withEnabled(launchSpecs.instanceMonitoring))
-      .withBlockDeviceMappings(
-        launchSpecs.deviceMapping.map{ case (key, value) =>
-          new BlockDeviceMapping().withDeviceName(key).withVirtualName(value)
-        }
-      )
 
     purchaseModel.maxPrice.fold() { price =>
       request.setSpotPrice(price.toString)
-    }
-
-    launchSpecs.instanceProfile.fold() {
-      request.setIamInstanceProfile
     }
 
     Try {
@@ -80,10 +65,7 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
   /* ### Auto Scaling groups operations */
 
   /* These are just aliases */
-  def waitUntilExists:      GroupWaiter = autoscaling.asJava.waiters.groupExists
-  def waitUntilIsInService: GroupWaiter = autoscaling.asJava.waiters.groupInService
-  def waitUntilDoesntExist: GroupWaiter = autoscaling.asJava.waiters.groupNotExists
-
+  def waitUntil: AmazonAutoScalingWaiters = asJava.waiters
 
   def getGroup(groupName: String): Try[AutoScalingGroup] = Try {
     val response = autoscaling.asJava.describeAutoScalingGroups(
@@ -118,7 +100,7 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
       // NOTE: response doesn't carry any information
       autoscaling.asJava.createAutoScalingGroup(request)
     }.map { _ =>
-      waitUntilExists(groupName)
+      waitUntil.groupExists.withName(groupName)
     }
   }
 
@@ -148,7 +130,7 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
   /* ### Tags operations */
 
   /* This method returns all tags retrieved with the given filters */
-  def filterTags(filters: AutoScalingTagFilter*): Try[Seq[Tag]] = Try {
+  def filterTags(filters: AutoScalingTagFilter*): Try[Stream[Tag]] = Try {
 
     val request = new DescribeTagsRequest()
       .withFilters(filters.map(_.asJava))

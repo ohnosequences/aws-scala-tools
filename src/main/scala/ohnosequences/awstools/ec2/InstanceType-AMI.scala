@@ -1,31 +1,13 @@
 package ohnosequences.awstools.ec2
 
+/* ## Instance Types & AMI compatibility implicits
 
-trait AnyInstanceSpecs {
+Here we provide implicits for (hopefully) all valid combinations of
 
-  type AMI <: AnyAMI
-  val  ami: AMI
-
-  type InstanceType <: AnyInstanceType
-  val  instanceType: InstanceType
-
-  // NOTE: we don't require it here, because in some place we create an instance of this type from a java-sdk type >_<
-  // val supportsAMI: T SupportsAMI A
-}
-
-case class InstanceSpecs[
-  A <: AnyLinuxAMI,
-  T <: AnyInstanceType
-](val ami: A,
-  val instanceType: T
-)(implicit
-  val supportsAMI: T SupportsAMI A
-) extends AnyInstanceSpecs {
-
-  type AMI = A
-  type InstanceType = T
-}
-
+- instance type & storage type
+- instance type & virtualization type
+- instance type & AMI (as a combination of storage and virtualization types)
+*/
 
 /* An instance type supports an AMI if it supports both its storage type and virtualization */
 @annotation.implicitNotFound( msg = """
