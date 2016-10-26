@@ -29,7 +29,6 @@ case object GovCloud           extends RegionAlias(Regions.GovCloud)
 case object SaoPaulo           extends RegionAlias(Regions.SA_EAST_1)
 /* - US East */
 case object NorthernVirginia   extends RegionAlias(Regions.US_EAST_1)
-// TODO: update sdk version:
 case object Ohio               extends RegionAlias(Regions.US_EAST_2)
 /* - US West */
 case object NorthernCalifornia extends RegionAlias(Regions.US_WEST_1)

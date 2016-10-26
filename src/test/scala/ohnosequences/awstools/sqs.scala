@@ -16,14 +16,12 @@ import scala.util.{ Try, Success, Failure, Random }
 class SQS extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterAll {
 
   lazy val sqsClient: AmazonSQSClient = SQSClient(
-    Region.Ireland,
-    new DefaultAWSCredentialsProviderChain(),
-    PredefinedClientConfigurations.defaultConfig.withMaxConnections(100)
+    configuration = PredefinedClientConfigurations.defaultConfig.withMaxConnections(100)
   )
 
   // we append a random suffix to avoid waiting 60 seconds between test runs
   val queueName: String = s"aws-scala-tools-sqs-testing-${Random.nextInt(100)}"
-  lazy val queue: Queue = sqsClient.createOrGet(queueName).get
+  lazy val queue: Queue = sqsClient.getOrCreateQueue(queueName).get
 
   override def beforeAll() = {
     queue.setVisibilityTimeout(2)
