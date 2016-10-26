@@ -39,7 +39,7 @@ package object autoscaling {
 
   implicit class waitersOps(val waiter: GroupWaiter) extends AnyVal {
 
-    def apply(groupName: String): Unit = {
+    def withName(groupName: String): Unit = {
 
       waiter.run(
         new WaiterParameters(
