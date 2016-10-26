@@ -1,11 +1,9 @@
 package ohnosequences.awstools.s3
 
-// import com.amazonaws.services.s3.model.{ Region => _ , _ }
-import com.amazonaws.{AmazonClientException, AmazonServiceException}
-import com.amazonaws.services.s3.transfer._
+import com.amazonaws.{ AmazonClientException, AmazonServiceException }
 import com.amazonaws.services.s3.model.{ S3Object => _, _ }
-import com.amazonaws.event._
-import com.amazonaws.event.{ProgressListener => PListener, ProgressEvent => PEvent}
+import com.amazonaws.services.s3.transfer._
+import com.amazonaws.event.{ ProgressListener => PListener, ProgressEvent => PEvent, _ }
 
 import java.io.File
 

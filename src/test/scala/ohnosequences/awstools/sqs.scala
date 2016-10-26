@@ -21,7 +21,7 @@ class SQS extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterAll {
 
   // we append a random suffix to avoid waiting 60 seconds between test runs
   val queueName: String = s"aws-scala-tools-sqs-testing-${Random.nextInt(100)}"
-  lazy val queue: Queue = sqsClient.createOrGetQueue(queueName).get
+  lazy val queue: Queue = sqsClient.getOrCreateQueue(queueName).get
 
   override def beforeAll() = {
     queue.setVisibilityTimeout(2)
