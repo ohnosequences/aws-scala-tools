@@ -65,7 +65,7 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
   /* ### Auto Scaling groups operations */
 
   /* These are just aliases */
-  def waitUntil = asJava.waiters
+  def waitUntil: AmazonAutoScalingWaiters = asJava.waiters
 
   def getGroup(groupName: String): Try[AutoScalingGroup] = Try {
     val response = autoscaling.asJava.describeAutoScalingGroups(
