@@ -9,6 +9,9 @@ import com.amazonaws.ClientConfiguration
 import com.amazonaws.PredefinedClientConfigurations
 import ohnosequences.awstools.regions._
 import scala.collection.JavaConversions._
+import scala.io.Source
+import scala.util.Try
+import java.net.URL
 
 package object ec2 {
 
@@ -22,8 +25,14 @@ package object ec2 {
   }
 
 
-  lazy val metadataLocalURL      = new java.net.URL("http://169.254.169.254/latest/meta-data")
-  // lazy val metadataLocalAMIIdURL = new URL(metadataLocalURL, "ami-id")
+  val localMetadataURL = new URL("http://169.254.169.254/latest/meta-data/")
+
+  def getLocalMetadata(path: String): Try[String] = Try {
+    Source.fromURL(
+      new URL(localMetadataURL, path)
+    ).mkString
+  }
+
 
   def base64encode(input: String) = new sun.misc.BASE64Encoder().encode(input.getBytes())
 
