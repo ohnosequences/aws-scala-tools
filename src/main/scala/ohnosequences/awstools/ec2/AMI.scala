@@ -57,7 +57,7 @@ trait AnyLinuxAMI extends AnyAMI {
 
 // Amazon Linux AMI 2016.09.0
 // See http://aws.amazon.com/amazon-linux-ami/
-trait AnyAmazonLinuxAMI {
+trait AnyAmazonLinuxAMI extends AnyLinuxAMI {
 
   final val version: String = "2016.09.0"
 
