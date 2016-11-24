@@ -71,6 +71,9 @@ case class ScalaEC2Client(val asJava: AmazonEC2) extends AnyVal { ec2 =>
       }
   }
 
+  def getCurrentInstance: Try[Instance] =
+    getLocalMetadata("instance-id").flatMap(getInstance)
+
 
   def currentSpotPrice(instanceType: AnyInstanceType): Try[Double] = Try {
     ec2.asJava.describeSpotPriceHistory(
