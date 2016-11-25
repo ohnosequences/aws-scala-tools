@@ -49,3 +49,7 @@ The full list of changes would be too big and not very useful, but here are the 
   * Any listing methods with pagination will now automatically rotate the token and return a `Stream` of results
   * Unified clients interface and constructors
   * Waiters API for EC2 and AutoScaling
+
+----
+
+See also the [v0.18.0](https://github.com/ohnosequences/aws-scala-tools/milestone/2?closed=1) milestone.
