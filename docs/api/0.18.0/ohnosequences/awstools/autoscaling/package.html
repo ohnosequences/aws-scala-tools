@@ -1,0 +1,368 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>autoscaling - ohnosequences.awstools.autoscaling</title>
+          <meta name="description" content="autoscaling - ohnosequences.awstools.autoscaling" />
+          <meta name="keywords" content="autoscaling ohnosequences.awstools.autoscaling" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../index.html';
+            var hash = 'ohnosequences.awstools.autoscaling.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../lib/package_big.png" />
+        <p id="owner"><a href="../../package.html" class="extype" name="ohnosequences">ohnosequences</a>.<a href="../package.html" class="extype" name="ohnosequences.awstools">awstools</a></p>
+        <h1>autoscaling</h1><span class="permalink">
+      <a href="../../../index.html#ohnosequences.awstools.autoscaling.package" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">autoscaling</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.AnyRef">AnyRef</span>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By Inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="ohnosequences.awstools.autoscaling"><span>autoscaling</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show All</span></li>
+            </ol>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="ohnosequences.awstools.autoscaling.AutoScalingGroupSize" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AutoScalingGroupSizeextendsProductwithSerializable"></a>
+      <a id="AutoScalingGroupSize:AutoScalingGroupSize"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="AutoScalingGroupSize.html"><span class="name">AutoScalingGroupSize</span></a><span class="params">(<span name="min">min: <span class="extype" name="scala.Int">Int</span></span>, <span name="desired">desired: <span class="extype" name="scala.Int">Int</span></span>, <span name="max">max: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#ohnosequences.awstools.autoscaling.package@AutoScalingGroupSizeextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="ohnosequences.awstools.autoscaling.AutoScalingTagFilter" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="AutoScalingTagFilterextendsAnyRef"></a>
+      <a id="AutoScalingTagFilter:AutoScalingTagFilter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">sealed abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="AutoScalingTagFilter.html"><span class="name">AutoScalingTagFilter</span></a><span class="result"> extends <span class="extype" name="scala.AnyRef">AnyRef</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#ohnosequences.awstools.autoscaling.package@AutoScalingTagFilterextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="ohnosequences.awstools.autoscaling.ByGroupNames" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ByGroupNamesextendsAutoScalingTagFilterwithProductwithSerializable"></a>
+      <a id="ByGroupNames:ByGroupNames"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ByGroupNames.html"><span class="name">ByGroupNames</span></a><span class="params">(<span name="groups">groups: <span class="extype" name="scala.Predef.String">String</span>*</span>)</span><span class="result"> extends <a href="AutoScalingTagFilter.html" class="extype" name="ohnosequences.awstools.autoscaling.AutoScalingTagFilter">AutoScalingTagFilter</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#ohnosequences.awstools.autoscaling.package@ByGroupNamesextendsAutoScalingTagFilterwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="ohnosequences.awstools.autoscaling.ByPropagateAtLaunch" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ByPropagateAtLaunchextendsAutoScalingTagFilterwithProductwithSerializable"></a>
+      <a id="ByPropagateAtLaunch:ByPropagateAtLaunch"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ByPropagateAtLaunch.html"><span class="name">ByPropagateAtLaunch</span></a><span class="params">(<span name="value">value: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="AutoScalingTagFilter.html" class="extype" name="ohnosequences.awstools.autoscaling.AutoScalingTagFilter">AutoScalingTagFilter</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#ohnosequences.awstools.autoscaling.package@ByPropagateAtLaunchextendsAutoScalingTagFilterwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="ohnosequences.awstools.autoscaling.ByTagKeys" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ByTagKeysextendsAutoScalingTagFilterwithProductwithSerializable"></a>
+      <a id="ByTagKeys:ByTagKeys"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ByTagKeys.html"><span class="name">ByTagKeys</span></a><span class="params">(<span name="keys">keys: <span class="extype" name="scala.Predef.String">String</span>*</span>)</span><span class="result"> extends <a href="AutoScalingTagFilter.html" class="extype" name="ohnosequences.awstools.autoscaling.AutoScalingTagFilter">AutoScalingTagFilter</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#ohnosequences.awstools.autoscaling.package@ByTagKeysextendsAutoScalingTagFilterwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="ohnosequences.awstools.autoscaling.ByTagValues" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ByTagValuesextendsAutoScalingTagFilterwithProductwithSerializable"></a>
+      <a id="ByTagValues:ByTagValues"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ByTagValues.html"><span class="name">ByTagValues</span></a><span class="params">(<span name="values">values: <span class="extype" name="scala.Predef.String">String</span>*</span>)</span><span class="result"> extends <a href="AutoScalingTagFilter.html" class="extype" name="ohnosequences.awstools.autoscaling.AutoScalingTagFilter">AutoScalingTagFilter</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#ohnosequences.awstools.autoscaling.package@ByTagValuesextendsAutoScalingTagFilterwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="ohnosequences.awstools.autoscaling.GroupWaiter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GroupWaiter=com.amazonaws.waiters.Waiter[com.amazonaws.services.autoscaling.model.DescribeAutoScalingGroupsRequest]"></a>
+      <a id="GroupWaiter:GroupWaiter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">GroupWaiter</span><span class="result"> = <span class="extype" name="com.amazonaws.waiters.Waiter">Waiter</span>[<span class="extype" name="com.amazonaws.services.autoscaling.model.DescribeAutoScalingGroupsRequest">DescribeAutoScalingGroupsRequest</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#ohnosequences.awstools.autoscaling.package@GroupWaiter=com.amazonaws.waiters.Waiter[com.amazonaws.services.autoscaling.model.DescribeAutoScalingGroupsRequest]" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="ohnosequences.awstools.autoscaling.PurchaseModel" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PurchaseModelextendsProductwithSerializable"></a>
+      <a id="PurchaseModel:PurchaseModel"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="PurchaseModel.html"><span class="name">PurchaseModel</span></a><span class="params">(<span name="maxPrice">maxPrice: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Double">Double</span>]</span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#ohnosequences.awstools.autoscaling.package@PurchaseModelextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="ohnosequences.awstools.autoscaling.ScalaAutoScalingClient" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ScalaAutoScalingClientextendsProductwithSerializable"></a>
+      <a id="ScalaAutoScalingClient:ScalaAutoScalingClient"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ScalaAutoScalingClient.html"><span class="name">ScalaAutoScalingClient</span></a><span class="params">(<span name="asJava">asJava: <span class="extype" name="com.amazonaws.services.autoscaling.AmazonAutoScaling">AmazonAutoScaling</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#ohnosequences.awstools.autoscaling.package@ScalaAutoScalingClientextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="ohnosequences.awstools.autoscaling.waitersOps" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="waitersOpsextendsAnyVal"></a>
+      <a id="waitersOps:waitersOps"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">implicit final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="package$$waitersOps.html"><span class="name">waitersOps</span></a><span class="result"> extends <span class="extype" name="scala.AnyVal">AnyVal</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#ohnosequences.awstools.autoscaling.package@waitersOpsextendsAnyVal" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="ohnosequences.awstools.autoscaling#AutoScalingClient" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AutoScalingClient(region:ohnosequences.awstools.regions.AwsRegionProvider,credentials:com.amazonaws.auth.AWSCredentialsProvider,configuration:com.amazonaws.ClientConfiguration):com.amazonaws.services.autoscaling.AmazonAutoScalingClient"></a>
+      <a id="AutoScalingClient(AwsRegionProvider,AWSCredentialsProvider,ClientConfiguration):AmazonAutoScalingClient"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">AutoScalingClient</span><span class="params">(<span name="region">region: <a href="../regions/package.html#AwsRegionProvider=com.amazonaws.regions.AwsRegionProvider" class="extmbr" name="ohnosequences.awstools.regions.AwsRegionProvider">AwsRegionProvider</a> = <span class="symbol"><span class="name"><a href="../../package.html">new DefaultAwsRegionProviderChain()</a></span></span></span>, <span name="credentials">credentials: <span class="extype" name="com.amazonaws.auth.AWSCredentialsProvider">AWSCredentialsProvider</span> = <span class="defval" name="new DefaultAWSCredentialsProviderChain()">...</span></span>, <span name="configuration">configuration: <span class="extype" name="com.amazonaws.ClientConfiguration">ClientConfiguration</span> = <span class="defval" name="PredefinedClientConfigurations.defaultConfig()">...</span></span>)</span><span class="result">: <span class="extype" name="com.amazonaws.services.autoscaling.AmazonAutoScalingClient">AmazonAutoScalingClient</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#ohnosequences.awstools.autoscaling.package@AutoScalingClient(region:ohnosequences.awstools.regions.AwsRegionProvider,credentials:com.amazonaws.auth.AWSCredentialsProvider,configuration:com.amazonaws.ClientConfiguration):com.amazonaws.services.autoscaling.AmazonAutoScalingClient" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="ohnosequences.awstools.autoscaling.PurchaseModel" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PurchaseModel"></a>
+      <a id="PurchaseModel:PurchaseModel"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="PurchaseModel$.html"><span class="name">PurchaseModel</span></a><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#ohnosequences.awstools.autoscaling.package@PurchaseModel" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="ohnosequences.awstools.autoscaling#tagDescriptionToTag" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="tagDescriptionToTag(td:com.amazonaws.services.autoscaling.model.TagDescription):com.amazonaws.services.autoscaling.model.Tag"></a>
+      <a id="tagDescriptionToTag(TagDescription):Tag"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">tagDescriptionToTag</span><span class="params">(<span name="td">td: <span class="extype" name="com.amazonaws.services.autoscaling.model.TagDescription">TagDescription</span></span>)</span><span class="result">: <span class="extype" name="com.amazonaws.services.autoscaling.model.Tag">Tag</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#ohnosequences.awstools.autoscaling.package@tagDescriptionToTag(td:com.amazonaws.services.autoscaling.model.TagDescription):com.amazonaws.services.autoscaling.model.Tag" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="ohnosequences.awstools.autoscaling#toScalaAutoScalingClient" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="toScalaAutoScalingClient(autoscaling:com.amazonaws.services.autoscaling.AmazonAutoScaling):ohnosequences.awstools.autoscaling.ScalaAutoScalingClient"></a>
+      <a id="toScalaAutoScalingClient(AmazonAutoScaling):ScalaAutoScalingClient"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toScalaAutoScalingClient</span><span class="params">(<span name="autoscaling">autoscaling: <span class="extype" name="com.amazonaws.services.autoscaling.AmazonAutoScaling">AmazonAutoScaling</span></span>)</span><span class="result">: <a href="ScalaAutoScalingClient.html" class="extype" name="ohnosequences.awstools.autoscaling.ScalaAutoScalingClient">ScalaAutoScalingClient</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#ohnosequences.awstools.autoscaling.package@toScalaAutoScalingClient(autoscaling:com.amazonaws.services.autoscaling.AmazonAutoScaling):ohnosequences.awstools.autoscaling.ScalaAutoScalingClient" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <span class="extype" name="scala.AnyRef">AnyRef</span></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>
