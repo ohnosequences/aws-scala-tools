@@ -2,12 +2,13 @@
 ```scala
 package ohnosequences.awstools.ec2
 
-import ohnosequences.awstools.regions
+import ohnosequences.awstools.regions._
 ```
 
 ## [Amazon Machine Images (AMI)](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ComponentsAMIs.html)
 
 ```scala
+// TODO: com.amazonaws.services.ec2.model.ArchitectureValues
 sealed abstract class Architecture(val wordSize: Int)
 case object x86_32 extends Architecture(32)
 case object x86_64 extends Architecture(64)
@@ -16,6 +17,7 @@ case object x86_64 extends Architecture(64)
 ### [Linux AMI Virtualization Types](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/virtualization_types.html)
 
 ```scala
+// TODO: com.amazonaws.services.ec2.model.VirtualizationType
 sealed trait AnyVirtualization
 ```
 
@@ -38,6 +40,7 @@ case object PV extends AnyVirtualization //; type PV = PV.type
 ### [Storage for the Root Device](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ComponentsAMIs.html#storage-for-the-root-device)
 
 ```scala
+// TODO: http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/ec2/model/DeviceType.html
 sealed trait AnyStorageType
 case object EBS extends AnyStorageType //; type EBS = EBS.type
 case object InstanceStore extends AnyStorageType //; type InstanceStore = InstanceStore.type
@@ -50,16 +53,16 @@ case object InstanceStore extends AnyStorageType //; type InstanceStore = Instan
 Just some base trait:
 
 ```scala
-trait AnyAMI {
+trait AnyAMI { val id: String }
 
-  val id: String
-}
+case class AMI(id: String) extends AnyAMI
+
 
 trait AnyLinuxAMI extends AnyAMI {
 
   val version: String
 
-  type Region <: regions.Region
+  type Region <: RegionAlias
   val  region: Region
 
   type Arch <: Architecture
@@ -72,143 +75,22 @@ trait AnyLinuxAMI extends AnyAMI {
   val  storage: Storage
 }
 
-// Amazon Linux AMI 2015.09.1
+// Amazon Linux AMI 2016.09.0
 // See http://aws.amazon.com/amazon-linux-ami/
 trait AnyAmazonLinuxAMI extends AnyLinuxAMI {
 
-  final val version: String = "2015.09.1"
+  final val version: String = "2016.09.0"
 
   type Arch = x86_64.type
   final val arch: Arch = x86_64
-
-  final lazy val id: String = s"ami-${idNum}"
-
-  private lazy val idNum: String = {
-    val r: regions.Region = region
-    val v: AnyVirtualization = virt
-    val s: AnyStorageType = storage
-    import regions.Region._
-
-    r match {
-      case NorthernVirginia  => v match {
-        case HVM => s match {
-          case EBS           => "60b6c60a"
-          case InstanceStore => "66b6c60c"
-        }
-        case PV  => s match {
-          case EBS           => "5fb8c835"
-          case InstanceStore => "30b6c65a"
-        }
-      }
-      case Oregon => v match {
-        case HVM => s match {
-          case EBS           => "f0091d91"
-          case InstanceStore => "31342050"
-        }
-        case PV  => s match {
-          case EBS           => "d93622b8"
-          case InstanceStore => "960317f7"
-        }
-      }
-      case NorthernCalifornia => v match {
-        case HVM => s match {
-          case EBS           => "d5ea86b5"
-          case InstanceStore => "ede78b8d"
-        }
-        case PV  => s match {
-          case EBS           => "56ea8636"
-          case InstanceStore => "c6eb87a6"
-        }
-      }
-      case Ireland => v match {
-        case HVM => s match {
-          case EBS           => "bff32ccc"
-          case InstanceStore => "54e03f27"
-        }
-        case PV  => s match {
-          case EBS           => "95e33ce6"
-          case InstanceStore => "54e53a27"
-        }
-      }
-      case Frankfurt => v match {
-        case HVM => s match {
-          case EBS           => "bc5b48d0"
-          case InstanceStore => "8d4a59e1"
-        }
-        case PV  => s match {
-          case EBS           => "794a5915"
-          case InstanceStore => "ef445783"
-        }
-      }
-      case Singapore => v match {
-        case HVM => s match {
-          case EBS           => "c9b572aa"
-          case InstanceStore => "deb176bd"
-        }
-        case PV  => s match {
-          case EBS           => "34bd7a57"
-          case InstanceStore => "66bf7805"
-        }
-      }
-      case Tokyo => v match {
-        case HVM => s match {
-          case EBS           => "383c1956"
-          case InstanceStore => "4232172c"
-        }
-        case PV  => s match {
-          case EBS           => "393c1957"
-          case InstanceStore => "4532172b"
-        }
-      }
-      case Sydney => v match {
-        case HVM => s match {
-          case EBS           => "48d38c2b"
-          case InstanceStore => "cad986a9"
-        }
-        case PV  => s match {
-          case EBS           => "ced887ad"
-          case InstanceStore => "cfd887ac"
-        }
-      }
-      case SaoPaulo => v match {
-        case HVM => s match {
-          case EBS           => "6817af04"
-          case InstanceStore => "7b15ad17"
-        }
-        case PV  => s match {
-          case EBS           => "7d15ad11"
-          case InstanceStore => "4f13ab23"
-        }
-      }
-      case Beijing => v match {
-        case HVM => s match {
-          case EBS           => "43a36a2e"
-          case InstanceStore => "52a0693f"
-        }
-        case PV  => s match {
-          case EBS           => "18ac6575"
-          case InstanceStore => "41a46d2c"
-        }
-      }
-      case GovCloud => v match {
-        case HVM => s match {
-          case EBS           => "c2b5d7e1"
-          case InstanceStore => "f4b5d7d7"
-        }
-        case PV  => s match {
-          case EBS           => "feb5d7dd"
-          case InstanceStore => "f6b5d7d5"
-        }
-      }
-    }
-  }
 }
 
-case class AmazonLinuxAMI[
-  R <: regions.Region,
+class AmazonLinuxAMI[
+  R <: RegionAlias,
   V <: AnyVirtualization,
   S <: AnyStorageType
-](val region: R,
+] private(
+  val region: R,
   val virt: V,
   val storage: S
 ) extends AnyAmazonLinuxAMI {
@@ -216,6 +98,102 @@ case class AmazonLinuxAMI[
   type Region = R
   type Virt = V
   type Storage = S
+
+  val id = this.toString.replaceAll("_", "-")
+}
+
+case object AmazonLinuxAMI {
+```
+
+This constructor allows us to use refer to these AMIs through their parameters instead of explicit IDs. For example, you can write:
+
+    ```scala
+    AmazonLinuxAMI(Oregon, PV,  EBS)
+    ```
+
+    and you get `ami_1d49957d` with it's precise type and the corresponding ID.
+
+    On the other hand you can't write `AmazonLinuxAMI(Ohio, PV, EBS)`, because such AMI doesn't exist.
+
+
+```scala
+  def apply[
+    R <: RegionAlias,
+    V <: AnyVirtualization,
+    S <: AnyStorageType
+  ](region: R,
+    virt: V,
+    storage: S
+  )(implicit
+    ami: AmazonLinuxAMI[R, V, S]
+  ): ami.type = ami
+
+  // NOTE: this list doesn't include HVM NAT
+
+  implicit case object ami_c481fad3 extends AmazonLinuxAMI(NorthernVirginia, HVM, EBS)
+  implicit case object ami_4487fc53 extends AmazonLinuxAMI(NorthernVirginia, HVM, InstanceStore)
+  implicit case object ami_4d87fc5a extends AmazonLinuxAMI(NorthernVirginia, PV,  EBS)
+  implicit case object ami_4287fc55 extends AmazonLinuxAMI(NorthernVirginia, PV,  InstanceStore)
+
+  implicit case object ami_71ca9114 extends AmazonLinuxAMI(Ohio, HVM, EBS)
+  implicit case object ami_70ca9115 extends AmazonLinuxAMI(Ohio, HVM, InstanceStore)
+
+  implicit case object ami_b04e92d0 extends AmazonLinuxAMI(Oregon, HVM, EBS)
+  implicit case object ami_dd4894bd extends AmazonLinuxAMI(Oregon, HVM, InstanceStore)
+  implicit case object ami_1d49957d extends AmazonLinuxAMI(Oregon, PV,  EBS)
+  implicit case object ami_48499528 extends AmazonLinuxAMI(Oregon, PV,  InstanceStore)
+
+  implicit case object ami_de347abe extends AmazonLinuxAMI(NorthernCalifornia, HVM, EBS)
+  implicit case object ami_9e3779fe extends AmazonLinuxAMI(NorthernCalifornia, HVM, InstanceStore)
+  implicit case object ami_df3779bf extends AmazonLinuxAMI(NorthernCalifornia, PV,  EBS)
+  implicit case object ami_69367809 extends AmazonLinuxAMI(NorthernCalifornia, PV,  InstanceStore)
+
+  implicit case object ami_d41d58a7 extends AmazonLinuxAMI(Ireland, HVM, EBS)
+  implicit case object ami_64105517 extends AmazonLinuxAMI(Ireland, HVM, InstanceStore)
+  implicit case object ami_0e10557d extends AmazonLinuxAMI(Ireland, PV,  EBS)
+  implicit case object ami_8c1d58ff extends AmazonLinuxAMI(Ireland, PV,  InstanceStore)
+
+  implicit case object ami_0044b96f extends AmazonLinuxAMI(Frankfurt, HVM, EBS)
+  implicit case object ami_a74ab7c8 extends AmazonLinuxAMI(Frankfurt, HVM, InstanceStore)
+  implicit case object ami_1345b87c extends AmazonLinuxAMI(Frankfurt, PV,  EBS)
+  implicit case object ami_f64ab799 extends AmazonLinuxAMI(Frankfurt, PV,  InstanceStore)
+
+  implicit case object ami_7243e611 extends AmazonLinuxAMI(Singapore, HVM, EBS)
+  implicit case object ami_4841e42b extends AmazonLinuxAMI(Singapore, HVM, InstanceStore)
+  implicit case object ami_a743e6c4 extends AmazonLinuxAMI(Singapore, PV,  EBS)
+  implicit case object ami_d846e3bb extends AmazonLinuxAMI(Singapore, PV,  InstanceStore)
+
+  implicit case object ami_a04297ce extends AmazonLinuxAMI(Seoul, HVM, EBS)
+  implicit case object ami_d34c99bd extends AmazonLinuxAMI(Seoul, HVM, InstanceStore)
+
+  implicit case object ami_1a15c77b extends AmazonLinuxAMI(Tokyo, HVM, EBS)
+  implicit case object ami_9016c4f1 extends AmazonLinuxAMI(Tokyo, HVM, InstanceStore)
+  implicit case object ami_cf14c6ae extends AmazonLinuxAMI(Tokyo, PV,  EBS)
+  implicit case object ami_4615c727 extends AmazonLinuxAMI(Tokyo, PV,  InstanceStore)
+
+  implicit case object ami_55d4e436 extends AmazonLinuxAMI(Sydney, HVM, EBS)
+  implicit case object ami_fbd6e698 extends AmazonLinuxAMI(Sydney, HVM, InstanceStore)
+  implicit case object ami_3ad6e659 extends AmazonLinuxAMI(Sydney, PV,  EBS)
+  implicit case object ami_3fd6e65c extends AmazonLinuxAMI(Sydney, PV,  InstanceStore)
+
+  implicit case object ami_cacbbea5 extends AmazonLinuxAMI(Mumbai, HVM, EBS)
+  implicit case object ami_cec2b7a1 extends AmazonLinuxAMI(Mumbai, HVM, InstanceStore)
+
+  implicit case object ami_b777e4db extends AmazonLinuxAMI(SaoPaulo, HVM, EBS)
+  implicit case object ami_5075e63c extends AmazonLinuxAMI(SaoPaulo, HVM, InstanceStore)
+  implicit case object ami_1d75e671 extends AmazonLinuxAMI(SaoPaulo, PV,  EBS)
+  implicit case object ami_b477e4d8 extends AmazonLinuxAMI(SaoPaulo, PV,  InstanceStore)
+
+  implicit case object ami_fa875397 extends AmazonLinuxAMI(Beijing, HVM, EBS)
+  implicit case object ami_cb8357a6 extends AmazonLinuxAMI(Beijing, HVM, InstanceStore)
+  implicit case object ami_d98357b4 extends AmazonLinuxAMI(Beijing, PV,  EBS)
+  implicit case object ami_1a8e5a77 extends AmazonLinuxAMI(Beijing, PV,  InstanceStore)
+
+  implicit case object ami_7b4df41a extends AmazonLinuxAMI(GovCloud, HVM, EBS)
+  implicit case object ami_ae4bf2cf extends AmazonLinuxAMI(GovCloud, HVM, InstanceStore)
+  implicit case object ami_144cf575 extends AmazonLinuxAMI(GovCloud, PV,  EBS)
+  implicit case object ami_bc48f1dd extends AmazonLinuxAMI(GovCloud, PV,  InstanceStore)
+
 }
 
 ```
@@ -223,33 +201,33 @@ case class AmazonLinuxAMI[
 
 
 
-[main/scala/ohnosequences/awstools/autoscaling/AutoScaling.scala]: ../autoscaling/AutoScaling.scala.md
-[main/scala/ohnosequences/awstools/autoscaling/AutoScalingGroup.scala]: ../autoscaling/AutoScalingGroup.scala.md
-[main/scala/ohnosequences/awstools/autoscaling/LaunchConfiguration.scala]: ../autoscaling/LaunchConfiguration.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/client.scala]: ../autoscaling/client.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/filters.scala]: ../autoscaling/filters.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/package.scala]: ../autoscaling/package.scala.md
 [main/scala/ohnosequences/awstools/autoscaling/PurchaseModel.scala]: ../autoscaling/PurchaseModel.scala.md
-[main/scala/ohnosequences/awstools/dynamodb/DynamoDBUtils.scala]: ../dynamodb/DynamoDBUtils.scala.md
 [main/scala/ohnosequences/awstools/ec2/AMI.scala]: AMI.scala.md
-[main/scala/ohnosequences/awstools/ec2/EC2.scala]: EC2.scala.md
-[main/scala/ohnosequences/awstools/ec2/Filters.scala]: Filters.scala.md
-[main/scala/ohnosequences/awstools/ec2/InstanceSpecs.scala]: InstanceSpecs.scala.md
+[main/scala/ohnosequences/awstools/ec2/client.scala]: client.scala.md
+[main/scala/ohnosequences/awstools/ec2/instances.scala]: instances.scala.md
+[main/scala/ohnosequences/awstools/ec2/InstanceType-AMI.scala]: InstanceType-AMI.scala.md
 [main/scala/ohnosequences/awstools/ec2/InstanceType.scala]: InstanceType.scala.md
 [main/scala/ohnosequences/awstools/ec2/LaunchSpecs.scala]: LaunchSpecs.scala.md
 [main/scala/ohnosequences/awstools/ec2/package.scala]: package.scala.md
-[main/scala/ohnosequences/awstools/regions/Region.scala]: ../regions/Region.scala.md
+[main/scala/ohnosequences/awstools/package.scala]: ../package.scala.md
+[main/scala/ohnosequences/awstools/regions/aliases.scala]: ../regions/aliases.scala.md
+[main/scala/ohnosequences/awstools/regions/package.scala]: ../regions/package.scala.md
 [main/scala/ohnosequences/awstools/s3/address.scala]: ../s3/address.scala.md
 [main/scala/ohnosequences/awstools/s3/client.scala]: ../s3/client.scala.md
 [main/scala/ohnosequences/awstools/s3/package.scala]: ../s3/package.scala.md
 [main/scala/ohnosequences/awstools/s3/transfers.scala]: ../s3/transfers.scala.md
-[main/scala/ohnosequences/awstools/sns/SNS.scala]: ../sns/SNS.scala.md
-[main/scala/ohnosequences/awstools/sns/Topic.scala]: ../sns/Topic.scala.md
-[main/scala/ohnosequences/awstools/sqs/Queue.scala]: ../sqs/Queue.scala.md
-[main/scala/ohnosequences/awstools/sqs/SQS.scala]: ../sqs/SQS.scala.md
-[main/scala/ohnosequences/awstools/utils/AutoScalingUtils.scala]: ../utils/AutoScalingUtils.scala.md
-[main/scala/ohnosequences/awstools/utils/DynamoDBUtils.scala]: ../utils/DynamoDBUtils.scala.md
-[main/scala/ohnosequences/awstools/utils/SQSUtils.scala]: ../utils/SQSUtils.scala.md
-[main/scala/ohnosequences/benchmark/Benchmark.scala]: ../../benchmark/Benchmark.scala.md
-[main/scala/ohnosequences/logging/Logger.scala]: ../../logging/Logger.scala.md
-[test/scala/ohnosequences/awstools/EC2Tests.scala]: ../../../../../test/scala/ohnosequences/awstools/EC2Tests.scala.md
-[test/scala/ohnosequences/awstools/RegionTests.scala]: ../../../../../test/scala/ohnosequences/awstools/RegionTests.scala.md
-[test/scala/ohnosequences/awstools/S3Tests.scala]: ../../../../../test/scala/ohnosequences/awstools/S3Tests.scala.md
-[test/scala/ohnosequences/awstools/SQSTests.scala]: ../../../../../test/scala/ohnosequences/awstools/SQSTests.scala.md
+[main/scala/ohnosequences/awstools/sns/client.scala]: ../sns/client.scala.md
+[main/scala/ohnosequences/awstools/sns/package.scala]: ../sns/package.scala.md
+[main/scala/ohnosequences/awstools/sns/subscribers.scala]: ../sns/subscribers.scala.md
+[main/scala/ohnosequences/awstools/sns/topics.scala]: ../sns/topics.scala.md
+[main/scala/ohnosequences/awstools/sqs/client.scala]: ../sqs/client.scala.md
+[main/scala/ohnosequences/awstools/sqs/messages.scala]: ../sqs/messages.scala.md
+[main/scala/ohnosequences/awstools/sqs/package.scala]: ../sqs/package.scala.md
+[main/scala/ohnosequences/awstools/sqs/queues.scala]: ../sqs/queues.scala.md
+[test/scala/ohnosequences/awstools/autoscaling.scala]: ../../../../../test/scala/ohnosequences/awstools/autoscaling.scala.md
+[test/scala/ohnosequences/awstools/instanceTypes.scala]: ../../../../../test/scala/ohnosequences/awstools/instanceTypes.scala.md
+[test/scala/ohnosequences/awstools/package.scala]: ../../../../../test/scala/ohnosequences/awstools/package.scala.md
+[test/scala/ohnosequences/awstools/sqs.scala]: ../../../../../test/scala/ohnosequences/awstools/sqs.scala.md

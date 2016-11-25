@@ -2,30 +2,28 @@
 ```scala
 package ohnosequences.awstools.s3
 
-// import com.amazonaws.services.s3.model.{ Region => _ , _ }
-import com.amazonaws.{AmazonClientException, AmazonServiceException}
-import com.amazonaws.services.s3.transfer._
+import com.amazonaws.{ AmazonClientException, AmazonServiceException }
 import com.amazonaws.services.s3.model.{ S3Object => _, _ }
-import com.amazonaws.event._
-import com.amazonaws.event.{ProgressListener => PListener, ProgressEvent => PEvent}
+import com.amazonaws.services.s3.transfer._
+import com.amazonaws.event.{ ProgressListener => PListener, ProgressEvent => PEvent, _ }
 
 import java.io.File
 
 import scala.collection.JavaConversions._
-import scala.concurrent._, Future._
-import ExecutionContext.Implicits.global
+import scala.util.Try
 
 
-case class TransferListener(transfer: Transfer) extends PListener {
+case class TransferListener(description: String) extends PListener {
 
   def progressChanged(progressEvent: PEvent): Unit = {
     import ProgressEventType._
     progressEvent.getEventType match {
-      // case TRANSFER_STARTED_EVENT  => println("Started")
-      case TRANSFER_CANCELED_EVENT  => println(s"${transfer.getDescription} is canceled")
-      case TRANSFER_COMPLETED_EVENT => println(s"${transfer.getDescription} is completed")
-      case TRANSFER_FAILED_EVENT    => println(s"${transfer.getDescription} is failed")
-      // case TRANSFER_PART_COMPLETED_EVENT  => println("Completed part: "+ transfer.getProgress.getBytesTransferred)
+      case TRANSFER_STARTED_EVENT   => print(description)
+      case TRANSFER_PART_COMPLETED_EVENT => print(".")
+      case TRANSFER_PART_FAILED_EVENT    => print("!")
+      case TRANSFER_CANCELED_EVENT  => println(" canceled")
+      case TRANSFER_COMPLETED_EVENT => println(" completed")
+      case TRANSFER_FAILED_EVENT    => println(" failed")
       case _ => ()
     }
   }
@@ -50,23 +48,19 @@ case class TransferManagerOps(asJava: TransferManager) {
 
   def download(
     s3Address: AnyS3Address,
-    destination: File
-  ): Future[File] = {
-    println(s"""Dowloading object
-      |from: ${s3Address}
-      |to: ${destination.getCanonicalPath}
-      |""".stripMargin
-    )
+    destination: File,
+    silent: Boolean = true
+  ): Try[File] = {
 
     lazy val transfer: Transfer = s3Address match {
       case S3Object(bucket, key) => asJava.download(bucket, key, destination)
       case S3Folder(bucket, key) => asJava.downloadDirectory(bucket, key, destination)
     }
 
-    Future {
-      transfer.addProgressListener(TransferListener(transfer))
-
-      // NOTE: this is blocking:
+    Try {
+      if (!silent) {
+        transfer.addProgressListener(TransferListener(s"${transfer.getDescription} to ${destination.getCanonicalPath}"))
+      }
       transfer.waitForCompletion
 
       // if this was a virtual directory, the destination actually differs:
@@ -80,13 +74,9 @@ case class TransferManagerOps(asJava: TransferManager) {
   def upload(
     file: File,
     s3Address: AnyS3Address,
-    userMetadata: Map[String, String] = Map()
-  ): Future[AnyS3Address] = {
-    println(s"""Uploading object
-      |from: ${file.getCanonicalPath}
-      |to: ${s3Address}
-      |""".stripMargin
-    )
+    userMetadata: Map[String, String] = Map(),
+    silent: Boolean = true
+  ): Try[AnyS3Address] = {
 
     lazy val transfer: Transfer = if (file.isDirectory) {
       asJava.uploadDirectory(
@@ -109,10 +99,10 @@ case class TransferManagerOps(asJava: TransferManager) {
       asJava.upload( request.withMetadata(metadata) )
     }
 
-    Future {
-      transfer.addProgressListener(TransferListener(transfer))
-
-      // NOTE: this is blocking:
+    Try {
+      if (!silent) {
+        transfer.addProgressListener(TransferListener(s"${transfer.getDescription} to ${file.getCanonicalPath}"))
+      }
       transfer.waitForCompletion
       s3Address
     }
@@ -125,33 +115,33 @@ case class TransferManagerOps(asJava: TransferManager) {
 
 
 
-[main/scala/ohnosequences/awstools/autoscaling/AutoScaling.scala]: ../autoscaling/AutoScaling.scala.md
-[main/scala/ohnosequences/awstools/autoscaling/AutoScalingGroup.scala]: ../autoscaling/AutoScalingGroup.scala.md
-[main/scala/ohnosequences/awstools/autoscaling/LaunchConfiguration.scala]: ../autoscaling/LaunchConfiguration.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/client.scala]: ../autoscaling/client.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/filters.scala]: ../autoscaling/filters.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/package.scala]: ../autoscaling/package.scala.md
 [main/scala/ohnosequences/awstools/autoscaling/PurchaseModel.scala]: ../autoscaling/PurchaseModel.scala.md
-[main/scala/ohnosequences/awstools/dynamodb/DynamoDBUtils.scala]: ../dynamodb/DynamoDBUtils.scala.md
 [main/scala/ohnosequences/awstools/ec2/AMI.scala]: ../ec2/AMI.scala.md
-[main/scala/ohnosequences/awstools/ec2/EC2.scala]: ../ec2/EC2.scala.md
-[main/scala/ohnosequences/awstools/ec2/Filters.scala]: ../ec2/Filters.scala.md
-[main/scala/ohnosequences/awstools/ec2/InstanceSpecs.scala]: ../ec2/InstanceSpecs.scala.md
+[main/scala/ohnosequences/awstools/ec2/client.scala]: ../ec2/client.scala.md
+[main/scala/ohnosequences/awstools/ec2/instances.scala]: ../ec2/instances.scala.md
+[main/scala/ohnosequences/awstools/ec2/InstanceType-AMI.scala]: ../ec2/InstanceType-AMI.scala.md
 [main/scala/ohnosequences/awstools/ec2/InstanceType.scala]: ../ec2/InstanceType.scala.md
 [main/scala/ohnosequences/awstools/ec2/LaunchSpecs.scala]: ../ec2/LaunchSpecs.scala.md
 [main/scala/ohnosequences/awstools/ec2/package.scala]: ../ec2/package.scala.md
-[main/scala/ohnosequences/awstools/regions/Region.scala]: ../regions/Region.scala.md
+[main/scala/ohnosequences/awstools/package.scala]: ../package.scala.md
+[main/scala/ohnosequences/awstools/regions/aliases.scala]: ../regions/aliases.scala.md
+[main/scala/ohnosequences/awstools/regions/package.scala]: ../regions/package.scala.md
 [main/scala/ohnosequences/awstools/s3/address.scala]: address.scala.md
 [main/scala/ohnosequences/awstools/s3/client.scala]: client.scala.md
 [main/scala/ohnosequences/awstools/s3/package.scala]: package.scala.md
 [main/scala/ohnosequences/awstools/s3/transfers.scala]: transfers.scala.md
-[main/scala/ohnosequences/awstools/sns/SNS.scala]: ../sns/SNS.scala.md
-[main/scala/ohnosequences/awstools/sns/Topic.scala]: ../sns/Topic.scala.md
-[main/scala/ohnosequences/awstools/sqs/Queue.scala]: ../sqs/Queue.scala.md
-[main/scala/ohnosequences/awstools/sqs/SQS.scala]: ../sqs/SQS.scala.md
-[main/scala/ohnosequences/awstools/utils/AutoScalingUtils.scala]: ../utils/AutoScalingUtils.scala.md
-[main/scala/ohnosequences/awstools/utils/DynamoDBUtils.scala]: ../utils/DynamoDBUtils.scala.md
-[main/scala/ohnosequences/awstools/utils/SQSUtils.scala]: ../utils/SQSUtils.scala.md
-[main/scala/ohnosequences/benchmark/Benchmark.scala]: ../../benchmark/Benchmark.scala.md
-[main/scala/ohnosequences/logging/Logger.scala]: ../../logging/Logger.scala.md
-[test/scala/ohnosequences/awstools/EC2Tests.scala]: ../../../../../test/scala/ohnosequences/awstools/EC2Tests.scala.md
-[test/scala/ohnosequences/awstools/RegionTests.scala]: ../../../../../test/scala/ohnosequences/awstools/RegionTests.scala.md
-[test/scala/ohnosequences/awstools/S3Tests.scala]: ../../../../../test/scala/ohnosequences/awstools/S3Tests.scala.md
-[test/scala/ohnosequences/awstools/SQSTests.scala]: ../../../../../test/scala/ohnosequences/awstools/SQSTests.scala.md
+[main/scala/ohnosequences/awstools/sns/client.scala]: ../sns/client.scala.md
+[main/scala/ohnosequences/awstools/sns/package.scala]: ../sns/package.scala.md
+[main/scala/ohnosequences/awstools/sns/subscribers.scala]: ../sns/subscribers.scala.md
+[main/scala/ohnosequences/awstools/sns/topics.scala]: ../sns/topics.scala.md
+[main/scala/ohnosequences/awstools/sqs/client.scala]: ../sqs/client.scala.md
+[main/scala/ohnosequences/awstools/sqs/messages.scala]: ../sqs/messages.scala.md
+[main/scala/ohnosequences/awstools/sqs/package.scala]: ../sqs/package.scala.md
+[main/scala/ohnosequences/awstools/sqs/queues.scala]: ../sqs/queues.scala.md
+[test/scala/ohnosequences/awstools/autoscaling.scala]: ../../../../../test/scala/ohnosequences/awstools/autoscaling.scala.md
+[test/scala/ohnosequences/awstools/instanceTypes.scala]: ../../../../../test/scala/ohnosequences/awstools/instanceTypes.scala.md
+[test/scala/ohnosequences/awstools/package.scala]: ../../../../../test/scala/ohnosequences/awstools/package.scala.md
+[test/scala/ohnosequences/awstools/sqs.scala]: ../../../../../test/scala/ohnosequences/awstools/sqs.scala.md

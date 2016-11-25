@@ -2,25 +2,24 @@
 ```scala
 package ohnosequences.awstools.autoscaling
 
-import com.amazonaws.auth._
-import com.amazonaws.services.ec2.AmazonEC2
-import ohnosequences.awstools.ec2._
-import ohnosequences.awstools.regions._
-import com.amazonaws.{ services => amzn }
+import com.amazonaws.services.autoscaling.model._
+import scala.collection.JavaConversions._
+```
 
-case class PurchaseModel(val maxPrice: Option[Double]) {
+This is a enum-type for the tags `Filter` from the SDK. Motivation for this wrapper is that the filter name can have only 4 fixed `String` values.
 
-  val isSpot = maxPrice.nonEmpty
+```scala
+sealed abstract class AutoScalingTagFilter(name: String, values: Seq[String]) {
+
+  val asJava = new Filter()
+    .withName(name)
+    .withValues(values)
 }
 
-case object PurchaseModel {
-
-  def onDemand:          PurchaseModel = PurchaseModel(None)
-  def spot(max: Double): PurchaseModel = PurchaseModel(Some(max))
-}
-
-// NOTE: you can set maximum price depending on the current spot price:
-// PurchaseModel.spot(ec2.getCurrentSpotPrice(instanceType) + 0.001)
+case class ByGroupNames(groups: String*)       extends AutoScalingTagFilter("auto-scaling-group", groups)
+case class ByTagKeys(keys: String*)            extends AutoScalingTagFilter("key", keys)
+case class ByTagValues(values: String*)        extends AutoScalingTagFilter("value", values)
+case class ByPropagateAtLaunch(value: Boolean) extends AutoScalingTagFilter("propagate-at-launch", Seq(value.toString))
 
 ```
 

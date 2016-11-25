@@ -1,36 +1,56 @@
 
 ```scala
-package ohnosequences.awstools.autoscaling
+package ohnosequences.awstools
 
-import com.amazonaws.auth._
-import com.amazonaws.services.ec2.AmazonEC2
-import ohnosequences.awstools.ec2._
-import ohnosequences.awstools.regions._
-import com.amazonaws.{ services => amzn }
+import com.amazonaws.regions._
 
-case class PurchaseModel(val maxPrice: Option[Double]) {
+package object regions {
+```
 
-  val isSpot = maxPrice.nonEmpty
+Adding SDK types to the scope without SDK imports:
+
+```scala
+  type Regions = com.amazonaws.regions.Regions
+  type Region  = com.amazonaws.regions.Region
+  type AwsRegionProvider = com.amazonaws.regions.AwsRegionProvider
+  type DefaultAwsRegionProviderChain = com.amazonaws.regions.DefaultAwsRegionProviderChain
+```
+
+### Implicits
+- `Regions` enum → `Region` and `AwsRegionProvider`
+
+```scala
+  implicit def RegionsToRegion(regions: Regions): Region = Region.getRegion(regions)
+  implicit def RegionsToProvider(region: Regions): AwsRegionProvider = RegionToProvider(region)
+```
+
+- `Region` type ⇄ `AwsRegionProvider`
+
+```scala
+  implicit def RegionToProvider(region: Region): AwsRegionProvider = new AwsRegionProvider {
+    override def getRegion(): String = region.getName
+  }
+  implicit def ProviderToRegion(provider: AwsRegionProvider): Region = Regions.fromName(provider.getRegion)
+```
+
+- `RegionAlias` → each of the other three
+
+```scala
+  implicit def RegionAliasToRegions (alias: RegionAlias): Regions = alias.region
+  implicit def RegionAliasToRegion  (alias: RegionAlias): Region  = alias.region
+  implicit def RegionAliasToProvider(alias: RegionAlias): AwsRegionProvider = alias.region
+
 }
-
-case object PurchaseModel {
-
-  def onDemand:          PurchaseModel = PurchaseModel(None)
-  def spot(max: Double): PurchaseModel = PurchaseModel(Some(max))
-}
-
-// NOTE: you can set maximum price depending on the current spot price:
-// PurchaseModel.spot(ec2.getCurrentSpotPrice(instanceType) + 0.001)
 
 ```
 
 
 
 
-[main/scala/ohnosequences/awstools/autoscaling/client.scala]: client.scala.md
-[main/scala/ohnosequences/awstools/autoscaling/filters.scala]: filters.scala.md
-[main/scala/ohnosequences/awstools/autoscaling/package.scala]: package.scala.md
-[main/scala/ohnosequences/awstools/autoscaling/PurchaseModel.scala]: PurchaseModel.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/client.scala]: ../autoscaling/client.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/filters.scala]: ../autoscaling/filters.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/package.scala]: ../autoscaling/package.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/PurchaseModel.scala]: ../autoscaling/PurchaseModel.scala.md
 [main/scala/ohnosequences/awstools/ec2/AMI.scala]: ../ec2/AMI.scala.md
 [main/scala/ohnosequences/awstools/ec2/client.scala]: ../ec2/client.scala.md
 [main/scala/ohnosequences/awstools/ec2/instances.scala]: ../ec2/instances.scala.md
@@ -39,8 +59,8 @@ case object PurchaseModel {
 [main/scala/ohnosequences/awstools/ec2/LaunchSpecs.scala]: ../ec2/LaunchSpecs.scala.md
 [main/scala/ohnosequences/awstools/ec2/package.scala]: ../ec2/package.scala.md
 [main/scala/ohnosequences/awstools/package.scala]: ../package.scala.md
-[main/scala/ohnosequences/awstools/regions/aliases.scala]: ../regions/aliases.scala.md
-[main/scala/ohnosequences/awstools/regions/package.scala]: ../regions/package.scala.md
+[main/scala/ohnosequences/awstools/regions/aliases.scala]: aliases.scala.md
+[main/scala/ohnosequences/awstools/regions/package.scala]: package.scala.md
 [main/scala/ohnosequences/awstools/s3/address.scala]: ../s3/address.scala.md
 [main/scala/ohnosequences/awstools/s3/client.scala]: ../s3/client.scala.md
 [main/scala/ohnosequences/awstools/s3/package.scala]: ../s3/package.scala.md

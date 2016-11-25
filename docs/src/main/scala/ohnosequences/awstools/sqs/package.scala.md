@@ -1,36 +1,42 @@
 
 ```scala
-package ohnosequences.awstools.autoscaling
+package ohnosequences.awstools
 
 import com.amazonaws.auth._
-import com.amazonaws.services.ec2.AmazonEC2
-import ohnosequences.awstools.ec2._
+import com.amazonaws.services.sqs.{ AmazonSQS, AmazonSQSClient }
+import com.amazonaws.ClientConfiguration
+import com.amazonaws.PredefinedClientConfigurations
 import ohnosequences.awstools.regions._
-import com.amazonaws.{ services => amzn }
 
-case class PurchaseModel(val maxPrice: Option[Double]) {
 
-  val isSpot = maxPrice.nonEmpty
+package object sqs {
+
+  type MessageId = String
+
+  def SQSClient(
+    region: AwsRegionProvider = new DefaultAwsRegionProviderChain(),
+    credentials: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain(),
+    configuration: ClientConfiguration = PredefinedClientConfigurations.defaultConfig()
+  ): AmazonSQSClient = {
+    new AmazonSQSClient(credentials, configuration)
+      .withRegion(region)
+  }
+
+  // Implicits
+  implicit def toScalaSQSClient(sqs: AmazonSQS):
+    ScalaSQSClient =
+    ScalaSQSClient(sqs)
 }
-
-case object PurchaseModel {
-
-  def onDemand:          PurchaseModel = PurchaseModel(None)
-  def spot(max: Double): PurchaseModel = PurchaseModel(Some(max))
-}
-
-// NOTE: you can set maximum price depending on the current spot price:
-// PurchaseModel.spot(ec2.getCurrentSpotPrice(instanceType) + 0.001)
 
 ```
 
 
 
 
-[main/scala/ohnosequences/awstools/autoscaling/client.scala]: client.scala.md
-[main/scala/ohnosequences/awstools/autoscaling/filters.scala]: filters.scala.md
-[main/scala/ohnosequences/awstools/autoscaling/package.scala]: package.scala.md
-[main/scala/ohnosequences/awstools/autoscaling/PurchaseModel.scala]: PurchaseModel.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/client.scala]: ../autoscaling/client.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/filters.scala]: ../autoscaling/filters.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/package.scala]: ../autoscaling/package.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/PurchaseModel.scala]: ../autoscaling/PurchaseModel.scala.md
 [main/scala/ohnosequences/awstools/ec2/AMI.scala]: ../ec2/AMI.scala.md
 [main/scala/ohnosequences/awstools/ec2/client.scala]: ../ec2/client.scala.md
 [main/scala/ohnosequences/awstools/ec2/instances.scala]: ../ec2/instances.scala.md
@@ -49,10 +55,10 @@ case object PurchaseModel {
 [main/scala/ohnosequences/awstools/sns/package.scala]: ../sns/package.scala.md
 [main/scala/ohnosequences/awstools/sns/subscribers.scala]: ../sns/subscribers.scala.md
 [main/scala/ohnosequences/awstools/sns/topics.scala]: ../sns/topics.scala.md
-[main/scala/ohnosequences/awstools/sqs/client.scala]: ../sqs/client.scala.md
-[main/scala/ohnosequences/awstools/sqs/messages.scala]: ../sqs/messages.scala.md
-[main/scala/ohnosequences/awstools/sqs/package.scala]: ../sqs/package.scala.md
-[main/scala/ohnosequences/awstools/sqs/queues.scala]: ../sqs/queues.scala.md
+[main/scala/ohnosequences/awstools/sqs/client.scala]: client.scala.md
+[main/scala/ohnosequences/awstools/sqs/messages.scala]: messages.scala.md
+[main/scala/ohnosequences/awstools/sqs/package.scala]: package.scala.md
+[main/scala/ohnosequences/awstools/sqs/queues.scala]: queues.scala.md
 [test/scala/ohnosequences/awstools/autoscaling.scala]: ../../../../../test/scala/ohnosequences/awstools/autoscaling.scala.md
 [test/scala/ohnosequences/awstools/instanceTypes.scala]: ../../../../../test/scala/ohnosequences/awstools/instanceTypes.scala.md
 [test/scala/ohnosequences/awstools/package.scala]: ../../../../../test/scala/ohnosequences/awstools/package.scala.md

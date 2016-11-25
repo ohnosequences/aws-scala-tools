@@ -17,7 +17,7 @@ sealed trait AnyS3Address {
 
   // We use URI as a way to sanitize things (dropping extra /)
   lazy val bucket: String = toURI.getHost
-  lazy val key: String = toURI.getPath
+  lazy val key: String = toURI.getPath.stripPrefix("/")
 
   lazy val segments: Seq[String] = key.split("/").filter(_.nonEmpty).toSeq
 
@@ -26,7 +26,7 @@ sealed trait AnyS3Address {
 
   override def toString = toURI.toString
 
-  def toHttpsURL(region: Region): URL = new URL("https", s"s3-${region}.amazonaws.com", s"${bucket}/${key}")
+  def toHttpsURL(region: Regions): URL = new URL("https", s"s3-${region}.amazonaws.com", s"${bucket}/${key}")
 }
 
 
@@ -42,7 +42,7 @@ object S3Folder {
 
   def apply(uri: URI): S3Folder = S3Folder(uri.getHost, uri.getPath)
 
-  implicit def toS3Object(f: S3Folder): S3Object =
+  def toS3Object(f: S3Folder): S3Object =
     S3Object(f.bucket, f.key.stripSuffix("/"))
 }
 
@@ -64,9 +64,9 @@ case class S3AddressFromString(val sc: StringContext) extends AnyVal {
 
   // This allows to write things like s3"bucket" / "foo" / "bar" /
   // or s3"org.com/${suffix}/${folder.getName}" / "file.foo"
-  def s3(args: Any*): S3Folder = {
+  def s3(args: Any*): S3Object = {
     val str = sc.s(args: _*)
-    S3Folder(new URI("s3://" + str))
+    S3Object(new URI("s3://" + str))
   }
 }
 
@@ -75,33 +75,33 @@ case class S3AddressFromString(val sc: StringContext) extends AnyVal {
 
 
 
-[main/scala/ohnosequences/awstools/autoscaling/AutoScaling.scala]: ../autoscaling/AutoScaling.scala.md
-[main/scala/ohnosequences/awstools/autoscaling/AutoScalingGroup.scala]: ../autoscaling/AutoScalingGroup.scala.md
-[main/scala/ohnosequences/awstools/autoscaling/LaunchConfiguration.scala]: ../autoscaling/LaunchConfiguration.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/client.scala]: ../autoscaling/client.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/filters.scala]: ../autoscaling/filters.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/package.scala]: ../autoscaling/package.scala.md
 [main/scala/ohnosequences/awstools/autoscaling/PurchaseModel.scala]: ../autoscaling/PurchaseModel.scala.md
-[main/scala/ohnosequences/awstools/dynamodb/DynamoDBUtils.scala]: ../dynamodb/DynamoDBUtils.scala.md
 [main/scala/ohnosequences/awstools/ec2/AMI.scala]: ../ec2/AMI.scala.md
-[main/scala/ohnosequences/awstools/ec2/EC2.scala]: ../ec2/EC2.scala.md
-[main/scala/ohnosequences/awstools/ec2/Filters.scala]: ../ec2/Filters.scala.md
-[main/scala/ohnosequences/awstools/ec2/InstanceSpecs.scala]: ../ec2/InstanceSpecs.scala.md
+[main/scala/ohnosequences/awstools/ec2/client.scala]: ../ec2/client.scala.md
+[main/scala/ohnosequences/awstools/ec2/instances.scala]: ../ec2/instances.scala.md
+[main/scala/ohnosequences/awstools/ec2/InstanceType-AMI.scala]: ../ec2/InstanceType-AMI.scala.md
 [main/scala/ohnosequences/awstools/ec2/InstanceType.scala]: ../ec2/InstanceType.scala.md
 [main/scala/ohnosequences/awstools/ec2/LaunchSpecs.scala]: ../ec2/LaunchSpecs.scala.md
 [main/scala/ohnosequences/awstools/ec2/package.scala]: ../ec2/package.scala.md
-[main/scala/ohnosequences/awstools/regions/Region.scala]: ../regions/Region.scala.md
+[main/scala/ohnosequences/awstools/package.scala]: ../package.scala.md
+[main/scala/ohnosequences/awstools/regions/aliases.scala]: ../regions/aliases.scala.md
+[main/scala/ohnosequences/awstools/regions/package.scala]: ../regions/package.scala.md
 [main/scala/ohnosequences/awstools/s3/address.scala]: address.scala.md
 [main/scala/ohnosequences/awstools/s3/client.scala]: client.scala.md
 [main/scala/ohnosequences/awstools/s3/package.scala]: package.scala.md
 [main/scala/ohnosequences/awstools/s3/transfers.scala]: transfers.scala.md
-[main/scala/ohnosequences/awstools/sns/SNS.scala]: ../sns/SNS.scala.md
-[main/scala/ohnosequences/awstools/sns/Topic.scala]: ../sns/Topic.scala.md
-[main/scala/ohnosequences/awstools/sqs/Queue.scala]: ../sqs/Queue.scala.md
-[main/scala/ohnosequences/awstools/sqs/SQS.scala]: ../sqs/SQS.scala.md
-[main/scala/ohnosequences/awstools/utils/AutoScalingUtils.scala]: ../utils/AutoScalingUtils.scala.md
-[main/scala/ohnosequences/awstools/utils/DynamoDBUtils.scala]: ../utils/DynamoDBUtils.scala.md
-[main/scala/ohnosequences/awstools/utils/SQSUtils.scala]: ../utils/SQSUtils.scala.md
-[main/scala/ohnosequences/benchmark/Benchmark.scala]: ../../benchmark/Benchmark.scala.md
-[main/scala/ohnosequences/logging/Logger.scala]: ../../logging/Logger.scala.md
-[test/scala/ohnosequences/awstools/EC2Tests.scala]: ../../../../../test/scala/ohnosequences/awstools/EC2Tests.scala.md
-[test/scala/ohnosequences/awstools/RegionTests.scala]: ../../../../../test/scala/ohnosequences/awstools/RegionTests.scala.md
-[test/scala/ohnosequences/awstools/S3Tests.scala]: ../../../../../test/scala/ohnosequences/awstools/S3Tests.scala.md
-[test/scala/ohnosequences/awstools/SQSTests.scala]: ../../../../../test/scala/ohnosequences/awstools/SQSTests.scala.md
+[main/scala/ohnosequences/awstools/sns/client.scala]: ../sns/client.scala.md
+[main/scala/ohnosequences/awstools/sns/package.scala]: ../sns/package.scala.md
+[main/scala/ohnosequences/awstools/sns/subscribers.scala]: ../sns/subscribers.scala.md
+[main/scala/ohnosequences/awstools/sns/topics.scala]: ../sns/topics.scala.md
+[main/scala/ohnosequences/awstools/sqs/client.scala]: ../sqs/client.scala.md
+[main/scala/ohnosequences/awstools/sqs/messages.scala]: ../sqs/messages.scala.md
+[main/scala/ohnosequences/awstools/sqs/package.scala]: ../sqs/package.scala.md
+[main/scala/ohnosequences/awstools/sqs/queues.scala]: ../sqs/queues.scala.md
+[test/scala/ohnosequences/awstools/autoscaling.scala]: ../../../../../test/scala/ohnosequences/awstools/autoscaling.scala.md
+[test/scala/ohnosequences/awstools/instanceTypes.scala]: ../../../../../test/scala/ohnosequences/awstools/instanceTypes.scala.md
+[test/scala/ohnosequences/awstools/package.scala]: ../../../../../test/scala/ohnosequences/awstools/package.scala.md
+[test/scala/ohnosequences/awstools/sqs.scala]: ../../../../../test/scala/ohnosequences/awstools/sqs.scala.md

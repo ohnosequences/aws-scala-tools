@@ -1,33 +1,15 @@
 
 ```scala
 package ohnosequences.awstools.ec2
-
-
-trait AnyInstanceSpecs {
-
-  type AMI <: AnyAMI
-  val  ami: AMI
-
-  type InstanceType <: AnyInstanceType
-  val  instanceType: InstanceType
-
-  // NOTE: we don't require it here, because in some place we create an instance of this type from a java-sdk type >_<
-  // val supportsAMI: T SupportsAMI A
-}
-
-case class InstanceSpecs[
-  A <: AnyLinuxAMI,
-  T <: AnyInstanceType
-](val ami: A,
-  val instanceType: T
-)(implicit
-  val supportsAMI: T SupportsAMI A
-) extends AnyInstanceSpecs {
-
-  type AMI = A
-  type InstanceType = T
-}
 ```
+
+## Instance Types & AMI compatibility implicits
+
+Here we provide implicits for (hopefully) all valid combinations of
+
+- instance type & storage type
+- instance type & virtualization type
+- instance type & AMI (as a combination of storage and virtualization types)
 
 An instance type supports an AMI if it supports both its storage type and virtualization
 
@@ -71,7 +53,6 @@ doesn't support storage type of the chosen AMI
 """)
 sealed trait SupportsStorageType[T <: AnyInstanceType, S <: AnyStorageType]
 case object SupportsStorageType {
-  import InstanceType._
 
   implicit def ebs[T <: AnyInstanceType]:
       (T SupportsStorageType EBS.type) =
@@ -144,7 +125,6 @@ doesn't support virtualization of the chosen AMI
 """)
 sealed trait SupportsVirtualization[T <: AnyInstanceType, V <: AnyVirtualization]
 case object SupportsVirtualization {
-  import InstanceType._
 ```
 
 All current generation instance types support HVM AMIs.
@@ -214,33 +194,33 @@ The C1, HI1, HS1, M1, M2, and T1 previous generation instance types support PV A
 
 
 
-[main/scala/ohnosequences/awstools/autoscaling/AutoScaling.scala]: ../autoscaling/AutoScaling.scala.md
-[main/scala/ohnosequences/awstools/autoscaling/AutoScalingGroup.scala]: ../autoscaling/AutoScalingGroup.scala.md
-[main/scala/ohnosequences/awstools/autoscaling/LaunchConfiguration.scala]: ../autoscaling/LaunchConfiguration.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/client.scala]: ../autoscaling/client.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/filters.scala]: ../autoscaling/filters.scala.md
+[main/scala/ohnosequences/awstools/autoscaling/package.scala]: ../autoscaling/package.scala.md
 [main/scala/ohnosequences/awstools/autoscaling/PurchaseModel.scala]: ../autoscaling/PurchaseModel.scala.md
-[main/scala/ohnosequences/awstools/dynamodb/DynamoDBUtils.scala]: ../dynamodb/DynamoDBUtils.scala.md
 [main/scala/ohnosequences/awstools/ec2/AMI.scala]: AMI.scala.md
-[main/scala/ohnosequences/awstools/ec2/EC2.scala]: EC2.scala.md
-[main/scala/ohnosequences/awstools/ec2/Filters.scala]: Filters.scala.md
-[main/scala/ohnosequences/awstools/ec2/InstanceSpecs.scala]: InstanceSpecs.scala.md
+[main/scala/ohnosequences/awstools/ec2/client.scala]: client.scala.md
+[main/scala/ohnosequences/awstools/ec2/instances.scala]: instances.scala.md
+[main/scala/ohnosequences/awstools/ec2/InstanceType-AMI.scala]: InstanceType-AMI.scala.md
 [main/scala/ohnosequences/awstools/ec2/InstanceType.scala]: InstanceType.scala.md
 [main/scala/ohnosequences/awstools/ec2/LaunchSpecs.scala]: LaunchSpecs.scala.md
 [main/scala/ohnosequences/awstools/ec2/package.scala]: package.scala.md
-[main/scala/ohnosequences/awstools/regions/Region.scala]: ../regions/Region.scala.md
+[main/scala/ohnosequences/awstools/package.scala]: ../package.scala.md
+[main/scala/ohnosequences/awstools/regions/aliases.scala]: ../regions/aliases.scala.md
+[main/scala/ohnosequences/awstools/regions/package.scala]: ../regions/package.scala.md
 [main/scala/ohnosequences/awstools/s3/address.scala]: ../s3/address.scala.md
 [main/scala/ohnosequences/awstools/s3/client.scala]: ../s3/client.scala.md
 [main/scala/ohnosequences/awstools/s3/package.scala]: ../s3/package.scala.md
 [main/scala/ohnosequences/awstools/s3/transfers.scala]: ../s3/transfers.scala.md
-[main/scala/ohnosequences/awstools/sns/SNS.scala]: ../sns/SNS.scala.md
-[main/scala/ohnosequences/awstools/sns/Topic.scala]: ../sns/Topic.scala.md
-[main/scala/ohnosequences/awstools/sqs/Queue.scala]: ../sqs/Queue.scala.md
-[main/scala/ohnosequences/awstools/sqs/SQS.scala]: ../sqs/SQS.scala.md
-[main/scala/ohnosequences/awstools/utils/AutoScalingUtils.scala]: ../utils/AutoScalingUtils.scala.md
-[main/scala/ohnosequences/awstools/utils/DynamoDBUtils.scala]: ../utils/DynamoDBUtils.scala.md
-[main/scala/ohnosequences/awstools/utils/SQSUtils.scala]: ../utils/SQSUtils.scala.md
-[main/scala/ohnosequences/benchmark/Benchmark.scala]: ../../benchmark/Benchmark.scala.md
-[main/scala/ohnosequences/logging/Logger.scala]: ../../logging/Logger.scala.md
-[test/scala/ohnosequences/awstools/EC2Tests.scala]: ../../../../../test/scala/ohnosequences/awstools/EC2Tests.scala.md
-[test/scala/ohnosequences/awstools/RegionTests.scala]: ../../../../../test/scala/ohnosequences/awstools/RegionTests.scala.md
-[test/scala/ohnosequences/awstools/S3Tests.scala]: ../../../../../test/scala/ohnosequences/awstools/S3Tests.scala.md
-[test/scala/ohnosequences/awstools/SQSTests.scala]: ../../../../../test/scala/ohnosequences/awstools/SQSTests.scala.md
+[main/scala/ohnosequences/awstools/sns/client.scala]: ../sns/client.scala.md
+[main/scala/ohnosequences/awstools/sns/package.scala]: ../sns/package.scala.md
+[main/scala/ohnosequences/awstools/sns/subscribers.scala]: ../sns/subscribers.scala.md
+[main/scala/ohnosequences/awstools/sns/topics.scala]: ../sns/topics.scala.md
+[main/scala/ohnosequences/awstools/sqs/client.scala]: ../sqs/client.scala.md
+[main/scala/ohnosequences/awstools/sqs/messages.scala]: ../sqs/messages.scala.md
+[main/scala/ohnosequences/awstools/sqs/package.scala]: ../sqs/package.scala.md
+[main/scala/ohnosequences/awstools/sqs/queues.scala]: ../sqs/queues.scala.md
+[test/scala/ohnosequences/awstools/autoscaling.scala]: ../../../../../test/scala/ohnosequences/awstools/autoscaling.scala.md
+[test/scala/ohnosequences/awstools/instanceTypes.scala]: ../../../../../test/scala/ohnosequences/awstools/instanceTypes.scala.md
+[test/scala/ohnosequences/awstools/package.scala]: ../../../../../test/scala/ohnosequences/awstools/package.scala.md
+[test/scala/ohnosequences/awstools/sqs.scala]: ../../../../../test/scala/ohnosequences/awstools/sqs.scala.md
