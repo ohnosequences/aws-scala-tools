@@ -10,7 +10,11 @@ import com.amazonaws.regions._
 
   This type is also implicitly converted to `Region`, `Regions` and `AwsRegionProvider` types, so you can use it anywhere those types are expected (once you've imported `ohnosequences.awstools.regions._`)
 */
-sealed abstract class RegionAlias(val region: Regions)
+sealed abstract class RegionAlias(val region: Regions) {
+
+  override def toString = region.getName
+}
+
 
 /* - Asia Pacific */
 case object Tokyo              extends RegionAlias(Regions.AP_NORTHEAST_1)
