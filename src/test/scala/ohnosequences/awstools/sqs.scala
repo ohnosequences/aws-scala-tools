@@ -24,7 +24,7 @@ class SQS extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterAll {
   lazy val queue: Queue = sqsClient.getOrCreateQueue(queueName).get
 
   override def beforeAll() = {
-    queue.setVisibilityTimeout(2)
+    queue.setVisibilityTimeout(2.seconds)
   }
 
   override def afterAll() = {

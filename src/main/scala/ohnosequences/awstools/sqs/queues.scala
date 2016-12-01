@@ -142,7 +142,9 @@ case class Queue(
   def approxMsgAvailable: Int = getAttribute(QueueAttributeName.ApproximateNumberOfMessages).toInt
   def approxMsgInFlight:  Int = getAttribute(QueueAttributeName.ApproximateNumberOfMessagesNotVisible).toInt
 
-  def visibilityTimeout: Duration = getAttribute(QueueAttributeName.VisibilityTimeout).toInt.seconds
+  // NOTE: this is actually limited by Int, but we use FiniteDuration for convenience
+  def visibilityTimeout: FiniteDuration =
+    getAttribute(QueueAttributeName.VisibilityTimeout).toInt.seconds
 
 
   /* A shortcut for setting attributes */
@@ -151,7 +153,8 @@ case class Queue(
   }
 
   /* Note that visibility timeout cannot be more than 12 hours */
-  def setVisibilityTimeout(seconds: Int): Try[Unit] = setAttribute(QueueAttributeName.VisibilityTimeout, seconds.toString)
+  def setVisibilityTimeout(time: FiniteDuration): Try[Unit] = 
+    setAttribute(QueueAttributeName.VisibilityTimeout, time.toSeconds.toString)
 
   // TODO: get/set for MessageRetentionPeriod, ReceiveMessageWaitTimeSeconds, etc.
 
