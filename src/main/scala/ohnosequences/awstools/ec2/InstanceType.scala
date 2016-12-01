@@ -3,11 +3,16 @@ package ohnosequences.awstools.ec2
 import com.amazonaws.services.ec2.model
 
 sealed trait AnyInstanceType {
+  // NOTE: it forced to be a case object
+  self: Singleton with Product =>
+
   type Family <: InstanceTypeFamily
   val  family: Family
 
-  final lazy val size: String = this.toString
-  final lazy val name: String = s"${family.prefix}.${size}"
+  final lazy val size: String = self.productPrefix
+  final lazy val name: String = s"${family}.${size}"
+
+  override def toString = name
 }
 
 case object AnyInstanceType {
@@ -23,6 +28,9 @@ case object AnyInstanceType {
 sealed class InstanceType[
   F <: InstanceTypeFamily
 ](val family: F) extends AnyInstanceType {
+  // NOTE: it forced to be a case object
+  self: Singleton with Product =>
+
   type Family = F
 }
 
@@ -31,9 +39,9 @@ sealed trait AnyGeneration
 trait CurrentGeneration extends AnyGeneration
 trait PreviousGeneration extends AnyGeneration
 
-sealed class InstanceTypeFamily { family: AnyGeneration =>
-
-  lazy val prefix: String = this.toString
+sealed class InstanceTypeFamily {
+  // NOTE: it forced to be a case object
+  self: AnyGeneration with Singleton with Product =>
 }
 
 /* ### Current Generation Instances */
