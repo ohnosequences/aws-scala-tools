@@ -12,7 +12,7 @@ import com.amazonaws.regions._
 */
 sealed abstract class RegionAlias(val region: Regions) {
 
-  override def toString = region.getName
+  override def toString: String = region.getName
 }
 
 

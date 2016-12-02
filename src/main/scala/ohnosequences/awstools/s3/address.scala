@@ -1,9 +1,7 @@
 package ohnosequences.awstools.s3
 
 import ohnosequences.awstools.regions._
-
-import java.net.URI
-import java.net.URL
+import java.net.{ URI, URL }
 
 
 sealed trait AnyS3Address {
@@ -20,9 +18,9 @@ sealed trait AnyS3Address {
   lazy val segments: Seq[String] = key.split("/").filter(_.nonEmpty).toSeq
 
   @deprecated("Use toURI method instead, or just toString", since = "v0.17.0")
-  final def url = "s3://" + bucket + "/" + key
+  final def url: String = "s3://" + bucket + "/" + key
 
-  override def toString = toURI.toString
+  override def toString: String = toURI.toString
 
   def toHttpsURL(region: Regions): URL = new URL("https", s"s3-${region}.amazonaws.com", s"${bucket}/${key}")
 }

@@ -160,7 +160,7 @@ case class Queue(
   // TODO: get/set for MessageRetentionPeriod, ReceiveMessageWaitTimeSeconds, etc.
 
 
-  override def toString = url.toString
+  override def toString: String = url.toString
 }
 
 
@@ -170,7 +170,7 @@ case class SendBatchResult(
   val failures: Seq[(String, BatchResultErrorEntry)]
 ) {
 
-  def ++(other: SendBatchResult) = SendBatchResult(
+  def ++(other: SendBatchResult): SendBatchResult = SendBatchResult(
     other.sent ++ this.sent,
     other.failures ++ this.failures
   )

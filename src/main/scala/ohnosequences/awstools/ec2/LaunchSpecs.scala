@@ -1,8 +1,10 @@
 package ohnosequences.awstools.ec2
 
+import ohnosequences.awstools._
 import com.amazonaws.services.ec2.model._
 import com.amazonaws.services.autoscaling.{ model => as }
 import scala.collection.JavaConversions._
+
 
 /* This type is a common denominator type for various types from the SDK desribing launch specification used for on-demand or spot requests in EC2 and for launch configurations in AutoScaling. Motivation:
 
@@ -78,7 +80,7 @@ case object AnyLaunchSpecs {
       val request = new RunInstancesRequest()
         .withImageId(launchSpecs.ami.id)
         .withInstanceType(launchSpecs.instanceType)
-        .withUserData(base64encode(launchSpecs.userData))
+        .withUserData(launchSpecs.userData.encodeBase64)
         .withSecurityGroups(launchSpecs.securityGroups)
         .withKeyName(launchSpecs.keyName)
         .withMonitoring(launchSpecs.monitoring)
@@ -105,7 +107,7 @@ case object AnyLaunchSpecs {
       val ls = new LaunchSpecification()
         .withImageId(launchSpecs.ami.id)
         .withInstanceType(launchSpecs.instanceType)
-        .withUserData(base64encode(launchSpecs.userData))
+        .withUserData(launchSpecs.userData.encodeBase64)
         .withSecurityGroups(launchSpecs.securityGroups)
         .withKeyName(launchSpecs.keyName)
         .withMonitoringEnabled(launchSpecs.monitoring)
@@ -132,7 +134,7 @@ case object AnyLaunchSpecs {
       val newRequest = new as.CreateLaunchConfigurationRequest()
         .withImageId(launchSpecs.ami.id)
         .withInstanceType(launchSpecs.instanceType.toString)
-        .withUserData(base64encode(launchSpecs.userData))
+        .withUserData(launchSpecs.userData.encodeBase64)
         .withKeyName(launchSpecs.keyName)
         .withSecurityGroups(launchSpecs.securityGroups)
         .withInstanceMonitoring(new as.InstanceMonitoring().withEnabled(launchSpecs.monitoring))

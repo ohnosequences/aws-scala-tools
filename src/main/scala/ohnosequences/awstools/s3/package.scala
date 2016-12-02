@@ -3,8 +3,7 @@ package ohnosequences.awstools
 import com.amazonaws.auth._
 import com.amazonaws.services.s3.{ AmazonS3, AmazonS3Client }
 import com.amazonaws.services.s3.transfer.TransferManager
-import com.amazonaws.ClientConfiguration
-import com.amazonaws.PredefinedClientConfigurations
+import com.amazonaws.{ ClientConfiguration, PredefinedClientConfigurations }
 import ohnosequences.awstools.regions._
 
 
