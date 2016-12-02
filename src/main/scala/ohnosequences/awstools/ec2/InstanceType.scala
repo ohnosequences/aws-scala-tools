@@ -12,7 +12,7 @@ sealed trait AnyInstanceType {
   final lazy val size: String = self.productPrefix
   final lazy val name: String = s"${family}.${size}"
 
-  override def toString = name
+  override def toString: String = name
 }
 
 case object AnyInstanceType {

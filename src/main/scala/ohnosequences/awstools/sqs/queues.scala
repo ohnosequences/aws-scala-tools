@@ -160,7 +160,7 @@ case class Queue(
   // TODO: get/set for MessageRetentionPeriod, ReceiveMessageWaitTimeSeconds, etc.
 
 
-  override def toString = url.toString
+  override def toString: String = url.toString
 }
 
 

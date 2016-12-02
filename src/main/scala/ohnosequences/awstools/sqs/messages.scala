@@ -42,7 +42,7 @@ case class Message(
     }
   }
 
-  override def toString = Map(
+  override def toString: String = Map(
     "id" -> message.id,
     // "receiptHandle" -> message.receiptHandle,
     "body" -> message.body

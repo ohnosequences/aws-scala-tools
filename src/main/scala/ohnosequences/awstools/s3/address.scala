@@ -22,7 +22,7 @@ sealed trait AnyS3Address {
   @deprecated("Use toURI method instead, or just toString", since = "v0.17.0")
   final def url = "s3://" + bucket + "/" + key
 
-  override def toString = toURI.toString
+  override def toString: String = toURI.toString
 
   def toHttpsURL(region: Regions): URL = new URL("https", s"s3-${region}.amazonaws.com", s"${bucket}/${key}")
 }
