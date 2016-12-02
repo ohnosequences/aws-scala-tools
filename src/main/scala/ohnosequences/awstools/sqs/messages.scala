@@ -31,7 +31,7 @@ case class Message(
   /* Note that the total visibility time for a message is 12 hours. See more details in the [Visibility Timeout](http://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/AboutVT.html) Amazon docs.
   */
   def changeVisibility(time: FiniteDuration): Try[Unit] = Try {
-    if (time < 0 || time > 12.hours) {
+    if (time < 1.second || time > 12.hours) {
       throw new IllegalArgumentException(s"Visibility timeout for an SQS message can't be negative or more than 12 hours: ${time}")
     } else {
       queue.sqs.changeMessageVisibility(
