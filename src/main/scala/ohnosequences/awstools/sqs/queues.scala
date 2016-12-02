@@ -170,7 +170,7 @@ case class SendBatchResult(
   val failures: Seq[(String, BatchResultErrorEntry)]
 ) {
 
-  def ++(other: SendBatchResult) = SendBatchResult(
+  def ++(other: SendBatchResult): SendBatchResult = SendBatchResult(
     other.sent ++ this.sent,
     other.failures ++ this.failures
   )

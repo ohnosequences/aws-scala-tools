@@ -2,8 +2,7 @@ package ohnosequences.awstools
 
 import com.amazonaws.auth._
 import com.amazonaws.services.sns.{ AmazonSNS, AmazonSNSClient }
-import com.amazonaws.ClientConfiguration
-import com.amazonaws.PredefinedClientConfigurations
+import com.amazonaws.{ ClientConfiguration, PredefinedClientConfigurations }
 import ohnosequences.awstools.regions._
 
 package object sns {
