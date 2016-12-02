@@ -1,5 +1,8 @@
 package ohnosequences
 
+import java.util.Base64
+import java.nio.charset.StandardCharsets.UTF_8
+
 package object awstools {
 
   type Token = String
@@ -44,4 +47,11 @@ package object awstools {
   //     ))
   //   }
   // }
+
+  implicit class StringAWSOps(val str: String) extends AnyVal {
+
+    def encodeBase64: String = new String(Base64.getEncoder().encode(str.getBytes(UTF_8)), UTF_8)
+    def decodeBase64: String = new String(Base64.getDecoder().decode(str.getBytes(UTF_8)), UTF_8)
+  }
+
 }
