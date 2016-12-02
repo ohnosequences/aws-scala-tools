@@ -15,6 +15,10 @@ case class Queue(
   val url: URL
 ) { queue =>
 
+  // This shouldn't change over time, so I make it a lazy val:
+  lazy val arn: String = getAttribute(QueueAttributeName.QueueArn)
+
+
   def delete(): Try[Unit] = Try { sqs.deleteQueue(queue.url.toString) }
 
   /* Note, that you have to wait 60s after purging a queue until you can do it again. */
@@ -135,9 +139,6 @@ case class Queue(
       .getAttributes.get(attr.toString)
   }
 
-  // This shouldn't change over time, so I make it a lazy val:
-  lazy val arn: String = getAttribute(QueueAttributeName.QueueArn)
-
   /* Note that these attributes return **approximate** numbers, meaning that you cannot reliably use them for determining the number of messages in a queue. */
   def approxMsgAvailable: Int = getAttribute(QueueAttributeName.ApproximateNumberOfMessages).toInt
   def approxMsgInFlight:  Int = getAttribute(QueueAttributeName.ApproximateNumberOfMessagesNotVisible).toInt
@@ -153,7 +154,7 @@ case class Queue(
   }
 
   /* Note that visibility timeout cannot be more than 12 hours */
-  def setVisibilityTimeout(time: FiniteDuration): Try[Unit] = 
+  def setVisibilityTimeout(time: FiniteDuration): Try[Unit] =
     setAttribute(QueueAttributeName.VisibilityTimeout, time.toSeconds.toString)
 
   // TODO: get/set for MessageRetentionPeriod, ReceiveMessageWaitTimeSeconds, etc.
