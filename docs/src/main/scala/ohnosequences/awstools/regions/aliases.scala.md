@@ -15,7 +15,10 @@ import com.amazonaws.regions._
 
 
 ```scala
-sealed abstract class RegionAlias(val region: Regions)
+sealed abstract class RegionAlias(val region: Regions) {
+
+  override def toString: String = region.getName
+}
 ```
 
 - Asia Pacific

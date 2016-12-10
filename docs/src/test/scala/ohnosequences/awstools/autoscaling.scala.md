@@ -12,11 +12,11 @@ class AutoScaling extends org.scalatest.FunSuite with org.scalatest.BeforeAndAft
   lazy val autoscaling: AmazonAutoScaling = AutoScalingClient()
 
 
-  override def beforeAll() = {
-  }
-
-  override def afterAll() = {
-  }
+  // override def beforeAll() = {
+  // }
+  //
+  // override def afterAll() = {
+  // }
 
 }
 

@@ -21,15 +21,15 @@ case class Message(
 Unique message identifier. You get this when you send a message, but you can't use it to _refer_ to messages.
 
 ```scala
-  def id: MessageId = asJava.getMessageId()
+  lazy val id: MessageId = asJava.getMessageId()
 ```
 
 A handle you get for each instance of a _received_ message. You need it to delete a message or change its visibility timeout.
 
 ```scala
-  def receiptHandle: String = asJava.getReceiptHandle()
+  lazy val receiptHandle: String = asJava.getReceiptHandle()
 
-  def body: String = asJava.getBody()
+  lazy val body: String = asJava.getBody()
 ```
 
 Note that to message will be deleted even if it's locked by the visibility timeout.
@@ -47,15 +47,19 @@ Note that the total visibility time for a message is 12 hours. See more details 
 
 
 ```scala
-  def changeVisibility(additionalSeconds: Integer): Try[Unit] = Try {
-    queue.sqs.changeMessageVisibility(
-      queue.url.toString,
-      message.receiptHandle,
-      additionalSeconds
-    )
+  def changeVisibility(time: FiniteDuration): Try[Unit] = Try {
+    if (time < 1.second || time > 12.hours) {
+      throw new IllegalArgumentException(s"Visibility timeout for an SQS message can't be negative or more than 12 hours: ${time}")
+    } else {
+      queue.sqs.changeMessageVisibility(
+        queue.url.toString,
+        message.receiptHandle,
+        time.toSeconds.toInt
+      )
+    }
   }
 
-  override def toString = Map(
+  override def toString: String = Map(
     "id" -> message.id,
     // "receiptHandle" -> message.receiptHandle,
     "body" -> message.body

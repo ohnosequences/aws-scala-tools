@@ -19,6 +19,10 @@ case class Queue(
   val url: URL
 ) { queue =>
 
+  // This shouldn't change over time, so I make it a lazy val:
+  lazy val arn: String = getAttribute(QueueAttributeName.QueueArn)
+
+
   def delete(): Try[Unit] = Try { sqs.deleteQueue(queue.url.toString) }
 ```
 
@@ -152,9 +156,6 @@ Providing read access to some useful attributes
     sqs.getQueueAttributes(queue.url.toString, List(attr.toString))
       .getAttributes.get(attr.toString)
   }
-
-  // This shouldn't change over time, so I make it a lazy val:
-  lazy val arn: String = getAttribute(QueueAttributeName.QueueArn)
 ```
 
 Note that these attributes return **approximate** numbers, meaning that you cannot reliably use them for determining the number of messages in a queue.
@@ -163,7 +164,9 @@ Note that these attributes return **approximate** numbers, meaning that you cann
   def approxMsgAvailable: Int = getAttribute(QueueAttributeName.ApproximateNumberOfMessages).toInt
   def approxMsgInFlight:  Int = getAttribute(QueueAttributeName.ApproximateNumberOfMessagesNotVisible).toInt
 
-  def visibilityTimeout: Duration = getAttribute(QueueAttributeName.VisibilityTimeout).toInt.seconds
+  // NOTE: this is actually limited by Int, but we use FiniteDuration for convenience
+  def visibilityTimeout: FiniteDuration =
+    getAttribute(QueueAttributeName.VisibilityTimeout).toInt.seconds
 ```
 
 A shortcut for setting attributes
@@ -177,12 +180,13 @@ A shortcut for setting attributes
 Note that visibility timeout cannot be more than 12 hours
 
 ```scala
-  def setVisibilityTimeout(seconds: Int): Try[Unit] = setAttribute(QueueAttributeName.VisibilityTimeout, seconds.toString)
+  def setVisibilityTimeout(time: FiniteDuration): Try[Unit] =
+    setAttribute(QueueAttributeName.VisibilityTimeout, time.toSeconds.toString)
 
   // TODO: get/set for MessageRetentionPeriod, ReceiveMessageWaitTimeSeconds, etc.
 
 
-  override def toString = url.toString
+  override def toString: String = url.toString
 }
 ```
 
@@ -194,7 +198,7 @@ case class SendBatchResult(
   val failures: Seq[(String, BatchResultErrorEntry)]
 ) {
 
-  def ++(other: SendBatchResult) = SendBatchResult(
+  def ++(other: SendBatchResult): SendBatchResult = SendBatchResult(
     other.sent ++ this.sent,
     other.failures ++ this.failures
   )

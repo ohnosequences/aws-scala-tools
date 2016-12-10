@@ -4,8 +4,7 @@ package ohnosequences.awstools
 
 import com.amazonaws.auth._
 import com.amazonaws.services.sqs.{ AmazonSQS, AmazonSQSClient }
-import com.amazonaws.ClientConfiguration
-import com.amazonaws.PredefinedClientConfigurations
+import com.amazonaws.{ ClientConfiguration, PredefinedClientConfigurations }
 import ohnosequences.awstools.regions._
 
 

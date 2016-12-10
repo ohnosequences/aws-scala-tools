@@ -66,7 +66,7 @@ case class Topic(
   //   sns.setTopicAttributes(new SetTopicAttributesRequest(topic.arn, name, value))
   // }
 
-  override def toString = topic.arn
+  override def toString: String = topic.arn
 }
 
 ```

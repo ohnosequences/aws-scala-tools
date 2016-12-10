@@ -5,8 +5,7 @@ package ohnosequences.awstools
 import com.amazonaws.auth._
 import com.amazonaws.services.autoscaling.{ AmazonAutoScaling, AmazonAutoScalingClient }
 import com.amazonaws.services.autoscaling.model._
-import com.amazonaws.ClientConfiguration
-import com.amazonaws.PredefinedClientConfigurations
+import com.amazonaws.{ ClientConfiguration, PredefinedClientConfigurations }
 import com.amazonaws.waiters._
 import ohnosequences.awstools.regions._
 

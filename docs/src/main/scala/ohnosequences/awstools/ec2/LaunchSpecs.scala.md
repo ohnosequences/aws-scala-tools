@@ -2,6 +2,7 @@
 ```scala
 package ohnosequences.awstools.ec2
 
+import ohnosequences.awstools._
 import com.amazonaws.services.ec2.model._
 import com.amazonaws.services.autoscaling.{ model => as }
 import scala.collection.JavaConversions._
@@ -125,7 +126,7 @@ Here follows some boring repetitive code for converting LaunchSpecs type to othe
       val request = new RunInstancesRequest()
         .withImageId(launchSpecs.ami.id)
         .withInstanceType(launchSpecs.instanceType)
-        .withUserData(base64encode(launchSpecs.userData))
+        .withUserData(launchSpecs.userData.encodeBase64)
         .withSecurityGroups(launchSpecs.securityGroups)
         .withKeyName(launchSpecs.keyName)
         .withMonitoring(launchSpecs.monitoring)
@@ -155,7 +156,7 @@ Here follows some boring repetitive code for converting LaunchSpecs type to othe
       val ls = new LaunchSpecification()
         .withImageId(launchSpecs.ami.id)
         .withInstanceType(launchSpecs.instanceType)
-        .withUserData(base64encode(launchSpecs.userData))
+        .withUserData(launchSpecs.userData.encodeBase64)
         .withSecurityGroups(launchSpecs.securityGroups)
         .withKeyName(launchSpecs.keyName)
         .withMonitoringEnabled(launchSpecs.monitoring)
@@ -185,7 +186,7 @@ Here follows some boring repetitive code for converting LaunchSpecs type to othe
       val newRequest = new as.CreateLaunchConfigurationRequest()
         .withImageId(launchSpecs.ami.id)
         .withInstanceType(launchSpecs.instanceType.toString)
-        .withUserData(base64encode(launchSpecs.userData))
+        .withUserData(launchSpecs.userData.encodeBase64)
         .withKeyName(launchSpecs.keyName)
         .withSecurityGroups(launchSpecs.securityGroups)
         .withInstanceMonitoring(new as.InstanceMonitoring().withEnabled(launchSpecs.monitoring))
