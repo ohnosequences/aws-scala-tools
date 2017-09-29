@@ -3,7 +3,7 @@ package ohnosequences.awstools.sqs
 import com.amazonaws.services.sqs.model.{ Message => AmazonMessage, _ }
 import com.amazonaws.services.sqs.AmazonSQS
 import scala.concurrent._, duration._
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import java.net.URL
 import scala.util.{ Try, Success, Failure }
 
@@ -34,7 +34,7 @@ case class Queue(
   def receiveOne: Try[Option[Message]] = Try {
 
     val response: ReceiveMessageResult = sqs.receiveMessage(queue.url.toString)
-    response.getMessages.headOption.map { Message(queue, _) }
+    response.getMessages.asScala.headOption.map { Message(queue, _) }
   }
 
 
@@ -46,11 +46,11 @@ case class Queue(
       val batch = group.zipWithIndex.map { case (msg, ix) =>
         new SendMessageBatchRequestEntry(ix.toString, msg)
       }
-      val response: SendMessageBatchResult = sqs.sendMessageBatch(queue.url.toString, batch)
+      val response: SendMessageBatchResult = sqs.sendMessageBatch(queue.url.toString, batch.asJava)
 
       SendBatchResult(
-        response.getSuccessful.map { _.getMessageId },
-        response.getFailed.map { err => (group.apply(err.getId.toInt), err) }
+        response.getSuccessful.asScala.map { _.getMessageId },
+        response.getFailed.asScala.map { err => (group.apply(err.getId.toInt), err) }
       )
     }
 
@@ -105,7 +105,7 @@ case class Queue(
           Try {
             sqs.receiveMessage(
               request.withMaxNumberOfMessages(maxMessagesForNextRequest)
-            ).getMessages.map { msg =>
+            ).getMessages.asScala.map { msg =>
               msg.getMessageId -> msg
             }
           }.recover {
@@ -135,7 +135,7 @@ case class Queue(
   /* Providing read access to some useful attributes */
   def getAttribute(attr: QueueAttributeName): String = {
     // NOTE: the only exception it throws is about invalid name of the attribute, but we control it by using the QueueAttributeName enum instead of just String.
-    sqs.getQueueAttributes(queue.url.toString, List(attr.toString))
+    sqs.getQueueAttributes(queue.url.toString, List(attr.toString).asJava)
       .getAttributes.get(attr.toString)
   }
 
@@ -150,7 +150,7 @@ case class Queue(
 
   /* A shortcut for setting attributes */
   def setAttribute(attr: QueueAttributeName, value: String): Try[Unit] = Try {
-    sqs.setQueueAttributes(queue.url.toString, Map(attr.toString -> value))
+    sqs.setQueueAttributes(queue.url.toString, Map(attr.toString -> value).asJava)
   }
 
   /* Note that visibility timeout cannot be more than 12 hours */

@@ -3,7 +3,7 @@ package ohnosequences.awstools.sns
 import ohnosequences.awstools._
 import com.amazonaws.services.sns.AmazonSNS
 import com.amazonaws.services.sns.model._
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.util.Try
 
 
@@ -30,7 +30,7 @@ case class Topic(
     def fromResponse(response: ListSubscriptionsByTopicResult) = (
       // NOTE: next token is null if there's nothing more to list
       Option(response.getNextToken),
-      response.getSubscriptions.toSeq
+      response.getSubscriptions.asScala.toSeq
     )
 
     rotateTokens {

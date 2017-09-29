@@ -3,7 +3,7 @@ package ohnosequences.awstools.ec2
 import ohnosequences.awstools._
 import com.amazonaws.services.ec2.model._
 import com.amazonaws.services.autoscaling.{ model => as }
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 
 /* This type is a common denominator type for various types from the SDK desribing launch specification used for on-demand or spot requests in EC2 and for launch configurations in AutoScaling. Motivation:
@@ -81,14 +81,14 @@ case object AnyLaunchSpecs {
         .withImageId(launchSpecs.ami.id)
         .withInstanceType(launchSpecs.instanceType)
         .withUserData(launchSpecs.userData.encodeBase64)
-        .withSecurityGroups(launchSpecs.securityGroups)
+        .withSecurityGroups(launchSpecs.securityGroups.asJava)
         .withKeyName(launchSpecs.keyName)
         .withMonitoring(launchSpecs.monitoring)
         .withEbsOptimized(launchSpecs.ebsOptimized)
         .withBlockDeviceMappings(
-          launchSpecs.deviceMappings.map { case (key, value) =>
+          launchSpecs.deviceMappings.toList.map { case (key, value) =>
             new BlockDeviceMapping().withDeviceName(key).withVirtualName(value)
-          }
+          }.asJava
         )
 
       launchSpecs.iamProfileName.fold() { name =>
@@ -108,14 +108,14 @@ case object AnyLaunchSpecs {
         .withImageId(launchSpecs.ami.id)
         .withInstanceType(launchSpecs.instanceType)
         .withUserData(launchSpecs.userData.encodeBase64)
-        .withSecurityGroups(launchSpecs.securityGroups)
+        .withSecurityGroups(launchSpecs.securityGroups.asJava)
         .withKeyName(launchSpecs.keyName)
         .withMonitoringEnabled(launchSpecs.monitoring)
         .withEbsOptimized(launchSpecs.ebsOptimized)
         .withBlockDeviceMappings(
-          launchSpecs.deviceMappings.map { case (key, value) =>
+          launchSpecs.deviceMappings.toList.map { case (key, value) =>
             new BlockDeviceMapping().withDeviceName(key).withVirtualName(value)
-          }
+          }.asJava
         )
 
       launchSpecs.iamProfileName.fold() { name =>
@@ -136,13 +136,13 @@ case object AnyLaunchSpecs {
         .withInstanceType(launchSpecs.instanceType.toString)
         .withUserData(launchSpecs.userData.encodeBase64)
         .withKeyName(launchSpecs.keyName)
-        .withSecurityGroups(launchSpecs.securityGroups)
+        .withSecurityGroups(launchSpecs.securityGroups.asJava)
         .withInstanceMonitoring(new as.InstanceMonitoring().withEnabled(launchSpecs.monitoring))
         .withEbsOptimized(launchSpecs.ebsOptimized)
         .withBlockDeviceMappings(
-          launchSpecs.deviceMappings.map { case (key, value) =>
+          launchSpecs.deviceMappings.toList.map { case (key, value) =>
             new as.BlockDeviceMapping().withDeviceName(key).withVirtualName(value)
-          }
+          }.asJava
         )
 
       launchSpecs.iamProfileName.fold() { name =>

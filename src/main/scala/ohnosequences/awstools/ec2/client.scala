@@ -5,7 +5,7 @@ import com.amazonaws.services.ec2.AmazonEC2
 import com.amazonaws.services.ec2.model._
 import com.amazonaws.services.ec2.waiters._
 import scala.util.Try
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 case class ScalaEC2Client(val asJava: AmazonEC2) extends AnyVal { ec2 =>
 
@@ -32,20 +32,20 @@ case class ScalaEC2Client(val asJava: AmazonEC2) extends AnyVal { ec2 =>
         .withMaxCount(amount)
         // TODO: .withPlacement
     ).getReservation
-      .getInstances
+      .getInstances.asScala
       .map { Instance(ec2.asJava, _) }
   }
 
   // TODO: instance-specific filter type
   def filterInstances(filters: Filter*): Try[Stream[Instance]] = Try {
 
-    val request = new DescribeInstancesRequest().withFilters(filters)
+    val request = new DescribeInstancesRequest().withFilters(filters.asJava)
 
     def fromResponse(response: DescribeInstancesResult) = (
       Option(response.getNextToken),
       response
-        .getReservations
-        .flatMap(_.getInstances)
+        .getReservations.asScala
+        .flatMap { _.getInstances.asScala }
         .map { Instance(ec2.asJava, _) }
     )
 
@@ -59,8 +59,8 @@ case class ScalaEC2Client(val asJava: AmazonEC2) extends AnyVal { ec2 =>
   def getInstance(instanceID: String): Try[Instance] = Try {
     ec2.asJava.describeInstances(
       new DescribeInstancesRequest().withInstanceIds(instanceID)
-    ).getReservations
-      .flatMap { _.getInstances }
+    ).getReservations.asScala
+      .flatMap { _.getInstances.asScala }
       .map { Instance(ec2.asJava, _) }
       .headOption.getOrElse {
         throw new java.util.NoSuchElementException(s"Instance [${instanceID}] doesn't exist")
@@ -77,7 +77,7 @@ case class ScalaEC2Client(val asJava: AmazonEC2) extends AnyVal { ec2 =>
         .withStartTime(new java.util.Date())
         .withProductDescriptions("Linux/UNIX")
         .withInstanceTypes(instanceType)
-    ).getSpotPriceHistory
+    ).getSpotPriceHistory.asScala
       .map{ _.getSpotPrice.toDouble }
       .fold(0D){ math.max(_, _) }
   }
@@ -93,7 +93,7 @@ case class ScalaEC2Client(val asJava: AmazonEC2) extends AnyVal { ec2 =>
         .withLaunchSpecification(launchSpecs.toLaunchSpecification)
         .withInstanceCount(amount)
         .withSpotPrice(price.toString)
-    ).getSpotInstanceRequests
+    ).getSpotInstanceRequests.asScala
   }
 
 
@@ -101,16 +101,16 @@ case class ScalaEC2Client(val asJava: AmazonEC2) extends AnyVal { ec2 =>
     ec2.asJava.describeAvailabilityZones(
       new DescribeAvailabilityZonesRequest()
         .withFilters(
-          new Filter("state", List("available"))
+          new Filter("state", List("available").asJava)
         )
-    ).getAvailabilityZones
+    ).getAvailabilityZones.asScala
       .map{ _.getZoneName }.toSet
   }
 
   def keyPairExists(name: String): Try[Boolean] = Try {
     asJava.describeKeyPairs(
       new DescribeKeyPairsRequest().withKeyNames(name)
-    ).getKeyPairs.nonEmpty
+    ).getKeyPairs.asScala.nonEmpty
   }
 
   def createKeyPair(name: String): Try[KeyPair] = Try {

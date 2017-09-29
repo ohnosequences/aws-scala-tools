@@ -6,7 +6,7 @@ import com.amazonaws.services.ec2.model.{ Instance => JavaInstance, _ }
 import com.amazonaws.waiters._
 import com.amazonaws.{ ClientConfiguration, PredefinedClientConfigurations }
 import ohnosequences.awstools.regions._
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.io.Source
 import scala.util.Try
 import java.net.URL
@@ -66,7 +66,7 @@ package object ec2 {
 
     def withIDs(instanceIDs: Seq[String]): Unit = waiter.run(
       new WaiterParameters(
-        new DescribeInstancesRequest().withInstanceIds(instanceIDs)
+        new DescribeInstancesRequest().withInstanceIds(instanceIDs.asJava)
       )
     )
   }
@@ -75,7 +75,7 @@ package object ec2 {
 
     def withIDs(instanceIDs: Seq[String]): Unit = waiter.run(
       new WaiterParameters(
-        new DescribeInstanceStatusRequest().withInstanceIds(instanceIDs)
+        new DescribeInstanceStatusRequest().withInstanceIds(instanceIDs.asJava)
       )
     )
   }
@@ -84,7 +84,7 @@ package object ec2 {
 
     def withIDs(requestIDs: Seq[String]): Unit = waiter.run(
       new WaiterParameters(
-        new DescribeSpotInstanceRequestsRequest().withSpotInstanceRequestIds(requestIDs)
+        new DescribeSpotInstanceRequestsRequest().withSpotInstanceRequestIds(requestIDs.asJava)
       )
     )
   }
