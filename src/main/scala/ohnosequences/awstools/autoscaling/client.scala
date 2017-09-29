@@ -1,9 +1,7 @@
 package ohnosequences.awstools.autoscaling
 
-import com.amazonaws.services.ec2.AmazonEC2
 import ohnosequences.awstools._, ec2._
-import com.amazonaws.auth._
-import com.amazonaws.services.autoscaling.{ AmazonAutoScaling, AmazonAutoScalingClient }
+import com.amazonaws.services.autoscaling.AmazonAutoScaling
 import com.amazonaws.services.autoscaling.model._
 import com.amazonaws.services.autoscaling.waiters.AmazonAutoScalingWaiters
 import scala.collection.JavaConversions._

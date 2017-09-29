@@ -3,7 +3,6 @@ package ohnosequences.awstools
 import com.amazonaws.auth._
 import com.amazonaws.services.ec2.{ AmazonEC2, AmazonEC2Client }
 import com.amazonaws.services.ec2.model.{ Instance => JavaInstance, _ }
-import com.amazonaws.services.ec2.waiters._
 import com.amazonaws.waiters._
 import com.amazonaws.{ ClientConfiguration, PredefinedClientConfigurations }
 import ohnosequences.awstools.regions._

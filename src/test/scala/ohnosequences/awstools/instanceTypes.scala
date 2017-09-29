@@ -1,6 +1,5 @@
 package ohnosequences.awstools.test
 
-import ohnosequences.awstools._, ec2._
 import com.amazonaws.services.ec2.model.{ InstanceType => JavaInstanceType }
 
 class InstanceTypes extends org.scalatest.FunSuite {

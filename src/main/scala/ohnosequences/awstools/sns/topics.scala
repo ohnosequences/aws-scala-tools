@@ -3,11 +3,6 @@ package ohnosequences.awstools.sns
 import ohnosequences.awstools._
 import com.amazonaws.services.sns.AmazonSNS
 import com.amazonaws.services.sns.model._
-import com.amazonaws.auth.policy.{Resource, Principal, Statement, Policy}
-import com.amazonaws.auth.policy.Statement.Effect
-import com.amazonaws.auth.policy.actions.SQSActions
-import com.amazonaws.auth.policy.conditions.ConditionFactory
-import com.amazonaws.services.sqs.model.QueueAttributeName
 import scala.collection.JavaConversions._
 import scala.util.Try
 

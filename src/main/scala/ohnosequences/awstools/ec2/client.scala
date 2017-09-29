@@ -1,15 +1,11 @@
 package ohnosequences.awstools.ec2
 
-import ohnosequences.awstools._, regions._
-import com.amazonaws.auth._
-import com.amazonaws.internal.StaticCredentialsProvider
-import com.amazonaws.services.ec2.{ AmazonEC2, AmazonEC2Client }
+import ohnosequences.awstools._
+import com.amazonaws.services.ec2.AmazonEC2
 import com.amazonaws.services.ec2.model._
 import com.amazonaws.services.ec2.waiters._
 import scala.util.Try
 import scala.collection.JavaConversions._
-import com.amazonaws.AmazonServiceException
-
 
 case class ScalaEC2Client(val asJava: AmazonEC2) extends AnyVal { ec2 =>
 

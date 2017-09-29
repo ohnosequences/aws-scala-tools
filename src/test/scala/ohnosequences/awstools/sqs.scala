@@ -1,14 +1,9 @@
 package ohnosequences.awstools.test
 
 import com.amazonaws.services.sqs.AmazonSQSClient
-import com.amazonaws.services.sqs.model.SendMessageBatchRequestEntry
 import ohnosequences.awstools._, sqs._
-import ohnosequences.awstools.regions._
 import com.amazonaws.PredefinedClientConfigurations
-import com.amazonaws.auth._
-import com.amazonaws.auth.profile.ProfileCredentialsProvider
 import java.util.concurrent.Executors
-import scala.collection.JavaConversions._
 import scala.concurrent._, duration._
 import scala.util.{ Try, Success, Failure, Random }
 
