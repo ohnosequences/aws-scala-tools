@@ -36,7 +36,7 @@ case class s3MetadataProvider(metadataMap: Map[String, String]) extends ObjectMe
 }
 
 
-case class TransferManagerOps(asJava: TransferManager) { tm =>
+case class ScalaTransferManager(asJava: TransferManager) { tm =>
 
   // by default shutdownNow shuts down the S3 client as well
   def shutdown(shutDownS3Client: Boolean = false): Unit =

@@ -17,6 +17,13 @@ case class ScalaS3Client(val asJava: AmazonS3) extends AnyVal { s3 =>
       .withS3Client(s3.asJava)
       .build()
 
+  def transfer[T](action: TransferManager => T): T = {
+    val tm = createTransferManager
+    val result = action(tm)
+    tm.shutdownNow(false)
+    result
+  }
+
   def waitUntil: AmazonS3Waiters = s3.asJava.waiters
 
   // TODO: rewrite using rotateTokens and listObjectsV2 method

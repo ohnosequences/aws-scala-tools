@@ -30,3 +30,5 @@ wartremoverWarnings in (Compile, compile) --= Seq(
 wartremoverErrors in (Test, compile) --= Seq(
   Wart.TryPartial
 )
+
+parallelExecution in Test := false
