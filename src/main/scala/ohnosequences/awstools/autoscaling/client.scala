@@ -41,7 +41,7 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
       .toCreateLaunchConfigurationRequest
       .withLaunchConfigurationName(configName)
 
-    purchaseModel.maxPrice.fold() { price =>
+    purchaseModel.maxPrice.fold(()) { price =>
       request.setSpotPrice(price.toString)
     }
 

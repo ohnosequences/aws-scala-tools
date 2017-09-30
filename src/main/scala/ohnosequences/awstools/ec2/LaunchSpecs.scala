@@ -91,12 +91,12 @@ case object AnyLaunchSpecs {
           }.asJava
         )
 
-      launchSpecs.iamProfileName.fold() { name =>
+      launchSpecs.iamProfileName.fold(()) { name =>
         request.setIamInstanceProfile(new IamInstanceProfileSpecification().withName(name))
       }
 
-      launchSpecs.kernelId.fold()  { request.setKernelId }
-      launchSpecs.ramdiskId.fold() { request.setRamdiskId }
+      launchSpecs.kernelId.fold(())  { request.setKernelId }
+      launchSpecs.ramdiskId.fold(()) { request.setRamdiskId }
 
       request
     }
@@ -118,12 +118,12 @@ case object AnyLaunchSpecs {
           }.asJava
         )
 
-      launchSpecs.iamProfileName.fold() { name =>
+      launchSpecs.iamProfileName.fold(()) { name =>
         ls.setIamInstanceProfile(new IamInstanceProfileSpecification().withName(name))
       }
 
-      launchSpecs.kernelId.fold()  { ls.setKernelId }
-      launchSpecs.ramdiskId.fold() { ls.setRamdiskId }
+      launchSpecs.kernelId.fold(())  { ls.setKernelId }
+      launchSpecs.ramdiskId.fold(()) { ls.setRamdiskId }
 
       ls
     }
@@ -145,12 +145,12 @@ case object AnyLaunchSpecs {
           }.asJava
         )
 
-      launchSpecs.iamProfileName.fold() { name =>
+      launchSpecs.iamProfileName.fold(()) { name =>
         newRequest.setIamInstanceProfile(name)
       }
 
-      launchSpecs.kernelId.fold()  { newRequest.setKernelId }
-      launchSpecs.ramdiskId.fold() { newRequest.setRamdiskId }
+      launchSpecs.kernelId.fold(())  { newRequest.setKernelId }
+      launchSpecs.ramdiskId.fold(()) { newRequest.setRamdiskId }
 
       newRequest
     }

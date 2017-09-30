@@ -54,9 +54,12 @@ case class Queue(
       )
     }
 
+    // NOTE: Future.reduce is deprecated in 2.12; reduceLeft is the replacement, but it doesn't exist in 2.11, so we keep reduce for now
     Future.reduce(
       // TODO: check messages lenghts not to exceed the total batch size limit
-      msgs.grouped(10).map { grp => Future { sendGroup(grp) } }
+      msgs.grouped(10).map { grp =>
+        Future { sendGroup(grp) }
+      }.toStream
     ){ _ ++ _ }
   }
 

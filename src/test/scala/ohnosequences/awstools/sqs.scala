@@ -52,6 +52,7 @@ class SQS extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterAll {
       val inputs = (1 to amount).map(_.toString)
 
       runWithTimer("one by one") {
+        // NOTE: Future.reduce is deprecated in 2.12; reduceLeft is the replacement, but it doesn't exist in 2.11, so we keep reduce for now
         Future.reduce(
           inputs.map { msg => Future( queue.sendOne(msg).isSuccess ) }
         ) { _ && _ }
@@ -71,8 +72,6 @@ class SQS extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterAll {
   testSendingInParallel(32, 1000, 11 seconds)
 
   test("receiving and deleting a message") {
-
-    val N = queue.approxMsgAvailable
 
     val result = queue.receiveOne.get
 
