@@ -1,7 +1,7 @@
 package ohnosequences.awstools
 
 import com.amazonaws.auth._
-import com.amazonaws.services.s3.{ AmazonS3, AmazonS3Client }
+import com.amazonaws.services.s3.{ AmazonS3, AmazonS3ClientBuilder }
 import com.amazonaws.services.s3.transfer.TransferManager
 import com.amazonaws.{ ClientConfiguration, PredefinedClientConfigurations }
 import ohnosequences.awstools.regions._
@@ -12,13 +12,23 @@ package object s3 {
   // Just an alias for the "root" S3 fodler:
   def S3Bucket(b: String): S3Folder = S3Folder(b, "")
 
+  def clientBuilder: AmazonS3ClientBuilder =
+    AmazonS3ClientBuilder.standard()
+
+  def defaultClient: AmazonS3 =
+    AmazonS3ClientBuilder.defaultClient()
+
+  @deprecated("Use s3.clientBuilder or s3.defaultClient instead", since = "0.19.0")
   def S3Client(
     region: AwsRegionProvider = new DefaultAwsRegionProviderChain(),
     credentials: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain(),
     configuration: ClientConfiguration = PredefinedClientConfigurations.defaultConfig()
-  ): AmazonS3Client = {
-    new AmazonS3Client(credentials, configuration)
-      .withRegion(region)
+  ): AmazonS3 = {
+    clientBuilder
+      .withCredentials(credentials)
+      .withClientConfiguration(configuration)
+      .withRegion(region.getName)
+      .build()
   }
 
   // Implicits

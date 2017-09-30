@@ -19,7 +19,7 @@ sealed trait AnyS3Address {
 
   lazy val segments: Seq[String] = key.split("/").filter(_.nonEmpty).toSeq
 
-  @deprecated("Use toURI method instead, or just toString", since = "v0.17.0")
+  @deprecated("Use toURI method instead, or just toString", since = "0.17.0")
   final def url: String = "s3://" + bucket + "/" + key
 
   override def toString: String = toURI.toString

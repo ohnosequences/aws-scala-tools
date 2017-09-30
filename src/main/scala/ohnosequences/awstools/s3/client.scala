@@ -1,7 +1,7 @@
 package ohnosequences.awstools.s3
 
 import com.amazonaws.services.s3.AmazonS3
-import com.amazonaws.services.s3.transfer.TransferManager
+import com.amazonaws.services.s3.transfer._
 import com.amazonaws.services.s3.waiters.AmazonS3Waiters
 import com.amazonaws.services.s3.model._
 import scala.collection.JavaConverters._
@@ -12,7 +12,10 @@ import java.net.URL
 
 case class ScalaS3Client(val asJava: AmazonS3) extends AnyVal { s3 =>
 
-  def createTransferManager: TransferManager = new TransferManager(asJava)
+  def createTransferManager: TransferManager =
+    TransferManagerBuilder.standard()
+      .withS3Client(s3.asJava)
+      .build()
 
   def waitUntil: AmazonS3Waiters = s3.asJava.waiters
 

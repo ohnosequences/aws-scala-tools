@@ -1,7 +1,7 @@
 package ohnosequences.awstools
 
 import com.amazonaws.auth._
-import com.amazonaws.services.ec2.{ AmazonEC2, AmazonEC2Client }
+import com.amazonaws.services.ec2.{ AmazonEC2, AmazonEC2ClientBuilder }
 import com.amazonaws.services.ec2.model.{ Instance => JavaInstance, _ }
 import com.amazonaws.waiters._
 import com.amazonaws.{ ClientConfiguration, PredefinedClientConfigurations }
@@ -14,13 +14,23 @@ import java.net.URL
 
 package object ec2 {
 
+  def clientBuilder: AmazonEC2ClientBuilder =
+    AmazonEC2ClientBuilder.standard()
+
+  def defaultClient: AmazonEC2 =
+    AmazonEC2ClientBuilder.defaultClient()
+
+  @deprecated("Use ec2.clientBuilder or ec2.defaultClient instead", since = "0.19.0")
   def EC2Client(
     region: AwsRegionProvider = new DefaultAwsRegionProviderChain(),
     credentials: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain(),
     configuration: ClientConfiguration = PredefinedClientConfigurations.defaultConfig()
-  ): AmazonEC2Client = {
-    new AmazonEC2Client(credentials, configuration)
-      .withRegion(region)
+  ): AmazonEC2 = {
+    clientBuilder
+      .withCredentials(credentials)
+      .withClientConfiguration(configuration)
+      .withRegion(region.getName)
+      .build()
   }
 
 

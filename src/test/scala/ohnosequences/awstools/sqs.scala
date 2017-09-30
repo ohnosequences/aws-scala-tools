@@ -1,6 +1,6 @@
 package ohnosequences.awstools.test
 
-import com.amazonaws.services.sqs.AmazonSQSClient
+import com.amazonaws.services.sqs.AmazonSQS
 import ohnosequences.awstools._, sqs._
 import com.amazonaws.PredefinedClientConfigurations
 import java.util.concurrent.Executors
@@ -10,9 +10,10 @@ import scala.util.{ Try, Success, Failure, Random }
 
 class SQS extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterAll {
 
-  lazy val sqsClient: AmazonSQSClient = SQSClient(
-    configuration = PredefinedClientConfigurations.defaultConfig.withMaxConnections(100)
-  )
+  lazy val sqsClient: AmazonSQS = sqs.clientBuilder
+    .withClientConfiguration(
+      PredefinedClientConfigurations.defaultConfig.withMaxConnections(100)
+    ).build()
 
   // we append a random suffix to avoid waiting 60 seconds between test runs
   val queueName: String = s"aws-scala-tools-sqs-testing-${Random.nextInt(100)}"
