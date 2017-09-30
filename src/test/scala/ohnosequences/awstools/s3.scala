@@ -2,9 +2,10 @@ package ohnosequences.awstools.test
 
 import com.amazonaws.services.s3.AmazonS3
 import ohnosequences.awstools._, s3._
-// import scala.util.{ Try, Success, Failure, Random }
 import java.io.File
 import java.nio.file._
+import java.net.URI
+import scala.util.Try
 import scala.collection.JavaConverters._
 
 case class tmpFiles(prefix: File) {
@@ -53,7 +54,9 @@ class S3 extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterAll {
 
 
   test(s"Uploading to ${srcS3}") {
-    val uploadTry = s3Client.transfer { _.upload(tmp.prefix, srcS3) }
+    val uploadTry = s3Client.withTransferManager {
+      _.upload(tmp.prefix, srcS3)
+    }
     assert { uploadTry.isSuccess }
 
     uploadTry.foreach { dst =>
@@ -62,7 +65,9 @@ class S3 extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterAll {
   }
 
   test(s"Copying one ${srcS3} to ${dstS3}") {
-    val copyTry = s3Client.transfer { _.copy(srcS3, dstS3) }
+    val copyTry = s3Client.withTransferManager {
+      _.copy(srcS3, dstS3)
+    }
     assert { copyTry.isSuccess }
 
     copyTry.foreach { list =>
@@ -70,12 +75,28 @@ class S3 extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterAll {
         info(s"Copied object ${obj.toString}")
       }
     }
+
+    def suffixes(prefix: S3Folder, objs: List[S3Object]): List[URI] = objs.map { obj =>
+      prefix.toURI.relativize(obj.toURI)
+    }
+
+    def listSuffixes(prefix: S3Folder): Try[List[URI]] =
+      s3Client.listObjects(prefix).map { list =>
+        suffixes(prefix, list)
+      }
+
+    assertResult(Set()) {
+      listSuffixes(srcS3).get.toSet diff
+      listSuffixes(dstS3).get.toSet
+    }
   }
 
   test(s"Downloading from ${dstS3}") {
     val dst = Files.createTempDirectory(Paths.get("target"), "s3-testing").toFile
 
-    val downloadTry = s3Client.transfer { _.download(dstS3, dst) }
+    val downloadTry = s3Client.withTransferManager {
+      _.download(dstS3, dst)
+    }
     assert { downloadTry.isSuccess }
 
     downloadTry.foreach { file =>
