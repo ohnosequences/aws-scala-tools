@@ -36,11 +36,11 @@ case class s3MetadataProvider(metadataMap: Map[String, String]) extends ObjectMe
 }
 
 
-case class TransferManagerOps(asJava: TransferManager) {
+case class TransferManagerOps(asJava: TransferManager) { tm =>
 
   // by default shutdownNow shuts down the S3 client as well
   def shutdown(shutDownS3Client: Boolean = false): Unit =
-    asJava.shutdownNow(shutDownS3Client)
+    tm.asJava.shutdownNow(shutDownS3Client)
 
 
   def download(
@@ -50,8 +50,8 @@ case class TransferManagerOps(asJava: TransferManager) {
   ): Try[File] = {
 
     lazy val transfer: Transfer = s3Address match {
-      case S3Object(bucket, key) => asJava.download(bucket, key, destination)
-      case S3Folder(bucket, key) => asJava.downloadDirectory(bucket, key, destination)
+      case S3Object(bucket, key) => tm.asJava.download(bucket, key, destination)
+      case S3Folder(bucket, key) => tm.asJava.downloadDirectory(bucket, key, destination)
     }
 
     Try {
@@ -76,7 +76,7 @@ case class TransferManagerOps(asJava: TransferManager) {
   ): Try[AnyS3Address] = {
 
     lazy val transfer: Transfer = if (file.isDirectory) {
-      asJava.uploadDirectory(
+      tm.asJava.uploadDirectory(
         s3Address.bucket,
         s3Address.key,
         file,
@@ -93,7 +93,7 @@ case class TransferManagerOps(asJava: TransferManager) {
       val metadata = new ObjectMetadata()
       metadata.setUserMetadata(userMetadata.asJava)
 
-      asJava.upload( request.withMetadata(metadata) )
+      tm.asJava.upload( request.withMetadata(metadata) )
     }
 
     Try {
@@ -105,4 +105,35 @@ case class TransferManagerOps(asJava: TransferManager) {
     }
   }
 
+  def copy(
+    source:      S3Folder,
+    destination: S3Folder
+  ): Try[List[S3Object]] = {
+
+    val s3 = tm.asJava.getAmazonS3Client
+
+    val listingResult: Try[List[(S3Object, S3Object)]] =
+      s3.listObjects(source).map { list =>
+        list.map { obj =>
+          val suffix = source.toURI.relativize(obj.toURI)
+          val newURI = destination.toURI.resolve(suffix)
+          obj -> S3Object(newURI)
+        }
+      }
+
+    // This should start all transfers
+    listingResult.map { list =>
+      val transfers = list.map { case (src, dst) =>
+        tm.asJava.copy(
+          src.bucket, src.key,
+          dst.bucket, dst.key
+        )
+      }
+
+      // Now we wait for all of them to finish
+      transfers.foreach { _.waitForCompletion }
+
+      list.map(_._2)
+    }
+  }
 }
