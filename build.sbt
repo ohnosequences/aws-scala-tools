@@ -3,9 +3,11 @@ organization := "ohnosequences"
 description := "AWS Scala tools"
 
 bucketSuffix := "era7.com"
-scalaVersion := "2.11.8"
 
-val sdkVersion = "1.11.60"
+crossScalaVersions := Seq("2.11.11", "2.12.3")
+scalaVersion := crossScalaVersions.value.max
+
+val sdkVersion = "1.11.205"
 
 val services = Seq(
   "autoscaling",
@@ -17,8 +19,14 @@ val services = Seq(
 
 libraryDependencies ++= services.map { service =>
   "com.amazonaws" % s"aws-java-sdk-${service}" % sdkVersion
-}
+} ++ Seq(
+  "org.scalatest" %% "scalatest" % "3.0.4" % Test
+)
 
-// FIXME: warts should be turned on back after the code is cleaned up
-wartremoverErrors in (Compile, compile) := Seq()
-wartremoverErrors in (Test, compile) := Seq()
+wartremoverWarnings in (Compile, compile) --= Seq(
+  Wart.Throw,
+  Wart.DefaultArguments
+)
+wartremoverErrors in (Test, compile) --= Seq(
+  Wart.TryPartial
+)

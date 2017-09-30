@@ -1,11 +1,8 @@
 package ohnosequences.awstools.sqs
 
-import com.amazonaws.services.sqs, sqs.AmazonSQS, sqs.model._
-import scala.collection.JavaConversions._
+import com.amazonaws.services.sqs
 import scala.concurrent.duration._
 import scala.util.Try
-import java.net.URL
-
 
 /* This is a wrapper for an instance of an SQS message. You can get it with `Queue#receiveMessage`. */
 case class Message(

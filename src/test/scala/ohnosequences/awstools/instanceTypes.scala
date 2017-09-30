@@ -1,6 +1,5 @@
 package ohnosequences.awstools.test
 
-import ohnosequences.awstools._, ec2._
 import com.amazonaws.services.ec2.model.{ InstanceType => JavaInstanceType }
 
 class InstanceTypes extends org.scalatest.FunSuite {
@@ -21,7 +20,7 @@ class InstanceTypes extends org.scalatest.FunSuite {
       scalaInstanceTypes diff javaInstanceTypes
     }
 
-    assertResult(Set("cc1.4xlarge"), "these types are defined in the Java SDK, but not in the library") {
+    assertResult(Set(), "these types are defined in the Java SDK, but not in the library") {
       javaInstanceTypes diff scalaInstanceTypes
     }
   }

@@ -1,6 +1,5 @@
 package ohnosequences.awstools.sns
 
-import com.amazonaws.services.sns.model._
 import com.amazonaws.services.sns.AmazonSNS
 import scala.util.Try
 

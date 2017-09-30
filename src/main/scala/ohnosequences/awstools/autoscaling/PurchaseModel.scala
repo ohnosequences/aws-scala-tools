@@ -1,11 +1,5 @@
 package ohnosequences.awstools.autoscaling
 
-import com.amazonaws.auth._
-import com.amazonaws.services.ec2.AmazonEC2
-import ohnosequences.awstools.ec2._
-import ohnosequences.awstools.regions._
-import com.amazonaws.{ services => amzn }
-
 case class PurchaseModel(val maxPrice: Option[Double]) {
 
   val isSpot = maxPrice.nonEmpty

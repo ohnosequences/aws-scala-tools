@@ -1,12 +1,10 @@
 package ohnosequences.awstools.autoscaling
 
-import com.amazonaws.services.ec2.AmazonEC2
 import ohnosequences.awstools._, ec2._
-import com.amazonaws.auth._
-import com.amazonaws.services.autoscaling.{ AmazonAutoScaling, AmazonAutoScalingClient }
+import com.amazonaws.services.autoscaling.AmazonAutoScaling
 import com.amazonaws.services.autoscaling.model._
 import com.amazonaws.services.autoscaling.waiters.AmazonAutoScalingWaiters
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.util.Try
 
 
@@ -27,7 +25,7 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
         .withLaunchConfigurationNames(configName)
         .withMaxRecords(1)
     )
-    response.getLaunchConfigurations
+    response.getLaunchConfigurations.asScala
       .headOption.getOrElse(
         throw new java.util.NoSuchElementException(s"Launch configuration with the name [${configName}] doesn't exist")
       )
@@ -43,7 +41,7 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
       .toCreateLaunchConfigurationRequest
       .withLaunchConfigurationName(configName)
 
-    purchaseModel.maxPrice.fold() { price =>
+    purchaseModel.maxPrice.fold(()) { price =>
       request.setSpotPrice(price.toString)
     }
 
@@ -74,7 +72,7 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
         .withMaxRecords(1)
     )
 
-    response.getAutoScalingGroups
+    response.getAutoScalingGroups.asScala
       .headOption.getOrElse(
         throw new java.util.NoSuchElementException(s"Auto Scaling group with the name [${groupName}] doesn't exist")
       )
@@ -94,7 +92,7 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
       .withMinSize(size.min)
       .withDesiredCapacity(size.desired)
       .withMaxSize(size.max)
-      .withAvailabilityZones(zones)
+      .withAvailabilityZones(zones.asJava)
 
     Try {
       // NOTE: response doesn't carry any information
@@ -133,11 +131,11 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
   def filterTags(filters: AutoScalingTagFilter*): Try[Stream[Tag]] = Try {
 
     val request = new DescribeTagsRequest()
-      .withFilters(filters.map(_.asJava))
+      .withFilters(filters.map(_.asJava).asJava)
 
     def fromResponse(response: DescribeTagsResult) = (
       Option(response.getNextToken),
-      response.getTags.map(tagDescriptionToTag)
+      response.getTags.asScala.map(tagDescriptionToTag)
     )
 
     rotateTokens { token =>
@@ -183,7 +181,7 @@ case class ScalaAutoScalingClient(val asJava: AmazonAutoScaling) { autoscaling =
     }
 
     autoscaling.asJava.createOrUpdateTags(
-      new CreateOrUpdateTagsRequest().withTags(autoscalingTags)
+      new CreateOrUpdateTagsRequest().withTags(autoscalingTags.toList.asJava)
     )
   }
 

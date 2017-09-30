@@ -1,10 +1,10 @@
 package ohnosequences.awstools.s3
 
 import com.amazonaws.services.s3.AmazonS3
-import com.amazonaws.services.s3.transfer.TransferManager
+import com.amazonaws.services.s3.transfer._
 import com.amazonaws.services.s3.waiters.AmazonS3Waiters
 import com.amazonaws.services.s3.model._
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.util.Try
 import java.net.URL
@@ -12,7 +12,10 @@ import java.net.URL
 
 case class ScalaS3Client(val asJava: AmazonS3) extends AnyVal { s3 =>
 
-  def createTransferManager: TransferManager = new TransferManager(asJava)
+  def createTransferManager: TransferManager =
+    TransferManagerBuilder.standard()
+      .withS3Client(s3.asJava)
+      .build()
 
   def waitUntil: AmazonS3Waiters = s3.asJava.waiters
 
@@ -20,7 +23,7 @@ case class ScalaS3Client(val asJava: AmazonS3) extends AnyVal { s3 =>
   def listObjects(s3folder: S3Folder): Try[List[S3Object]] = {
 
     def listingToObjects(listing: ObjectListing): List[S3Object] =
-      listing.getObjectSummaries.toList.map { summary =>
+      listing.getObjectSummaries.asScala.toList.map { summary =>
         S3Object(summary.getBucketName, summary.getKey)
       }
 
@@ -50,8 +53,11 @@ case class ScalaS3Client(val asJava: AmazonS3) extends AnyVal { s3 =>
 
 
   def prefixExists(address: AnyS3Address): Boolean =
-    Try { s3.asJava.listObjects(address.bucket, address.key).getObjectSummaries }
-      .filter{ _.nonEmpty }
+    Try {
+      s3.asJava
+        .listObjects(address.bucket, address.key)
+        .getObjectSummaries.asScala
+    }.filter{ _.nonEmpty }
       .isSuccess
 
   def objectExists(address: S3Object): Boolean =

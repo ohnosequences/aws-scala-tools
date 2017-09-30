@@ -2,7 +2,7 @@ package ohnosequences.awstools.ec2
 
 import com.amazonaws.services.ec2.{ AmazonEC2, model }
 import com.amazonaws.services.ec2.model.{ Instance => JavaInstance, _ }
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.util.Try
 import java.util.Date
 
@@ -44,9 +44,10 @@ case class Instance(
   /* This will be `None` if the instance wasn't launched from a spot request */
   lazy val spotRequestId: Option[String] = Option(asJava.getSpotInstanceRequestId).filter(_.nonEmpty)
 
-  lazy val tagsMap: Map[String, String] = instance.asJava.getTags.map { tag =>
-    tag.getKey -> tag.getValue
-  }.toMap
+  lazy val tagsMap: Map[String, String] = instance.asJava
+    .getTags.asScala.map { tag =>
+      tag.getKey -> tag.getValue
+    }.toMap
 
 
   /* ### Actions on the instance
@@ -54,8 +55,8 @@ case class Instance(
     These methods involve requests on behalf of the EC2 client.
   */
 
-  def terminate: Try[Unit] = Try { ec2.terminateInstances(new TerminateInstancesRequest(List(instance.id))) }
-  def reboot:    Try[Unit] = Try {    ec2.rebootInstances(new RebootInstancesRequest(List(instance.id))) }
+  def terminate: Try[Unit] = Try { ec2.terminateInstances(new TerminateInstancesRequest(List(instance.id).asJava)) }
+  def reboot:    Try[Unit] = Try {    ec2.rebootInstances(new RebootInstancesRequest(List(instance.id).asJava)) }
 
   /* This method makes a `DescribeInstanceStatusRequest` and is supposed to be used with the implicit "shortcuts" from the `ec2._` package object returning corresponding enumeration values. Having `st: InstanceStatus`, you can use
 
@@ -66,7 +67,7 @@ case class Instance(
   def status: Try[InstanceStatus] = Try {
     ec2.describeInstanceStatus(
       new DescribeInstanceStatusRequest().withInstanceIds(instance.id)
-    ).getInstanceStatuses
+    ).getInstanceStatuses.asScala
       .headOption.getOrElse {
         throw new java.util.NoSuchElementException(s"Instance [${instance.id}] doesn't exist")
       }
@@ -83,11 +84,11 @@ case class Instance(
   /* Enables or disables instance monitoring and returnes the monitoring state. It can be one of `Disabled`, `Disabling`, `Enabled` or `Pending`. */
   def setMonitoring(on: Boolean): Try[MonitoringState] = Try {
 
-    if (on) ec2.monitorInstances(new   MonitorInstancesRequest(List(instance.id))).getInstanceMonitorings
-    else  ec2.unmonitorInstances(new UnmonitorInstancesRequest(List(instance.id))).getInstanceMonitorings
+    if (on) ec2.monitorInstances(new   MonitorInstancesRequest(List(instance.id).asJava)).getInstanceMonitorings
+    else  ec2.unmonitorInstances(new UnmonitorInstancesRequest(List(instance.id).asJava)).getInstanceMonitorings
   }.map { monitorings =>
 
-    val monitoring: Monitoring = monitorings.headOption.getOrElse(
+    val monitoring: Monitoring = monitorings.asScala.headOption.getOrElse(
       throw new java.util.NoSuchElementException(s"Instance [${instance.id}] doesn't exist")
     ).getMonitoring
 
@@ -98,14 +99,14 @@ case class Instance(
   def createTags(tags: Map[String, String]): Try[Unit] = Try {
     ec2.createTags(new CreateTagsRequest()
       .withResources(instance.id)
-      .withTags(tags.map { case (key, value) => new Tag(key, value) }.toList)
+      .withTags(tags.map { case (key, value) => new Tag(key, value) }.toList.asJava)
     )
   }
 
   def deleteTags(keys: Set[String]): Try[Unit] = Try {
     ec2.deleteTags(new DeleteTagsRequest()
       .withResources(instance.id)
-      .withTags(keys.map { key => new Tag(key) })
+      .withTags(keys.map { key => new Tag(key) }.asJava)
     )
   }
 

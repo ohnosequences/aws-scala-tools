@@ -1,13 +1,12 @@
 package ohnosequences.awstools
 
 import com.amazonaws.auth._
-import com.amazonaws.services.ec2.{ AmazonEC2, AmazonEC2Client }
+import com.amazonaws.services.ec2.{ AmazonEC2, AmazonEC2ClientBuilder }
 import com.amazonaws.services.ec2.model.{ Instance => JavaInstance, _ }
-import com.amazonaws.services.ec2.waiters._
 import com.amazonaws.waiters._
 import com.amazonaws.{ ClientConfiguration, PredefinedClientConfigurations }
 import ohnosequences.awstools.regions._
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.io.Source
 import scala.util.Try
 import java.net.URL
@@ -15,13 +14,23 @@ import java.net.URL
 
 package object ec2 {
 
+  def clientBuilder: AmazonEC2ClientBuilder =
+    AmazonEC2ClientBuilder.standard()
+
+  def defaultClient: AmazonEC2 =
+    AmazonEC2ClientBuilder.defaultClient()
+
+  @deprecated("Use ec2.clientBuilder or ec2.defaultClient instead", since = "0.19.0")
   def EC2Client(
     region: AwsRegionProvider = new DefaultAwsRegionProviderChain(),
     credentials: AWSCredentialsProvider = new DefaultAWSCredentialsProviderChain(),
     configuration: ClientConfiguration = PredefinedClientConfigurations.defaultConfig()
-  ): AmazonEC2Client = {
-    new AmazonEC2Client(credentials, configuration)
-      .withRegion(region)
+  ): AmazonEC2 = {
+    clientBuilder
+      .withCredentials(credentials)
+      .withClientConfiguration(configuration)
+      .withRegion(region.getName)
+      .build()
   }
 
 
@@ -67,7 +76,7 @@ package object ec2 {
 
     def withIDs(instanceIDs: Seq[String]): Unit = waiter.run(
       new WaiterParameters(
-        new DescribeInstancesRequest().withInstanceIds(instanceIDs)
+        new DescribeInstancesRequest().withInstanceIds(instanceIDs.asJava)
       )
     )
   }
@@ -76,7 +85,7 @@ package object ec2 {
 
     def withIDs(instanceIDs: Seq[String]): Unit = waiter.run(
       new WaiterParameters(
-        new DescribeInstanceStatusRequest().withInstanceIds(instanceIDs)
+        new DescribeInstanceStatusRequest().withInstanceIds(instanceIDs.asJava)
       )
     )
   }
@@ -85,7 +94,7 @@ package object ec2 {
 
     def withIDs(requestIDs: Seq[String]): Unit = waiter.run(
       new WaiterParameters(
-        new DescribeSpotInstanceRequestsRequest().withSpotInstanceRequestIds(requestIDs)
+        new DescribeSpotInstanceRequestsRequest().withSpotInstanceRequestIds(requestIDs.asJava)
       )
     )
   }

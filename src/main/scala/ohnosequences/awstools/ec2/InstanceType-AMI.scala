@@ -21,17 +21,23 @@ doesn't support the AMI type
 
 Try to choose different virtualization or storage type.
 """)
-sealed trait SupportsAMI[T <: AnyInstanceType, A <: AnyLinuxAMI]
+sealed trait SupportsAMI[T <: AnyInstanceType, A <: AnyLinuxAMI] {
+  implicit val supportsStorage:        T SupportsStorageType    A#Storage
+  implicit val supportsVirtualization: T SupportsVirtualization A#Virt
+}
 case object SupportsAMI {
 
   implicit def supports[
     T <: AnyInstanceType,
     A <: AnyLinuxAMI
   ](implicit
-    stor: T SupportsStorageType A#Storage,
-    virt: T SupportsVirtualization A#Virt
+    ss: T SupportsStorageType A#Storage,
+    sv: T SupportsVirtualization A#Virt
   ):  (T SupportsAMI A) =
-  new (T SupportsAMI A) {}
+  new (T SupportsAMI A) {
+    val supportsStorage = ss
+    val supportsVirtualization = sv
+  }
 }
 
 

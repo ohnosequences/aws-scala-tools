@@ -9,6 +9,8 @@ sealed trait AnyS3Address {
   val _bucket: String
   val _key: String
 
+  // NOTE: java.net.URI needs an explicit null for the empty fragment argument
+  @SuppressWarnings(Array("org.wartremover.warts.Null"))
   def toURI: URI = new URI("s3", _bucket, s"/${_key}", null).normalize
 
   // We use URI as a way to sanitize things (dropping extra /)
@@ -17,7 +19,7 @@ sealed trait AnyS3Address {
 
   lazy val segments: Seq[String] = key.split("/").filter(_.nonEmpty).toSeq
 
-  @deprecated("Use toURI method instead, or just toString", since = "v0.17.0")
+  @deprecated("Use toURI method instead, or just toString", since = "0.17.0")
   final def url: String = "s3://" + bucket + "/" + key
 
   override def toString: String = toURI.toString

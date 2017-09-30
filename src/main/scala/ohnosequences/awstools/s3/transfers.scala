@@ -1,13 +1,12 @@
 package ohnosequences.awstools.s3
 
-import com.amazonaws.{ AmazonClientException, AmazonServiceException }
 import com.amazonaws.services.s3.model.{ S3Object => _, _ }
 import com.amazonaws.services.s3.transfer._
 import com.amazonaws.event.{ ProgressListener => PListener, ProgressEvent => PEvent, _ }
 
 import java.io.File
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import scala.util.Try
 
 
@@ -32,7 +31,7 @@ case class TransferListener(description: String) extends PListener {
 case class s3MetadataProvider(metadataMap: Map[String, String]) extends ObjectMetadataProvider {
 
   def provideObjectMetadata(file: java.io.File, metadata: ObjectMetadata): Unit = {
-    metadata.setUserMetadata(metadataMap)
+    metadata.setUserMetadata(metadataMap.asJava)
   }
 }
 
@@ -92,7 +91,7 @@ case class TransferManagerOps(asJava: TransferManager) {
       )
 
       val metadata = new ObjectMetadata()
-      metadata.setUserMetadata(userMetadata)
+      metadata.setUserMetadata(userMetadata.asJava)
 
       asJava.upload( request.withMetadata(metadata) )
     }

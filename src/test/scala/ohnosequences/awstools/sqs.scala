@@ -1,23 +1,19 @@
 package ohnosequences.awstools.test
 
-import com.amazonaws.services.sqs.AmazonSQSClient
-import com.amazonaws.services.sqs.model.SendMessageBatchRequestEntry
+import com.amazonaws.services.sqs.AmazonSQS
 import ohnosequences.awstools._, sqs._
-import ohnosequences.awstools.regions._
 import com.amazonaws.PredefinedClientConfigurations
-import com.amazonaws.auth._
-import com.amazonaws.auth.profile.ProfileCredentialsProvider
 import java.util.concurrent.Executors
-import scala.collection.JavaConversions._
 import scala.concurrent._, duration._
 import scala.util.{ Try, Success, Failure, Random }
 
 
 class SQS extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterAll {
 
-  lazy val sqsClient: AmazonSQSClient = SQSClient(
-    configuration = PredefinedClientConfigurations.defaultConfig.withMaxConnections(100)
-  )
+  lazy val sqsClient: AmazonSQS = sqs.clientBuilder
+    .withClientConfiguration(
+      PredefinedClientConfigurations.defaultConfig.withMaxConnections(100)
+    ).build()
 
   // we append a random suffix to avoid waiting 60 seconds between test runs
   val queueName: String = s"aws-scala-tools-sqs-testing-${Random.nextInt(100)}"
@@ -57,6 +53,7 @@ class SQS extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterAll {
       val inputs = (1 to amount).map(_.toString)
 
       runWithTimer("one by one") {
+        // NOTE: Future.reduce is deprecated in 2.12; reduceLeft is the replacement, but it doesn't exist in 2.11, so we keep reduce for now
         Future.reduce(
           inputs.map { msg => Future( queue.sendOne(msg).isSuccess ) }
         ) { _ && _ }
@@ -76,8 +73,6 @@ class SQS extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterAll {
   testSendingInParallel(32, 1000, 11 seconds)
 
   test("receiving and deleting a message") {
-
-    val N = queue.approxMsgAvailable
 
     val result = queue.receiveOne.get
 

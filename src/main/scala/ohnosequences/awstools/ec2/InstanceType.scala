@@ -54,6 +54,8 @@ case object t2 extends InstanceTypeFamily with CurrentGeneration {
   case object small  extends InstanceType(t2)
   case object medium extends InstanceType(t2)
   case object large  extends InstanceType(t2)
+  case object   xlarge  extends InstanceType(t2)
+  case object `2xlarge` extends InstanceType(t2)
 }
 case object m4 extends InstanceTypeFamily with CurrentGeneration {
   case object     large  extends InstanceType(m4)
@@ -94,9 +96,20 @@ case object r3 extends InstanceTypeFamily with CurrentGeneration {
   case object `4xlarge` extends InstanceType(r3)
   case object `8xlarge` extends InstanceType(r3)
 }
+case object r4 extends InstanceTypeFamily with CurrentGeneration {
+  case object     large  extends InstanceType(r4)
+  case object    xlarge  extends InstanceType(r4)
+  case object  `2xlarge` extends InstanceType(r4)
+  case object  `4xlarge` extends InstanceType(r4)
+  case object  `8xlarge` extends InstanceType(r4)
+  case object `16xlarge` extends InstanceType(r4)
+}
 case object x1 extends InstanceTypeFamily with CurrentGeneration {
   case object `16xlarge` extends InstanceType(x1)
   case object `32xlarge` extends InstanceType(x1)
+}
+case object x1e extends InstanceTypeFamily with CurrentGeneration {
+  case object `32xlarge` extends InstanceType(x1e)
 }
 
 /* #### Storage optimized */
@@ -105,6 +118,14 @@ case object i2 extends InstanceTypeFamily with CurrentGeneration {
   case object `2xlarge` extends InstanceType(i2)
   case object `4xlarge` extends InstanceType(i2)
   case object `8xlarge` extends InstanceType(i2)
+}
+case object i3 extends InstanceTypeFamily with CurrentGeneration {
+  case object     large  extends InstanceType(i3)
+  case object    xlarge  extends InstanceType(i3)
+  case object  `2xlarge` extends InstanceType(i3)
+  case object  `4xlarge` extends InstanceType(i3)
+  case object  `8xlarge` extends InstanceType(i3)
+  case object `16xlarge` extends InstanceType(i3)
 }
 case object d2 extends InstanceTypeFamily with CurrentGeneration {
   case object   xlarge  extends InstanceType(d2)
@@ -123,6 +144,15 @@ case object g2 extends InstanceTypeFamily with CurrentGeneration {
   case object `2xlarge` extends InstanceType(g2)
   case object `8xlarge` extends InstanceType(g2)
 }
+case object g3 extends InstanceTypeFamily with CurrentGeneration {
+  case object  `4xlarge` extends InstanceType(g3)
+  case object  `8xlarge` extends InstanceType(g3)
+  case object `16xlarge` extends InstanceType(g3)
+}
+case object f1 extends InstanceTypeFamily with CurrentGeneration {
+  case object  `2xlarge` extends InstanceType(f1)
+  case object `16xlarge` extends InstanceType(f1)
+}
 
 
 /* ### Previous Generation Instances */
@@ -139,6 +169,9 @@ case object m1 extends InstanceTypeFamily with PreviousGeneration {
 case object c1 extends InstanceTypeFamily with PreviousGeneration {
   case object medium extends InstanceType(c1)
   case object xlarge extends InstanceType(c1)
+}
+case object cc1 extends InstanceTypeFamily with PreviousGeneration {
+  case object `4xlarge` extends InstanceType(cc1)
 }
 case object cc2 extends InstanceTypeFamily with PreviousGeneration {
   case object `8xlarge` extends InstanceType(cc2)
