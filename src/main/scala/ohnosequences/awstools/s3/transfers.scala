@@ -106,6 +106,20 @@ case class TransferManagerOps(asJava: TransferManager) { tm =>
   }
 
   def copy(
+    source:      S3Object,
+    destination: S3Object
+  ): Try[S3Object] = {
+    Try {
+      tm.asJava.copy(
+        source.bucket, source.key,
+        destination.bucket, destination.key
+      ).waitForCompletion
+
+      destination
+    }
+  }
+
+  def copy(
     source:      S3Folder,
     destination: S3Folder
   ): Try[List[S3Object]] = {
