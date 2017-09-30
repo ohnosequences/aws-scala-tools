@@ -8,6 +8,7 @@ import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.util.Try
 import java.net.URL
+import java.io.File
 
 
 case class ScalaS3Client(val asJava: AmazonS3) extends AnyVal { s3 =>
@@ -16,6 +17,41 @@ case class ScalaS3Client(val asJava: AmazonS3) extends AnyVal { s3 =>
     TransferManagerBuilder.standard()
       .withS3Client(s3.asJava)
       .build()
+
+  def withTransferManager[T](action: TransferManager => T): T = {
+    val tm = createTransferManager
+    val result = action(tm)
+    tm.shutdownNow(false)
+    result
+  }
+
+  def download(
+    src: AnyS3Address,
+    dst: File
+  ): Try[File] = withTransferManager {
+    _.download(src, dst)
+  }
+
+  def upload(
+    src: File,
+    dst: AnyS3Address
+  ): Try[AnyS3Address] = withTransferManager {
+    _.upload(src, dst)
+  }
+
+  def copy(
+    src: S3Object,
+    dst: S3Object
+  ): Try[S3Object] = withTransferManager {
+    _.copy(src, dst)
+  }
+
+  def copy(
+    src: S3Folder,
+    dst: S3Folder
+  ): Try[List[S3Object]] = withTransferManager {
+    _.copy(src, dst)
+  }
 
   def waitUntil: AmazonS3Waiters = s3.asJava.waiters
 

@@ -40,7 +40,7 @@ package object s3 {
     ScalaS3Client =
     ScalaS3Client(s3)
 
-  implicit def transferManagerOps(tm: TransferManager):
-    TransferManagerOps =
-    TransferManagerOps(tm)
+  implicit def toScalaTransferManager(tm: TransferManager):
+    ScalaTransferManager =
+    ScalaTransferManager(tm)
 }
