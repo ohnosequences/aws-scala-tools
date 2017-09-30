@@ -54,9 +54,7 @@ class S3 extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterAll {
 
 
   test(s"Uploading to ${srcS3}") {
-    val uploadTry = s3Client.withTransferManager {
-      _.upload(tmp.prefix, srcS3)
-    }
+    val uploadTry = s3Client.upload(tmp.prefix, srcS3)
     assert { uploadTry.isSuccess }
 
     uploadTry.foreach { dst =>
@@ -65,9 +63,7 @@ class S3 extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterAll {
   }
 
   test(s"Copying one ${srcS3} to ${dstS3}") {
-    val copyTry = s3Client.withTransferManager {
-      _.copy(srcS3, dstS3)
-    }
+    val copyTry = s3Client.copy(srcS3, dstS3)
     assert { copyTry.isSuccess }
 
     copyTry.foreach { list =>
@@ -94,9 +90,7 @@ class S3 extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterAll {
   test(s"Downloading from ${dstS3}") {
     val dst = Files.createTempDirectory(Paths.get("target"), "s3-testing").toFile
 
-    val downloadTry = s3Client.withTransferManager {
-      _.download(dstS3, dst)
-    }
+    val downloadTry = s3Client.download(dstS3, dst)
     assert { downloadTry.isSuccess }
 
     downloadTry.foreach { file =>
