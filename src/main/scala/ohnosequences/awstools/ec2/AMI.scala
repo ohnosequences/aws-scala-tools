@@ -65,7 +65,7 @@ trait AnyAmazonLinuxAMI extends AnyLinuxAMI {
   final val arch: Arch = x86_64
 }
 
-class AmazonLinuxAMI[
+sealed class AmazonLinuxAMI[
   R <: RegionAlias,
   V <: AnyVirtualization,
   S <: AnyStorageType
