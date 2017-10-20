@@ -12,7 +12,7 @@ class RegionAliases extends org.scalatest.FunSuite {
 
   test("region aliases correspond to the SDK enum") {
 
-    scalaRegionNames.foreach { t => info(t) }
+    // scalaRegionNames.foreach { t => info(t) }
 
     assertResult(Set(), "these types don't exist in the Java SDK") {
       scalaRegionNames diff javaRegionNames
