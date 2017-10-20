@@ -55,11 +55,11 @@ trait AnyLinuxAMI extends AnyAMI {
   val  storage: Storage
 }
 
-// Amazon Linux AMI 2016.09.0
+// Amazon Linux AMI 2017.09.0
 // See http://aws.amazon.com/amazon-linux-ami/
 trait AnyAmazonLinuxAMI extends AnyLinuxAMI {
 
-  final val version: String = "2016.09.0"
+  final val version: String = "2017.09.0"
 
   type Arch = x86_64.type
   final val arch: Arch = x86_64
@@ -107,68 +107,74 @@ case object AmazonLinuxAMI {
 
   // NOTE: this list doesn't include HVM NAT
 
-  implicit case object ami_c481fad3 extends AmazonLinuxAMI(NorthernVirginia, HVM, EBS)
-  implicit case object ami_4487fc53 extends AmazonLinuxAMI(NorthernVirginia, HVM, InstanceStore)
-  implicit case object ami_4d87fc5a extends AmazonLinuxAMI(NorthernVirginia, PV,  EBS)
-  implicit case object ami_4287fc55 extends AmazonLinuxAMI(NorthernVirginia, PV,  InstanceStore)
+  implicit case object ami_8c1be5f6 extends AmazonLinuxAMI(NorthernVirginia, HVM, EBS)
+  implicit case object ami_a518e6df extends AmazonLinuxAMI(NorthernVirginia, HVM, InstanceStore)
+  implicit case object ami_fe16e884 extends AmazonLinuxAMI(NorthernVirginia, PV,  EBS)
+  implicit case object ami_ec19e796 extends AmazonLinuxAMI(NorthernVirginia, PV,  InstanceStore)
 
-  implicit case object ami_71ca9114 extends AmazonLinuxAMI(Ohio, HVM, EBS)
-  implicit case object ami_70ca9115 extends AmazonLinuxAMI(Ohio, HVM, InstanceStore)
+  implicit case object ami_c5062ba0 extends AmazonLinuxAMI(Ohio, HVM, EBS)
+  implicit case object ami_6b012c0e extends AmazonLinuxAMI(Ohio, HVM, InstanceStore)
 
-  implicit case object ami_b04e92d0 extends AmazonLinuxAMI(Oregon, HVM, EBS)
-  implicit case object ami_dd4894bd extends AmazonLinuxAMI(Oregon, HVM, InstanceStore)
-  implicit case object ami_1d49957d extends AmazonLinuxAMI(Oregon, PV,  EBS)
-  implicit case object ami_48499528 extends AmazonLinuxAMI(Oregon, PV,  InstanceStore)
+  implicit case object ami_e689729e extends AmazonLinuxAMI(Oregon, HVM, EBS)
+  implicit case object ami_01897279 extends AmazonLinuxAMI(Oregon, HVM, InstanceStore)
+  implicit case object ami_e389729b extends AmazonLinuxAMI(Oregon, PV,  EBS)
+  implicit case object ami_d8906ba0 extends AmazonLinuxAMI(Oregon, PV,  InstanceStore)
 
-  implicit case object ami_de347abe extends AmazonLinuxAMI(NorthernCalifornia, HVM, EBS)
-  implicit case object ami_9e3779fe extends AmazonLinuxAMI(NorthernCalifornia, HVM, InstanceStore)
-  implicit case object ami_df3779bf extends AmazonLinuxAMI(NorthernCalifornia, PV,  EBS)
-  implicit case object ami_69367809 extends AmazonLinuxAMI(NorthernCalifornia, PV,  InstanceStore)
+  implicit case object ami_02eada62 extends AmazonLinuxAMI(NorthernCalifornia, HVM, EBS)
+  implicit case object ami_d7eadab7 extends AmazonLinuxAMI(NorthernCalifornia, HVM, InstanceStore)
+  implicit case object ami_fce9d99c extends AmazonLinuxAMI(NorthernCalifornia, PV,  EBS)
+  implicit case object ami_d1eadab1 extends AmazonLinuxAMI(NorthernCalifornia, PV,  InstanceStore)
 
-  implicit case object ami_d41d58a7 extends AmazonLinuxAMI(Ireland, HVM, EBS)
-  implicit case object ami_64105517 extends AmazonLinuxAMI(Ireland, HVM, InstanceStore)
-  implicit case object ami_0e10557d extends AmazonLinuxAMI(Ireland, PV,  EBS)
-  implicit case object ami_8c1d58ff extends AmazonLinuxAMI(Ireland, PV,  InstanceStore)
+  implicit case object ami_fd55ec99 extends AmazonLinuxAMI(CanadaCentral, HVM, EBS)
+  implicit case object ami_be54edda extends AmazonLinuxAMI(CanadaCentral, HVM, InstanceStore)
 
-  implicit case object ami_0044b96f extends AmazonLinuxAMI(Frankfurt, HVM, EBS)
-  implicit case object ami_a74ab7c8 extends AmazonLinuxAMI(Frankfurt, HVM, InstanceStore)
-  implicit case object ami_1345b87c extends AmazonLinuxAMI(Frankfurt, PV,  EBS)
-  implicit case object ami_f64ab799 extends AmazonLinuxAMI(Frankfurt, PV,  InstanceStore)
+  implicit case object ami_acd005d5 extends AmazonLinuxAMI(Ireland, HVM, EBS)
+  implicit case object ami_aed005d7 extends AmazonLinuxAMI(Ireland, HVM, InstanceStore)
+  implicit case object ami_07df0a7e extends AmazonLinuxAMI(Ireland, PV,  EBS)
+  implicit case object ami_acd207d5 extends AmazonLinuxAMI(Ireland, PV,  InstanceStore)
 
-  implicit case object ami_7243e611 extends AmazonLinuxAMI(Singapore, HVM, EBS)
-  implicit case object ami_4841e42b extends AmazonLinuxAMI(Singapore, HVM, InstanceStore)
-  implicit case object ami_a743e6c4 extends AmazonLinuxAMI(Singapore, PV,  EBS)
-  implicit case object ami_d846e3bb extends AmazonLinuxAMI(Singapore, PV,  InstanceStore)
+  implicit case object ami_1a7f6d7e extends AmazonLinuxAMI(London, HVM, EBS)
+  implicit case object ami_677f6d03 extends AmazonLinuxAMI(London, HVM, InstanceStore)
 
-  implicit case object ami_a04297ce extends AmazonLinuxAMI(Seoul, HVM, EBS)
-  implicit case object ami_d34c99bd extends AmazonLinuxAMI(Seoul, HVM, InstanceStore)
+  implicit case object ami_c7ee5ca8 extends AmazonLinuxAMI(Frankfurt, HVM, EBS)
+  implicit case object ami_feef5d91 extends AmazonLinuxAMI(Frankfurt, HVM, InstanceStore)
+  implicit case object ami_66ec5e09 extends AmazonLinuxAMI(Frankfurt, PV,  EBS)
+  implicit case object ami_58ec5e37 extends AmazonLinuxAMI(Frankfurt, PV,  InstanceStore)
 
-  implicit case object ami_1a15c77b extends AmazonLinuxAMI(Tokyo, HVM, EBS)
-  implicit case object ami_9016c4f1 extends AmazonLinuxAMI(Tokyo, HVM, InstanceStore)
-  implicit case object ami_cf14c6ae extends AmazonLinuxAMI(Tokyo, PV,  EBS)
-  implicit case object ami_4615c727 extends AmazonLinuxAMI(Tokyo, PV,  InstanceStore)
+  implicit case object ami_0797ea64 extends AmazonLinuxAMI(Singapore, HVM, EBS)
+  implicit case object ami_ca96eba9 extends AmazonLinuxAMI(Singapore, HVM, InstanceStore)
+  implicit case object ami_5a91ec39 extends AmazonLinuxAMI(Singapore, PV,  EBS)
+  implicit case object ami_0697ea65 extends AmazonLinuxAMI(Singapore, PV,  InstanceStore)
 
-  implicit case object ami_55d4e436 extends AmazonLinuxAMI(Sydney, HVM, EBS)
-  implicit case object ami_fbd6e698 extends AmazonLinuxAMI(Sydney, HVM, InstanceStore)
-  implicit case object ami_3ad6e659 extends AmazonLinuxAMI(Sydney, PV,  EBS)
-  implicit case object ami_3fd6e65c extends AmazonLinuxAMI(Sydney, PV,  InstanceStore)
+  implicit case object ami_9bec36f5 extends AmazonLinuxAMI(Seoul, HVM, EBS)
+  implicit case object ami_a3ed37cd extends AmazonLinuxAMI(Seoul, HVM, InstanceStore)
 
-  implicit case object ami_cacbbea5 extends AmazonLinuxAMI(Mumbai, HVM, EBS)
-  implicit case object ami_cec2b7a1 extends AmazonLinuxAMI(Mumbai, HVM, InstanceStore)
+  implicit case object ami_2a69be4c extends AmazonLinuxAMI(Tokyo, HVM, EBS)
+  implicit case object ami_8068bfe6 extends AmazonLinuxAMI(Tokyo, HVM, InstanceStore)
+  implicit case object ami_05964063 extends AmazonLinuxAMI(Tokyo, PV,  EBS)
+  implicit case object ami_c59543a3 extends AmazonLinuxAMI(Tokyo, PV,  InstanceStore)
 
-  implicit case object ami_b777e4db extends AmazonLinuxAMI(SaoPaulo, HVM, EBS)
-  implicit case object ami_5075e63c extends AmazonLinuxAMI(SaoPaulo, HVM, InstanceStore)
-  implicit case object ami_1d75e671 extends AmazonLinuxAMI(SaoPaulo, PV,  EBS)
-  implicit case object ami_b477e4d8 extends AmazonLinuxAMI(SaoPaulo, PV,  InstanceStore)
+  implicit case object ami_8536d6e7 extends AmazonLinuxAMI(Sydney, HVM, EBS)
+  implicit case object ami_8236d6e0 extends AmazonLinuxAMI(Sydney, HVM, InstanceStore)
+  implicit case object ami_f137d793 extends AmazonLinuxAMI(Sydney, PV,  EBS)
+  implicit case object ami_8f36d6ed extends AmazonLinuxAMI(Sydney, PV,  InstanceStore)
 
-  implicit case object ami_fa875397 extends AmazonLinuxAMI(Beijing, HVM, EBS)
-  implicit case object ami_cb8357a6 extends AmazonLinuxAMI(Beijing, HVM, InstanceStore)
-  implicit case object ami_d98357b4 extends AmazonLinuxAMI(Beijing, PV,  EBS)
-  implicit case object ami_1a8e5a77 extends AmazonLinuxAMI(Beijing, PV,  InstanceStore)
+  implicit case object ami_4fc58420 extends AmazonLinuxAMI(Mumbai, HVM, EBS)
+  implicit case object ami_e3c2838c extends AmazonLinuxAMI(Mumbai, HVM, InstanceStore)
 
-  implicit case object ami_7b4df41a extends AmazonLinuxAMI(GovCloud, HVM, EBS)
-  implicit case object ami_ae4bf2cf extends AmazonLinuxAMI(GovCloud, HVM, InstanceStore)
-  implicit case object ami_144cf575 extends AmazonLinuxAMI(GovCloud, PV,  EBS)
-  implicit case object ami_bc48f1dd extends AmazonLinuxAMI(GovCloud, PV,  InstanceStore)
+  implicit case object ami_f1344b9d extends AmazonLinuxAMI(SaoPaulo, HVM, EBS)
+  implicit case object ami_21354a4d extends AmazonLinuxAMI(SaoPaulo, HVM, InstanceStore)
+  implicit case object ami_b4344bd8 extends AmazonLinuxAMI(SaoPaulo, PV,  EBS)
+  implicit case object ami_05364969 extends AmazonLinuxAMI(SaoPaulo, PV,  InstanceStore)
+
+  implicit case object ami_fba67596 extends AmazonLinuxAMI(Beijing, HVM, EBS)
+  implicit case object ami_b6a774db extends AmazonLinuxAMI(Beijing, HVM, InstanceStore)
+  implicit case object ami_04a57669 extends AmazonLinuxAMI(Beijing, PV,  EBS)
+  implicit case object ami_24a67549 extends AmazonLinuxAMI(Beijing, PV,  InstanceStore)
+
+  implicit case object ami_6e9c1e0f extends AmazonLinuxAMI(GovCloud, HVM, EBS)
+  implicit case object ami_a89e1cc9 extends AmazonLinuxAMI(GovCloud, HVM, InstanceStore)
+  implicit case object ami_139c1e72 extends AmazonLinuxAMI(GovCloud, PV,  EBS)
+  implicit case object ami_9c991bfd extends AmazonLinuxAMI(GovCloud, PV,  InstanceStore)
 
 }
