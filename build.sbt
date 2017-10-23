@@ -7,7 +7,8 @@ bucketSuffix := "era7.com"
 crossScalaVersions := Seq("2.11.11", "2.12.3")
 scalaVersion := crossScalaVersions.value.max
 
-val sdkVersion = "1.11.217"
+// https://github.com/aws/aws-sdk-java/blob/master/CHANGELOG.md
+val sdkVersion = "1.11.218"
 
 val services = Seq(
   "autoscaling",
