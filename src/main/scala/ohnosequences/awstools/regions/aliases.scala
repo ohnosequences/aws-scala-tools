@@ -22,11 +22,14 @@ case object Seoul              extends RegionAlias(Regions.AP_NORTHEAST_2)
 case object Mumbai             extends RegionAlias(Regions.AP_SOUTH_1)
 case object Singapore          extends RegionAlias(Regions.AP_SOUTHEAST_1)
 case object Sydney             extends RegionAlias(Regions.AP_SOUTHEAST_2)
+/* - Canada */
+case object CanadaCentral      extends RegionAlias(Regions.CA_CENTRAL_1)
 /* - China */
 case object Beijing            extends RegionAlias(Regions.CN_NORTH_1)
 /* - Europe */
 case object Frankfurt          extends RegionAlias(Regions.EU_CENTRAL_1)
 case object Ireland            extends RegionAlias(Regions.EU_WEST_1)
+case object London             extends RegionAlias(Regions.EU_WEST_2)
 /* - Somewhere in CIA */
 case object GovCloud           extends RegionAlias(Regions.GovCloud)
 /* - South America */

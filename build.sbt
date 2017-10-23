@@ -7,7 +7,7 @@ bucketSuffix := "era7.com"
 crossScalaVersions := Seq("2.11.11", "2.12.3")
 scalaVersion := crossScalaVersions.value.max
 
-val sdkVersion = "1.11.205"
+val sdkVersion = "1.11.217"
 
 val services = Seq(
   "autoscaling",
