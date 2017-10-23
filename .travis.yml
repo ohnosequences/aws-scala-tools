@@ -5,6 +5,7 @@ jdk: oraclejdk8
 scala:
   - 2.11.11
   - 2.12.3
+  - 2.12.4
 script:
   - sbt ++$TRAVIS_SCALA_VERSION 'testOnly *InstanceTypes *RegionAliases'
 notifications:
