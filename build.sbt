@@ -8,7 +8,7 @@ crossScalaVersions := Seq("2.11.12", "2.12.4")
 scalaVersion := crossScalaVersions.value.max
 
 // https://github.com/aws/aws-sdk-java/blob/master/CHANGELOG.md
-val sdkVersion = "1.11.218"
+val sdkVersion = "1.11.268"
 
 val services = Seq(
   "autoscaling",
