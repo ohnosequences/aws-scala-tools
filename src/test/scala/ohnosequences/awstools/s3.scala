@@ -52,6 +52,48 @@ class S3 extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterAll {
     }
   }
 
+  test("S3 addresses are (de)constructed correctly") {
+
+    val obj = s3"bucket" / "foo//bar" / "/buh"
+
+    assertResult(Set("s3://bucket/foo/bar/buh")) {
+      Set(
+        obj.toURI.toString,
+        obj.toString,
+        obj.url
+      )
+    }
+
+    assertResult("bucket") { obj.bucket }
+    assertResult("foo/bar/buh") { obj.key }
+
+    obj match {
+      case S3Object(bucket, key) => {
+        assertResult("bucket") { bucket }
+        assertResult("foo/bar/buh") { key }
+      }
+    }
+
+    val fldr = obj /
+
+    assertResult(Set("s3://bucket/foo/bar/buh/")) {
+      Set(
+        fldr.toURI.toString,
+        fldr.toString,
+        fldr.url
+      )
+    }
+
+    assertResult("bucket") { fldr.bucket }
+    assertResult("foo/bar/buh/") { fldr.key }
+
+    fldr match {
+      case S3Folder(bucket, key) => {
+        assertResult("bucket") { bucket }
+        assertResult("foo/bar/buh/") { key }
+      }
+    }
+  }
 
   test(s"Uploading to ${srcS3}") {
     val uploadTry = s3Client.upload(tmp.prefix, srcS3)
