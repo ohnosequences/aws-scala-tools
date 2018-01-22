@@ -28,7 +28,7 @@ sealed trait AnyS3Address {
 }
 
 
-case class S3Folder(b: String, k: String) extends AnyS3Address {
+class S3Folder private(b: String, k: String) extends AnyS3Address {
   val _bucket = b
   // NOTE: we explicitly add / in the end here (it represents the empty S3 object of the folder)
   val _key = k + "/"
@@ -37,7 +37,11 @@ case class S3Folder(b: String, k: String) extends AnyS3Address {
 }
 
 object S3Folder {
+  // NOTE: This returns sanitized key in contrast with the case class default unapply method
+  def unapply(addr: S3Folder): Option[(String, String)] =
+    Some((addr.bucket, addr.key))
 
+  def apply(b: String, k: String): S3Folder = new S3Folder(b, k)
   def apply(uri: URI): S3Folder = S3Folder(uri.getHost, uri.getPath)
 
   def toS3Object(f: S3Folder): S3Object =
@@ -45,7 +49,7 @@ object S3Folder {
 }
 
 
-case class S3Object(_bucket: String, _key: String) extends AnyS3Address {
+class S3Object private(val _bucket: String, val _key: String) extends AnyS3Address {
 
   def /(): S3Folder = S3Folder(bucket, key)
 
@@ -53,8 +57,12 @@ case class S3Object(_bucket: String, _key: String) extends AnyS3Address {
 }
 
 object S3Object {
+  // NOTE: This returns sanitized key in contrast with the case class default unapply method
+  def unapply(addr: S3Object): Option[(String, String)] =
+    Some((addr.bucket, addr.key))
 
-  def apply(uri: URI): S3Object = S3Object(uri.getHost, uri.getPath)
+  def apply(b: String, k: String): S3Object = new S3Object(b, k)
+  def apply(uri: URI): S3Object = apply(uri.getHost, uri.getPath)
 }
 
 
