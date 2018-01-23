@@ -9,6 +9,8 @@ import scala.concurrent.duration._
 import scala.util.Try
 import java.net.URL
 import java.io.File
+import java.time.Instant
+import java.util.Date
 
 
 case class ScalaS3Client(val asJava: AmazonS3) extends AnyVal { s3 =>
@@ -100,7 +102,8 @@ case class ScalaS3Client(val asJava: AmazonS3) extends AnyVal { s3 =>
     s3.asJava.doesObjectExist(address.bucket, address.key)
 
   def generateTemporaryLink(address: S3Object, linkLifeTime: FiniteDuration): Try[URL] = Try {
-    val date = new java.util.Date(linkLifeTime.toMillis)
+    val instant = Instant.now() plusMillis linkLifeTime.toMillis
+    val date = new Date(instant.toEpochMilli())
     s3.asJava.generatePresignedUrl(address.bucket, address.key, date)
   }
 
