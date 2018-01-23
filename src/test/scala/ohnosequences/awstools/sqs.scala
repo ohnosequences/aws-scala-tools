@@ -70,7 +70,7 @@ class SQS extends org.scalatest.FunSuite with org.scalatest.BeforeAndAfterAll {
   // testSendingInParallel(24, 1000, 21 seconds)
   // testSendingInParallel(32, 1000, 3 seconds)
 
-  testSendingInParallel(32, 1000, 11 seconds)
+  testSendingInParallel(32, 1000, 15 seconds)
 
   test("receiving and deleting a message") {
 
